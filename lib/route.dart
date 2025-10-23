@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'src/home/presentation/home_page.dart';
+import 'src/auth/presentation/dev_auth_screen.dart'; // added import
 
 class AppRoutes {
   static const String home = '/';
   static const String second = '/second';
+  static const String devAuth = '/dev-auth'; // added route constant
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -11,6 +13,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const HomePage());
       case second:
         return MaterialPageRoute(builder: (_) => const SecondPage());
+      case devAuth:
+        return MaterialPageRoute(builder: (_) => const DevAuthScreen()); // added case
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

@@ -31,8 +31,8 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      // use named routes so changing routes renders the proper page
-      initialRoute: AppRoutes.home,
+      // Changed initialRoute to devAuth to show auth screen first
+      initialRoute: AppRoutes.devAuth,
       onGenerateRoute: AppRoutes.generateRoute,
       // removed `home:` so initialRoute determines the initial screen
     );
