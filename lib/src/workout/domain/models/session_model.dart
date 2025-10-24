@@ -6,6 +6,7 @@ class WorkoutSession {
   final bool isPublic;
   final String? notes;
   final bool isActive;
+  final String? lastWorkoutLogId; // NEW: nullable last workout log id
   final DateTime createdAt;
   final DateTime? updatedAt;
   final List<SessionExercise> sessionExercises;
@@ -18,6 +19,7 @@ class WorkoutSession {
     required this.isPublic,
     this.notes,
     required this.isActive,
+    this.lastWorkoutLogId, // NEW
     required this.createdAt,
     this.updatedAt,
     required this.sessionExercises,
@@ -32,6 +34,7 @@ class WorkoutSession {
       isPublic: json['isPublic'] as bool? ?? false,
       notes: json['notes'] as String?,
       isActive: json['isActive'] as bool? ?? false,
+      lastWorkoutLogId: json['lastWorkoutLogId'] as String?, // NEW parsing
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt:
           json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,

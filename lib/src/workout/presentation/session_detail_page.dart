@@ -15,6 +15,17 @@ class SessionDetailPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(8),
         children: [
+          // show lastWorkoutLogId prominently if present
+          if (session.lastWorkoutLogId != null && session.lastWorkoutLogId!.isNotEmpty)
+            Card(
+              color: Theme.of(context).colorScheme.surfaceVariant,
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              child: ListTile(
+                leading: const Icon(Icons.history),
+                title: const Text('Last workout log'),
+                subtitle: Text(session.lastWorkoutLogId!),
+              ),
+            ),
           if (session.notes != null && session.notes!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
