@@ -30,4 +30,26 @@ class SessionApi {
       throw Exception('Failed to load sessions: ${resp.statusCode} ${resp.body}');
     }
   }
+
+  static Future<void> createSession(Map<String, dynamic> sessionData) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(_tokenKey);
+
+    final uri = Uri.parse(sessionsUrl);
+    final headers = <String, String>{
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+
+    final resp = await http.post(
+      uri,
+      headers: headers,
+      body: jsonEncode(sessionData),
+    );
+
+    if (resp.statusCode != 200 && resp.statusCode != 201) {
+      throw Exception('Failed to create session: ${resp.statusCode} ${resp.body}');
+    }
+  }
 }

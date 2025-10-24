@@ -21,6 +21,10 @@ class HomePage extends StatelessWidget {
               onPressed: () => Navigator.pushNamed(context, AppRoutes.session),
               child: const Text('Go to Session Page'),
             ),
+              ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.workoutLogs),
+              child: const Text('Go to Workout Logs Page'),
+            ),
           ],
         ),
       ),
