@@ -18,3 +18,6 @@ String workoutProgressUrl(String logId) => '$apiBase${workoutProgressPath(logId)
 
 String updateExerciseProgressPath(String logId, String exerciseId) => '/api/workout/progress/log/$logId/exercise/$exerciseId';
 String updateExerciseProgressUrl(String logId, String exerciseId) => '$apiBase${updateExerciseProgressPath(logId, exerciseId)}';
+
+String completeWorkoutPath(String logId) => '/api/workout/progress/log/$logId/complete';
+String completeWorkoutUrl(String logId) => '$apiBase${completeWorkoutPath(logId)}';

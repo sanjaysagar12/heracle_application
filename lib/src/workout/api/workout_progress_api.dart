@@ -70,4 +70,25 @@ class WorkoutProgressApi {
       throw Exception('Failed to update exercise progress: ${resp.statusCode} ${resp.body}');
     }
   }
+
+  static Future<Map<String, dynamic>> completeWorkout(String logId, String? notes) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(_tokenKey);
+
+    final uri = Uri.parse(completeWorkoutUrl(logId));
+    final headers = <String, String>{
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+
+    final body = jsonEncode({'notes': notes ?? ''});
+
+    final resp = await http.post(uri, headers: headers, body: body);
+    if (resp.statusCode == 200 || resp.statusCode == 201) {
+      return jsonDecode(resp.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Failed to complete workout: ${resp.statusCode} ${resp.body}');
+    }
+  }
 }

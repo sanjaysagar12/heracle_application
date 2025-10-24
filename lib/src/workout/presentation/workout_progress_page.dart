@@ -50,6 +50,80 @@ class _WorkoutProgressPageState extends State<WorkoutProgressPage> {
     }
   }
 
+  Future<void> _showFinishWorkoutDialog() async {
+    final notesController = TextEditingController();
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Finish Workout'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Are you sure you want to finish this workout?'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(
+                labelText: 'Workout Notes (Optional)',
+                border: OutlineInputBorder(),
+                hintText: 'How did the workout go?',
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Finish'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      await _finishWorkout(notesController.text.trim());
+    }
+    
+    notesController.dispose();
+  }
+
+  Future<void> _finishWorkout(String notes) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final response = await WorkoutProgressApi.completeWorkout(widget.workoutLogId, notes);
+      
+      Navigator.of(context).pop(); // Close loading dialog
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Workout completed! Total time: ${response['totalTimeMin']} min'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pop(); // Return to sessions page
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Close loading dialog
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to finish workout: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,7 +134,18 @@ class _WorkoutProgressPageState extends State<WorkoutProgressPage> {
             icon: const Icon(Icons.refresh),
             onPressed: _refreshProgress,
           ),
+          IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: _showFinishWorkoutDialog,
+            tooltip: 'Finish Workout',
+          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showFinishWorkoutDialog,
+        icon: const Icon(Icons.check),
+        label: const Text('Finish Workout'),
+        backgroundColor: Colors.green,
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _progressFuture,
