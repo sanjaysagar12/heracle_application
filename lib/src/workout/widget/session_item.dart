@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../domain/models/session_model.dart';
+import '../presentation/session_detail_page.dart';
 
 class SessionItem extends StatelessWidget {
   final WorkoutSession session;
@@ -8,17 +9,20 @@ class SessionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ExpansionTile(
-      title: Text(session.name),
-      subtitle: Text(session.description ?? ''),
-      children: session.sessionExercises.map((se) {
-        final exerciseName = se.exercise?.name ?? se.exerciseId;
-        return ListTile(
-          title: Text(exerciseName),
-          subtitle: Text('Sets: ${se.plannedSets} • Reps: ${se.plannedReps}'),
-          trailing: Text(se.tempo ?? ''),
-        );
-      }).toList(),
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: ListTile(
+        title: Text(session.name),
+        subtitle: Text(session.description ?? ''),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => SessionDetailPage(session: session),
+            ),
+          );
+        },
+      ),
     );
   }
 }
