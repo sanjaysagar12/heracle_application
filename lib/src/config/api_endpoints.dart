@@ -9,3 +9,12 @@ const String exercisesUrl = '$apiBase$exercisesPath';
 
 String sessionExercisesPath(String sessionId) => '/api/workout/session/$sessionId/exercises';
 String sessionExercisesUrl(String sessionId) => '$apiBase${sessionExercisesPath(sessionId)}';
+
+String workoutStartPath(String sessionId) => '/api/workout/progress/$sessionId/start';
+String workoutStartUrl(String sessionId) => '$apiBase${workoutStartPath(sessionId)}';
+
+String workoutProgressPath(String logId) => '/api/workout/progress/log/$logId';
+String workoutProgressUrl(String logId) => '$apiBase${workoutProgressPath(logId)}';
+
+String updateExerciseProgressPath(String logId, String exerciseId) => '/api/workout/progress/log/$logId/exercise/$exerciseId';
+String updateExerciseProgressUrl(String logId, String exerciseId) => '$apiBase${updateExerciseProgressPath(logId, exerciseId)}';
