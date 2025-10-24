@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:theone_application/route.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -17,8 +18,8 @@ class HomePage extends StatelessWidget {
             const Text('This is the Home Page'),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/second'),
-              child: const Text('Go to Second Page'),
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.session),
+              child: const Text('Go to Session Page'),
             ),
           ],
         ),
