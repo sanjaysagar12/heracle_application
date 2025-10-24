@@ -3,6 +3,7 @@ import '../domain/session_repository_impl.dart';
 import '../api/session_api.dart';
 import '../widget/session_item.dart';
 import '../domain/models/session_model.dart';
+import '../presentation/create_session_page.dart';
 
 class SessionPage extends StatefulWidget {
   const SessionPage({Key? key}) : super(key: key);
@@ -13,19 +14,50 @@ class SessionPage extends StatefulWidget {
 
 class _SessionPageState extends State<SessionPage> {
   late final SessionRepositoryImpl _repo;
-  late final Future<List<WorkoutSession>> _futureSessions;
+  late Future<List<WorkoutSession>> _futureSessions;
 
   @override
   void initState() {
     super.initState();
     _repo = SessionRepositoryImpl(api: SessionApi());
-    _futureSessions = _repo.getSessions();
+    _refreshSessions();
+  }
+
+  void _refreshSessions() {
+    setState(() {
+      _futureSessions = _repo.getSessions();
+    });
+  }
+
+  Future<void> _navigateToCreateSession() async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => const CreateSessionPage(),
+      ),
+    );
+
+    if (result == true) {
+      _refreshSessions();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sessions')),
+      appBar: AppBar(
+        title: const Text('Sessions'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshSessions,
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToCreateSession,
+        child: const Icon(Icons.add),
+        tooltip: 'Create New Session',
+      ),
       body: FutureBuilder<List<WorkoutSession>>(
         future: _futureSessions,
         builder: (context, snapshot) {
