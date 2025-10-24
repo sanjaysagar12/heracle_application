@@ -57,6 +57,53 @@ class _SessionDetailPageState extends State<SessionDetailPage> {
       body: ListView(
         padding: const EdgeInsets.all(8),
         children: [
+          // Session Status Card
+          Card(
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Session Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        _currentSession.isActive ? Icons.play_circle : Icons.pause_circle,
+                        color: _currentSession.isActive ? Colors.green : Colors.grey,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _currentSession.isActive ? 'Active Session' : 'Inactive Session',
+                        style: TextStyle(
+                          color: _currentSession.isActive ? Colors.green : Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        _currentSession.isPublic ? Icons.public : Icons.lock,
+                        color: _currentSession.isPublic ? Colors.blue : Colors.grey,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _currentSession.isPublic ? 'Public Session' : 'Private Session',
+                        style: TextStyle(
+                          color: _currentSession.isPublic ? Colors.blue : Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
           // show lastWorkoutLogId prominently if present
           if (_currentSession.lastWorkoutLogId != null && _currentSession.lastWorkoutLogId!.isNotEmpty)
             Card(

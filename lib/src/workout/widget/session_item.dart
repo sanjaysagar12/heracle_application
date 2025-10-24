@@ -12,7 +12,32 @@ class SessionItem extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: ListTile(
-        title: Text(session.name),
+        title: Row(
+          children: [
+            Expanded(child: Text(session.name)),
+            if (session.isActive)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'ACTIVE',
+                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+            ),
+            if (session.isPublic)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Icon(
+                  Icons.public,
+                  size: 16,
+                  color: Colors.blue[600],
+                ),
+            ),
+          ],
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
