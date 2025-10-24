@@ -4,6 +4,7 @@ import '../api/session_api.dart';
 import '../widget/session_item.dart';
 import '../domain/models/session_model.dart';
 import '../presentation/create_session_page.dart';
+import '../presentation/workout_logs_page.dart';
 
 class SessionPage extends StatefulWidget {
   const SessionPage({Key? key}) : super(key: key);
@@ -47,6 +48,13 @@ class _SessionPageState extends State<SessionPage> {
       appBar: AppBar(
         title: const Text('Sessions'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () {
+              Navigator.of(context).pushNamed('/workout-logs');
+            },
+            tooltip: 'Workout Logs',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refreshSessions,

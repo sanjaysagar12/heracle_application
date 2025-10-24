@@ -134,18 +134,7 @@ class _WorkoutProgressPageState extends State<WorkoutProgressPage> {
             icon: const Icon(Icons.refresh),
             onPressed: _refreshProgress,
           ),
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _showFinishWorkoutDialog,
-            tooltip: 'Finish Workout',
-          ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showFinishWorkoutDialog,
-        icon: const Icon(Icons.check),
-        label: const Text('Finish Workout'),
-        backgroundColor: Colors.green,
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _progressFuture,
@@ -161,111 +150,142 @@ class _WorkoutProgressPageState extends State<WorkoutProgressPage> {
           final workoutLog = data['workoutLog'] as Map<String, dynamic>;
           final exerciseProgress = (data['exerciseProgress'] as List<dynamic>?) ?? [];
           final completion = data['completion'] as Map<String, dynamic>?;
+          final status = workoutLog['status'] as String? ?? 'UNKNOWN';
+          final isInProgress = status.toUpperCase() == 'IN_PROGRESS';
 
-          return ListView(
-            padding: const EdgeInsets.all(8),
-            children: [
-              // Workout Summary Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Workout Summary', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 8),
-                      Text('Status: ${workoutLog['status'] ?? 'Unknown'}'),
-                      Text('Total Time: ${(workoutLog['totalTimeMin'] as num?)?.toInt() ?? 0} min'),
-                      Text('Total Volume: ${(workoutLog['totalVolume'] as num?)?.toInt() ?? 0}'),
-                      Text('Total Sets: ${(workoutLog['totalSets'] as num?)?.toInt() ?? 0}'),
-                      Text('Total Reps: ${(workoutLog['totalReps'] as num?)?.toInt() ?? 0}'),
-                      if (completion != null) ...[
-                        const SizedBox(height: 8),
-                        Text('Sets: ${(completion['setsPercentage'] as num?)?.toInt() ?? 0}%'),
-                        Text('Reps: ${(completion['repsPercentage'] as num?)?.toInt() ?? 0}%'),
-                        Text('Volume: ${(completion['volumePercentage'] as num?)?.toInt() ?? 0}%'),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-
-              // Exercise Progress Cards
-              ...exerciseProgress.map<Widget>((ep) {
-                final exercise = ep['exercise'] as Map<String, dynamic>;
-                final planned = ep['planned'] as Map<String, dynamic>;
-                final actual = ep['actual'] as Map<String, dynamic>?;
-                final setDetails = (ep['setDetails'] as List<dynamic>?) ?? [];
-
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  child: ExpansionTile(
-                    title: Text(exercise['name'] as String? ?? 'Unknown Exercise'),
-                    subtitle: Text('Planned: ${(planned['sets'] as num?)?.toInt() ?? 0} sets × ${(planned['reps'] as num?)?.toInt() ?? 0} reps @ ${(planned['weight'] as num?)?.toDouble() ?? 0}'),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          return Scaffold(
+            // Only show finish button for in-progress workouts
+            floatingActionButton: isInProgress ? FloatingActionButton.extended(
+              onPressed: _showFinishWorkoutDialog,
+              icon: const Icon(Icons.check),
+              label: const Text('Finish Workout'),
+              backgroundColor: Colors.green,
+            ) : null,
+            body: ListView(
+              padding: const EdgeInsets.all(8),
+              children: [
+                // Workout Summary Card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            if (actual != null) ...[
-                              Text('Actual: ${(actual['sets'] as num?)?.toInt() ?? 0} sets, ${(actual['reps'] as num?)?.toInt() ?? 0} reps'),
-                              Text('Volume: ${(actual['volume'] as num?)?.toInt() ?? 0}, Avg Weight: ${(actual['averageWeight'] as num?)?.toDouble() ?? 0}'),
-                              const SizedBox(height: 8),
-                            ],
-                            const Text('Sets:', style: TextStyle(fontWeight: FontWeight.bold)),
-                            ...setDetails.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final setDetail = entry.value as Map<String, dynamic>;
-                              final plannedSet = setDetail['planned'] as Map<String, dynamic>? ?? {};
-                              final actualSet = setDetail['actual'] as Map<String, dynamic>?;
-
-                              return SetProgressItem(
-                                setNumber: (plannedSet['setNumber'] as num?)?.toInt() ?? (index + 1),
-                                plannedReps: (plannedSet['reps'] as num?)?.toInt() ?? 0,
-                                plannedWeight: (plannedSet['weight'] as num?)?.toDouble(),
-                                actualReps: (actualSet?['reps'] as num?)?.toInt(),
-                                actualWeight: (actualSet?['weight'] as num?)?.toDouble(),
-                                completed: setDetail['completed'] as bool? ?? false,
-                                onUpdate: (reps, weight, rpe) {
-                                  // Update this specific set
-                                  final updatedSets = setDetails.asMap().entries.map((e) {
-                                    if (e.key == index) {
-                                      return {
-                                        'setNumber': (plannedSet['setNumber'] as num?)?.toInt() ?? (index + 1),
-                                        'reps': reps,
-                                        'weight': weight,
-                                        'rpe': rpe,
-                                        'completed': true,
-                                      };
-                                    }
-                                    final otherSet = e.value as Map<String, dynamic>;
-                                    final otherActual = otherSet['actual'] as Map<String, dynamic>?;
-                                    final otherPlanned = otherSet['planned'] as Map<String, dynamic>? ?? {};
-                                    return {
-                                      'setNumber': (otherPlanned['setNumber'] as num?)?.toInt() ?? (e.key + 1),
-                                      'reps': (otherActual?['reps'] as num?)?.toInt() ?? (otherPlanned['reps'] as num?)?.toInt() ?? 0,
-                                      'weight': (otherActual?['weight'] as num?)?.toDouble() ?? (otherPlanned['weight'] as num?)?.toDouble(),
-                                      'rpe': (otherActual?['rpe'] as num?)?.toInt() ?? 7,
-                                      'completed': otherSet['completed'] as bool? ?? false,
-                                    };
-                                  }).toList();
-
-                                  _updateExerciseProgress(
-                                    exercise['id'] as String,
-                                    updatedSets.cast<Map<String, dynamic>>(),
-                                  );
-                                },
-                              );
-                            }).toList(),
+                            Text('Workout Summary', style: Theme.of(context).textTheme.titleLarge),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: status.toUpperCase() == 'COMPLETED' ? Colors.green : 
+                                       status.toUpperCase() == 'IN_PROGRESS' ? Colors.orange : Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                status,
+                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        Text('Status: ${workoutLog['status'] ?? 'Unknown'}'),
+                        Text('Total Time: ${(workoutLog['totalTimeMin'] as num?)?.toInt() ?? 0} min'),
+                        Text('Total Volume: ${(workoutLog['totalVolume'] as num?)?.toInt() ?? 0}'),
+                        Text('Total Sets: ${(workoutLog['totalSets'] as num?)?.toInt() ?? 0}'),
+                        Text('Total Reps: ${(workoutLog['totalReps'] as num?)?.toInt() ?? 0}'),
+                        if (completion != null) ...[
+                          const SizedBox(height: 8),
+                          Text('Sets: ${(completion['setsPercentage'] as num?)?.toInt() ?? 0}%'),
+                          Text('Reps: ${(completion['repsPercentage'] as num?)?.toInt() ?? 0}%'),
+                          Text('Volume: ${(completion['volumePercentage'] as num?)?.toInt() ?? 0}%'),
+                        ],
+                        if (!isInProgress && workoutLog['endedAt'] != null)
+                          Text('Ended: ${workoutLog['endedAt']}'),
+                      ],
+                    ),
                   ),
-                );
-              }).toList(),
-            ],
+                ),
+
+                // Exercise Progress Cards
+                ...exerciseProgress.map<Widget>((ep) {
+                  final exercise = ep['exercise'] as Map<String, dynamic>;
+                  final planned = ep['planned'] as Map<String, dynamic>;
+                  final actual = ep['actual'] as Map<String, dynamic>?;
+                  final setDetails = (ep['setDetails'] as List<dynamic>?) ?? [];
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    child: ExpansionTile(
+                      title: Text(exercise['name'] as String? ?? 'Unknown Exercise'),
+                      subtitle: Text('Planned: ${(planned['sets'] as num?)?.toInt() ?? 0} sets × ${(planned['reps'] as num?)?.toInt() ?? 0} reps @ ${(planned['weight'] as num?)?.toDouble() ?? 0}'),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (actual != null) ...[
+                                Text('Actual: ${(actual['sets'] as num?)?.toInt() ?? 0} sets, ${(actual['reps'] as num?)?.toInt() ?? 0} reps'),
+                                Text('Volume: ${(actual['volume'] as num?)?.toInt() ?? 0}, Avg Weight: ${(actual['averageWeight'] as num?)?.toDouble() ?? 0}'),
+                                const SizedBox(height: 8),
+                              ],
+                              const Text('Sets:', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ...setDetails.asMap().entries.map((entry) {
+                                final index = entry.key;
+                                final setDetail = entry.value as Map<String, dynamic>;
+                                final plannedSet = setDetail['planned'] as Map<String, dynamic>? ?? {};
+                                final actualSet = setDetail['actual'] as Map<String, dynamic>?;
+
+                                return SetProgressItem(
+                                  setNumber: (plannedSet['setNumber'] as num?)?.toInt() ?? (index + 1),
+                                  plannedReps: (plannedSet['reps'] as num?)?.toInt() ?? 0,
+                                  plannedWeight: (plannedSet['weight'] as num?)?.toDouble(),
+                                  actualReps: (actualSet?['reps'] as num?)?.toInt(),
+                                  actualWeight: (actualSet?['weight'] as num?)?.toDouble(),
+                                  completed: setDetail['completed'] as bool? ?? false,
+                                  isReadOnly: !isInProgress, // Make read-only for completed workouts
+                                  onUpdate: isInProgress ? (reps, weight, rpe) {
+                                    // Update this specific set - only for in-progress workouts
+                                    final updatedSets = setDetails.asMap().entries.map((e) {
+                                      if (e.key == index) {
+                                        return {
+                                          'setNumber': (plannedSet['setNumber'] as num?)?.toInt() ?? (index + 1),
+                                          'reps': reps,
+                                          'weight': weight,
+                                          'rpe': rpe,
+                                          'completed': true,
+                                        };
+                                      }
+                                      final otherSet = e.value as Map<String, dynamic>;
+                                      final otherActual = otherSet['actual'] as Map<String, dynamic>?;
+                                      final otherPlanned = otherSet['planned'] as Map<String, dynamic>? ?? {};
+                                      return {
+                                        'setNumber': (otherPlanned['setNumber'] as num?)?.toInt() ?? (e.key + 1),
+                                        'reps': (otherActual?['reps'] as num?)?.toInt() ?? (otherPlanned['reps'] as num?)?.toInt() ?? 0,
+                                        'weight': (otherActual?['weight'] as num?)?.toDouble() ?? (otherPlanned['weight'] as num?)?.toDouble(),
+                                        'rpe': (otherActual?['rpe'] as num?)?.toInt() ?? 7,
+                                        'completed': otherSet['completed'] as bool? ?? false,
+                                      };
+                                    }).toList();
+
+                                    _updateExerciseProgress(
+                                      exercise['id'] as String,
+                                      updatedSets.cast<Map<String, dynamic>>(),
+                                    );
+                                  } : null,
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
           );
         },
       ),
@@ -280,7 +300,8 @@ class SetProgressItem extends StatefulWidget {
   final int? actualReps;
   final double? actualWeight;
   final bool completed;
-  final Function(int reps, double? weight, int rpe) onUpdate;
+  final bool isReadOnly; // NEW: read-only mode
+  final Function(int reps, double? weight, int rpe)? onUpdate;
 
   const SetProgressItem({
     Key? key,
@@ -290,7 +311,8 @@ class SetProgressItem extends StatefulWidget {
     this.actualReps,
     this.actualWeight,
     required this.completed,
-    required this.onUpdate,
+    this.isReadOnly = false, // NEW
+    this.onUpdate,
   }) : super(key: key);
 
   @override
@@ -326,7 +348,7 @@ class _SetProgressItemState extends State<SetProgressItem> {
     final reps = int.tryParse(_repsController.text) ?? widget.plannedReps;
     final weight = double.tryParse(_weightController.text);
     final rpe = int.tryParse(_rpeController.text) ?? 7;
-    widget.onUpdate(reps, weight, rpe);
+    widget.onUpdate?.call(reps, weight, rpe);
   }
 
   @override
@@ -349,6 +371,7 @@ class _SetProgressItemState extends State<SetProgressItem> {
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
+                    readOnly: widget.isReadOnly, // NEW: make read-only
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -360,6 +383,7 @@ class _SetProgressItemState extends State<SetProgressItem> {
                       isDense: true,
                     ),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    readOnly: widget.isReadOnly, // NEW: make read-only
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -371,13 +395,16 @@ class _SetProgressItemState extends State<SetProgressItem> {
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
+                    readOnly: widget.isReadOnly, // NEW: make read-only
                   ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _updateSet,
-                  child: const Text('Update'),
-                ),
+                // Only show update button for editable sets
+                if (!widget.isReadOnly && widget.onUpdate != null)
+                  ElevatedButton(
+                    onPressed: _updateSet,
+                    child: const Text('Update'),
+                  ),
               ],
             ),
           ],
