@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
 import 'src/home/presentation/home_page.dart';
-import 'src/auth/presentation/dev_auth_screen.dart'; // added import
+import 'src/auth/presentation/dev_auth_screen.dart'; 
+import 'src/workout/presentation/session_page.dart';
+import 'src/workout/presentation/workout_logs_page.dart';
 
 class AppRoutes {
   static const String home = '/';
-  static const String second = '/second';
+  static const String session = '/session';
   static const String devAuth = '/dev-auth'; // added route constant
+  static const String workoutLogs = '/workout-logs'; // added route constant
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case home:
         return MaterialPageRoute(builder: (_) => const HomePage());
-      case second:
-        return MaterialPageRoute(builder: (_) => const SecondPage());
+      case session:
+        return MaterialPageRoute(builder: (_) => const SessionPage());
       case devAuth:
         return MaterialPageRoute(builder: (_) => const DevAuthScreen()); // added case
+      case workoutLogs:
+        return MaterialPageRoute(builder: (_) => const WorkoutLogsPage()); // added case
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
@@ -26,22 +31,3 @@ class AppRoutes {
   }
 }
 
-class SecondPage extends StatelessWidget {
-  const SecondPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Second Page'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Back'),
-        ),
-      ),
-    );
-  }
-}
