@@ -33,3 +33,6 @@ const String workoutPostsUrl = '$apiBase$workoutPostsPath';
 
 String workoutPostImagePath(String postId) => '/api/workout/progress/post/$postId/image';
 String workoutPostImageUrl(String postId) => '$apiBase${workoutPostImagePath(postId)}';
+
+String workoutPostDetailPath(String postId) => '/api/feed/workout-posts/$postId';
+String workoutPostDetailUrl(String postId) => '$apiBase${workoutPostDetailPath(postId)}';
