@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../api/workout_progress_api.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class WorkoutProgressPage extends StatefulWidget {
   final String workoutLogId;
@@ -112,13 +115,223 @@ class _WorkoutProgressPageState extends State<WorkoutProgressPage> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop(); // Return to sessions page
+        
+        // Refresh the page to show the completed status and post button
+        _refreshProgress();
+        
+        // Show post workout dialog immediately after finishing
+        await Future.delayed(const Duration(milliseconds: 500)); // Small delay for UI update
+        _showPostWorkoutDialog();
       }
     } catch (e) {
       Navigator.of(context).pop(); // Close loading dialog
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to finish workout: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showPostWorkoutDialog() async {
+    final captionController = TextEditingController();
+    bool isPublic = false;
+    File? selectedImage;
+    XFile? selectedXFile; // For web compatibility
+    
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Post Workout'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image picker section
+                const Text('Workout Photo (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                if ((kIsWeb ? selectedXFile != null : selectedImage != null)) ...[
+                  Container(
+                    height: 150,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: kIsWeb
+                          ? Image.network(selectedXFile!.path, fit: BoxFit.cover) // For web
+                          : Image.file(selectedImage!, fit: BoxFit.cover), // For mobile
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final picker = ImagePicker();
+                        final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                        if (pickedFile != null) {
+                          setState(() {
+                            if (kIsWeb) {
+                              selectedXFile = pickedFile;
+                              selectedImage = null;
+                            } else {
+                              selectedImage = File(pickedFile.path);
+                              selectedXFile = null;
+                            }
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text('Gallery'),
+                    ),
+                    const SizedBox(width: 8),
+                    if (!kIsWeb) // Camera is not available on web
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final picker = ImagePicker();
+                          final pickedFile = await picker.pickImage(source: ImageSource.camera);
+                          if (pickedFile != null) {
+                            setState(() {
+                              selectedImage = File(pickedFile.path);
+                              selectedXFile = null;
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.camera_alt),
+                        label: const Text('Camera'),
+                      ),
+                  ],
+                ),
+                if ((kIsWeb ? selectedXFile != null : selectedImage != null)) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        selectedImage = null;
+                        selectedXFile = null;
+                      });
+                    },
+                    child: const Text('Remove Image'),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                
+                // Caption input
+                TextField(
+                  controller: captionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Caption *',
+                    border: OutlineInputBorder(),
+                    hintText: 'Share your workout achievements!',
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                
+                // Public toggle
+                SwitchListTile(
+                  title: const Text('Make Public'),
+                  subtitle: const Text('Share with the community'),
+                  value: isPublic,
+                  onChanged: (value) {
+                    setState(() {
+                      isPublic = value;
+                    });
+                  },
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: captionController.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.of(context).pop({
+                      'caption': captionController.text.trim(),
+                      'isPublic': isPublic,
+                      'image': selectedImage,
+                      'xfile': selectedXFile, // For web
+                    }),
+              child: const Text('Post'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null) {
+      await _postWorkout(
+        caption: result['caption'] as String,
+        isPublic: result['isPublic'] as bool,
+        imageFile: result['image'] as File?,
+        imageXFile: result['xfile'] as XFile?, // For web
+      );
+    }
+    
+    captionController.dispose();
+  }
+
+  Future<void> _postWorkout({
+    required String caption,
+    required bool isPublic,
+    File? imageFile,
+    XFile? imageXFile, // For web
+  }) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final response = await WorkoutProgressApi.postWorkout(
+        logId: widget.workoutLogId,
+        imageFile: imageFile,
+        imageXFile: imageXFile, // Pass XFile for web
+        caption: caption,
+        isPublic: isPublic,
+      );
+      
+      Navigator.of(context).pop(); // Close loading dialog
+
+      if (mounted) {
+        final postId = response['postId'] as String?;
+        final success = response['success'] as bool? ?? false;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success && postId != null 
+                  ? (isPublic ? 'Workout posted publicly! Post ID: ${postId.substring(0, 8)}...' : 'Workout posted! Post ID: ${postId.substring(0, 8)}...')
+                  : (isPublic ? 'Workout posted publicly!' : 'Workout posted!')
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        
+        // Navigate to home after posting
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/', // Home route
+          (route) => false, // Remove all previous routes
+        );
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Close loading dialog
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to post workout: $e')),
         );
       }
     }
@@ -152,15 +365,25 @@ class _WorkoutProgressPageState extends State<WorkoutProgressPage> {
           final completion = data['completion'] as Map<String, dynamic>?;
           final status = workoutLog['status'] as String? ?? 'UNKNOWN';
           final isInProgress = status.toUpperCase() == 'IN_PROGRESS';
+          final isCompleted = status.toUpperCase() == 'COMPLETED';
 
           return Scaffold(
-            // Only show finish button for in-progress workouts
-            floatingActionButton: isInProgress ? FloatingActionButton.extended(
-              onPressed: _showFinishWorkoutDialog,
-              icon: const Icon(Icons.check),
-              label: const Text('Finish Workout'),
-              backgroundColor: Colors.green,
-            ) : null,
+            // Show appropriate FAB based on workout status
+            floatingActionButton: isInProgress 
+                ? FloatingActionButton.extended(
+                    onPressed: _showFinishWorkoutDialog,
+                    icon: const Icon(Icons.check),
+                    label: const Text('Finish Workout'),
+                    backgroundColor: Colors.green,
+                  )
+                : isCompleted 
+                    ? FloatingActionButton.extended(
+                        onPressed: _showPostWorkoutDialog,
+                        icon: const Icon(Icons.share),
+                        label: const Text('Post Workout'),
+                        backgroundColor: Colors.blue,
+                      )
+                    : null,
             body: ListView(
               padding: const EdgeInsets.all(8),
               children: [

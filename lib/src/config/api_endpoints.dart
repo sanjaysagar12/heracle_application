@@ -22,5 +22,8 @@ String updateExerciseProgressUrl(String logId, String exerciseId) => '$apiBase${
 String completeWorkoutPath(String logId) => '/api/workout/progress/log/$logId/complete';
 String completeWorkoutUrl(String logId) => '$apiBase${completeWorkoutPath(logId)}';
 
+String postWorkoutPath(String logId) => '/api/workout/progress/log/$logId/post';
+String postWorkoutUrl(String logId) => '$apiBase${postWorkoutPath(logId)}';
+
 const String workoutLogsPath = '/api/workout/progress/my-logs';
 const String workoutLogsUrl = '$apiBase$workoutLogsPath';
