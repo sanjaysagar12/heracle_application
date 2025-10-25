@@ -27,3 +27,9 @@ String postWorkoutUrl(String logId) => '$apiBase${postWorkoutPath(logId)}';
 
 const String workoutLogsPath = '/api/workout/progress/my-logs';
 const String workoutLogsUrl = '$apiBase$workoutLogsPath';
+
+const String workoutPostsPath = '/api/feed/workout-posts';
+const String workoutPostsUrl = '$apiBase$workoutPostsPath';
+
+String workoutPostImagePath(String postId) => '/api/workout/progress/post/$postId/image';
+String workoutPostImageUrl(String postId) => '$apiBase${workoutPostImagePath(postId)}';
