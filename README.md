@@ -1,4 +1,4 @@
-# theone_application
+# heracle
 
 A new Flutter project.
 

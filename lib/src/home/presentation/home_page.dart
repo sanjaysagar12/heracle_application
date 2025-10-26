@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:theone_application/route.dart';
+import 'package:heracle/route.dart';
 import '../../config/api_endpoints.dart';
 import '../../feed/api/workout_posts_api.dart';
 import '../../feed/domain/models/workout_post_model.dart';

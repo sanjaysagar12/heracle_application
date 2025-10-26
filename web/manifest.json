@@ -1,6 +1,6 @@
 {
-    "name": "theone_application",
-    "short_name": "theone_application",
+    "name": "heracle",
+    "short_name": "heracle",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
