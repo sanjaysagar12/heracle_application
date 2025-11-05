@@ -46,3 +46,16 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+.env
+
+
+# Flutter platform builds
+**/linux/flutter/generated_*
+**/windows/flutter/generated_*
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/GeneratedPluginRegistrant.*
+**/build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.dart_tool/
