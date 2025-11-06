@@ -1,5 +1,5 @@
-const String apiBase = 'http://localhost:3000';
-const String devTokenPath = '/api/auth/dev/token';
+const String apiBase = 'https://api-heracle-backend.portos.cloud';
+const String devTokenPath = '/api/auth/google/token';
 const String devTokenUrl = '$apiBase$devTokenPath';
 const String sessionsPath = '/api/workout/session';
 const String sessionsUrl = '$apiBase$sessionsPath';
