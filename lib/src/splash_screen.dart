@@ -16,14 +16,14 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_){
       _checkTokenAndNavigate();
     });
   }
 
   Future<void> _checkTokenAndNavigate() async {
     try {
-      final token = _storage.getAuthToken();
+      final token =  _storage.getAuthToken();
 
       if (token == null) {
         _goToAuth();

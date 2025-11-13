@@ -6,10 +6,9 @@ import 'src/workout/presentation/session_page.dart';
 import 'src/workout/presentation/workout_logs_page.dart';
 
 class AppRoutes {
-  static const String home = '/';
+  static const String home = '/home';
   static const String auth = '/auth';
   static const String session = '/session';
-  static const String splash = '/splash';
   static const String workoutLogs = '/workout-logs'; // added route constant
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -20,10 +19,6 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const DevAuthScreen());
       case session:
         return MaterialPageRoute(builder: (_) => const SessionPage());
-      case splash:
-        return MaterialPageRoute(
-          builder: (_) => const SplashPage(),
-        ); 
       case workoutLogs:
         return MaterialPageRoute(
           builder: (_) => const WorkoutLogsPage(),
