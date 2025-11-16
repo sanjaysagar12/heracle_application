@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:heracle/src/auth/data/auth_repository.dart';
-import '../api/auth_service.dart';
 import '../../../route.dart'; // Added import for AppRoutes constants
 
-class DevAuthScreen extends StatefulWidget {
-  const DevAuthScreen({super.key});
+class AuthScreen extends StatefulWidget {
+  const AuthScreen({super.key});
 
   @override
-  State<DevAuthScreen> createState() => _DevAuthScreenState();
+  State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _DevAuthScreenState extends State<DevAuthScreen> {
+class _AuthScreenState extends State<AuthScreen> {
   @override
   void initState() {
     super.initState();

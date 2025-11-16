@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:heracle/core/storage/local_storage.dart';
 import 'route.dart';
 import 'src/splash_screen.dart'; // added import for route generator

@@ -26,5 +26,5 @@ class GoogleConfig {
     return '';
   }
 
-  static String get serverClientId => dotenv.env['GOOGLE_SERVER_CLIENT_ID'] ?? '';
+  static String get serverClientId => dotenv.env['WEB_CLIENT_ID'] ?? '';
 }
