@@ -1,6 +1,6 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:heracle/core/network/dio_client.dart';
-import 'package:heracle/helper/constants.dart';
+import 'package:heracle/core/helper/constants.dart';
 import 'package:dio/dio.dart';
 
 class AuthService {

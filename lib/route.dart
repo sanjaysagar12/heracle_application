@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'src/home/presentation/home_page.dart';
+import 'app.dart';
 import 'src/auth/presentation/auth_screen.dart';
 
 class AppRoutes {
@@ -9,7 +9,7 @@ class AppRoutes {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case home:
-        return MaterialPageRoute(builder: (_) => const HomePage());
+        return MaterialPageRoute(builder: (_) => const AppPage());
       case auth:
         return MaterialPageRoute(builder: (_) => const AuthScreen());
       default:

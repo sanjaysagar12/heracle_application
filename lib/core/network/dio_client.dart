@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:heracle/core/storage/local_storage.dart';
 
 class DioClient {
@@ -7,10 +8,12 @@ class DioClient {
 
   late Dio dio;
 
+  final String baseUrl = dotenv.env['BACKEND_URL'] ?? '';
+
   DioClient._internal() {
     dio = Dio(
       BaseOptions(
-        baseUrl: "https://api-heracle-backend.portos.cloud",
+        baseUrl: baseUrl,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {'Content-Type': 'application/json'},
