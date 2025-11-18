@@ -5,9 +5,6 @@ import 'src/auth/presentation/auth_screen.dart';
 class AppRoutes {
   static const String home = '/home';
   static const String auth = '/auth';
-  static const String session = '/session';
-  static const String workoutLogs = '/workout-logs'; 
-  static const String camera = '/camera';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {

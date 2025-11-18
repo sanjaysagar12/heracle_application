@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:heracle/core/storage/local_storage.dart';
+import 'package:heracle/core/theme/app_theme.dart';
 import 'route.dart';
 import 'src/splash_screen.dart'; // added import for route generator
 
@@ -19,9 +20,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
+      theme: AppTheme.light,
+      debugShowCheckedModeBanner: false,
       home: const SplashPage(),
       onGenerateRoute: AppRoutes.generateRoute,
     );
