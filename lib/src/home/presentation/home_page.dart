@@ -7,6 +7,7 @@ import 'widgets/progress_card.dart';
 import 'widgets/track_mutuals_section.dart';
 import '../../../core/theme/app_colors.dart';
 import 'widgets/comments_bottom_sheet.dart';
+import 'widgets/skeleton_loading.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -172,9 +173,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: AppColors.black,
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
+          ? const SkeletonLoading()
           : SingleChildScrollView(
               child: Column(
                 children: [
