@@ -1,6 +1,23 @@
 import '../api/mutual_feed_service.dart';
 import '../presentation/widgets/workout_post_card.dart';
 
+class LikedByUser {
+  final String name;
+  final String profileImage;
+
+  LikedByUser({
+    required this.name,
+    required this.profileImage,
+  });
+
+  factory LikedByUser.fromJson(Map<String, dynamic> json) {
+    return LikedByUser(
+      name: json['name'] as String,
+      profileImage: json['profileImage'] as String,
+    );
+  }
+}
+
 abstract class FeedPost {
   final String id;
   final String username;
@@ -10,7 +27,7 @@ abstract class FeedPost {
   final String content;
   final List<String> images;
   final int likes;
-  final List<String> likedBy;
+  final List<LikedByUser> likedBy;
   final bool isLiked;
   final int commentCount;
 
@@ -74,7 +91,9 @@ class WorkoutPost extends FeedPost {
           .map((e) => Exercise(name: e as String))
           .toList(),
       likes: json['likes'] as int,
-      likedBy: List<String>.from(json['likedBy']),
+      likedBy: (json['likedBy'] as List)
+          .map((user) => LikedByUser.fromJson(user))
+          .toList(),
       commentCount: json['commentCount'] as int? ?? 0,
     );
   }
@@ -140,7 +159,9 @@ class NutritionPost extends FeedPost {
       carbs: json['carbs'] as int,
       fats: json['fats'] as int,
       likes: json['likes'] as int,
-      likedBy: List<String>.from(json['likedBy']),
+      likedBy: (json['likedBy'] as List)
+          .map((user) => LikedByUser.fromJson(user))
+          .toList(),
       commentCount: json['commentCount'] as int? ?? 0,
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/mutual_feed_repository.dart';
 
 class WorkoutPostCard extends StatelessWidget {
   final String username;
@@ -14,7 +15,7 @@ class WorkoutPostCard extends StatelessWidget {
   final String records;
   final List<Exercise> exercises;
   final int likes;
-  final List<String> likedBy;
+  final List<LikedByUser> likedBy;
   final bool isLiked;
   final VoidCallback onLike;
   final int commentCount;
@@ -330,26 +331,27 @@ class WorkoutPostCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            ...likedBy.take(3).map((avatar) => Align(
-              widthFactor: 0.7,
-              child: CircleAvatar(
-                radius: 12,
-                backgroundColor: AppColors.greyDark,
-                backgroundImage: NetworkImage(avatar),
+        if (likedBy.isNotEmpty)
+          Row(
+            children: [
+              ...likedBy.take(3).map((user) => Align(
+                widthFactor: 0.7,
+                child: CircleAvatar(
+                  radius: 12,
+                  backgroundColor: AppColors.greyDark,
+                  backgroundImage: NetworkImage(user.profileImage),
+                ),
+              )),
+              const SizedBox(width: 8),
+              Text(
+                'Liked by ${likedBy[0].name} and others',
+                style: const TextStyle(
+                  color: AppColors.white60,
+                  fontSize: 13,
+                ),
               ),
-            )),
-            const SizedBox(width: 8),
-            Text(
-              'Liked by ${likedBy[0].split('/').last} and others',
-              style: const TextStyle(
-                color: AppColors.white60,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
       ],
     );
   }
