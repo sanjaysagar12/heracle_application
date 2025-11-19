@@ -12,6 +12,7 @@ abstract class FeedPost {
   final int likes;
   final List<String> likedBy;
   final bool isLiked;
+  final int commentCount;
 
   FeedPost({
     required this.id,
@@ -24,9 +25,10 @@ abstract class FeedPost {
     required this.likes,
     required this.likedBy,
     this.isLiked = false,
+    required this.commentCount,
   });
 
-  FeedPost copyWith({bool? isLiked, int? likes});
+  FeedPost copyWith({bool? isLiked, int? likes, int? commentCount});
 }
 
 class WorkoutPost extends FeedPost {
@@ -52,6 +54,7 @@ class WorkoutPost extends FeedPost {
     required this.volume,
     required this.records,
     required this.exercises,
+    required super.commentCount,
   });
 
   factory WorkoutPost.fromJson(Map<String, dynamic> json) {
@@ -72,11 +75,12 @@ class WorkoutPost extends FeedPost {
           .toList(),
       likes: json['likes'] as int,
       likedBy: List<String>.from(json['likedBy']),
+      commentCount: json['commentCount'] as int? ?? 0,
     );
   }
 
   @override
-  WorkoutPost copyWith({bool? isLiked, int? likes}) {
+  WorkoutPost copyWith({bool? isLiked, int? likes, int? commentCount}) {
     return WorkoutPost(
       id: id,
       username: username,
@@ -93,6 +97,7 @@ class WorkoutPost extends FeedPost {
       likes: likes ?? this.likes,
       likedBy: likedBy,
       isLiked: isLiked ?? this.isLiked,
+      commentCount: commentCount ?? this.commentCount,
     );
   }
 }
@@ -118,6 +123,7 @@ class NutritionPost extends FeedPost {
     required this.protein,
     required this.carbs,
     required this.fats,
+    required super.commentCount,
   });
 
   factory NutritionPost.fromJson(Map<String, dynamic> json) {
@@ -135,11 +141,12 @@ class NutritionPost extends FeedPost {
       fats: json['fats'] as int,
       likes: json['likes'] as int,
       likedBy: List<String>.from(json['likedBy']),
+      commentCount: json['commentCount'] as int? ?? 0,
     );
   }
 
   @override
-  NutritionPost copyWith({bool? isLiked, int? likes}) {
+  NutritionPost copyWith({bool? isLiked, int? likes, int? commentCount}) {
     return NutritionPost(
       id: id,
       username: username,
@@ -155,6 +162,44 @@ class NutritionPost extends FeedPost {
       likes: likes ?? this.likes,
       likedBy: likedBy,
       isLiked: isLiked ?? this.isLiked,
+      commentCount: commentCount ?? this.commentCount,
+    );
+  }
+}
+
+class Comment {
+  final String id;
+  final String username;
+  final String handle;
+  final String profileImage;
+  final String timeAgo;
+  final String content;
+  final int likes;
+  final List<Comment> replies;
+
+  Comment({
+    required this.id,
+    required this.username,
+    required this.handle,
+    required this.profileImage,
+    required this.timeAgo,
+    required this.content,
+    required this.likes,
+    required this.replies,
+  });
+
+  factory Comment.fromJson(Map<String, dynamic> json) {
+    return Comment(
+      id: json['id'] as String,
+      username: json['username'] as String,
+      handle: json['handle'] as String,
+      profileImage: json['profileImage'] as String,
+      timeAgo: json['timeAgo'] as String,
+      content: json['content'] as String,
+      likes: json['likes'] as int,
+      replies: (json['replies'] as List)
+          .map((reply) => Comment.fromJson(reply))
+          .toList(),
     );
   }
 }
@@ -179,6 +224,24 @@ class MutualFeedRepository {
       }).toList();
     } catch (e) {
       throw Exception('Failed to load mutual feed: $e');
+    }
+  }
+
+  Future<List<Comment>> getPostComments(String postId) async {
+    try {
+      final data = await _mutualFeedService.getPostComments(postId);
+      return data.map((json) => Comment.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to load comments: $e');
+    }
+  }
+
+  Future<Comment> addComment(String postId, String content) async {
+    try {
+      final data = await _mutualFeedService.addComment(postId, content);
+      return Comment.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to add comment: $e');
     }
   }
 }

@@ -17,6 +17,8 @@ class WorkoutPostCard extends StatelessWidget {
   final List<String> likedBy;
   final bool isLiked;
   final VoidCallback onLike;
+  final int commentCount;
+  final VoidCallback onComment;
 
   const WorkoutPostCard({
     super.key,
@@ -35,6 +37,8 @@ class WorkoutPostCard extends StatelessWidget {
     required this.likedBy,
     this.isLiked = false,
     required this.onLike,
+    required this.commentCount,
+    required this.onComment,
   });
 
   @override
@@ -304,7 +308,23 @@ class WorkoutPostCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 24),
-            const Icon(Icons.chat_bubble_outline, color: AppColors.pureWhite, size: 24),
+            GestureDetector(
+              onTap: onComment,
+              child: const Icon(
+                Icons.chat_bubble_outline,
+                color: AppColors.pureWhite,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$commentCount',
+              style: const TextStyle(
+                color: AppColors.pureWhite,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const Spacer(),
             const Icon(Icons.send_outlined, color: AppColors.pureWhite, size: 24),
           ],

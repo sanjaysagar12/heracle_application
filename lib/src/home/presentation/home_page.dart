@@ -6,6 +6,7 @@ import '../data/mutual_feed_repository.dart';
 import 'widgets/progress_card.dart';
 import 'widgets/track_mutuals_section.dart';
 import '../../../core/theme/app_colors.dart';
+import 'widgets/comments_bottom_sheet.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   ProgressCard? _progress;
   List<FeedPost> _posts = [];
   bool _isLoading = true;
+  Map<String, List<Comment>> _commentsCache = {};
 
   @override
   void initState() {
@@ -65,6 +67,56 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _handleCommentClick(String postId) async {
+    try {
+      // Load comments if not cached
+      if (!_commentsCache.containsKey(postId)) {
+        final comments = await _mutualFeedRepository.getPostComments(postId);
+        _commentsCache[postId] = comments;
+      }
+      
+      if (!mounted) return;
+      
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) => CommentsBottomSheet(
+            comments: _commentsCache[postId] ?? [],
+            onAddComment: (content) => _handleAddComment(postId, content),
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Error loading comments: $e');
+    }
+  }
+
+  Future<void> _handleAddComment(String postId, String content) async {
+    try {
+      final newComment = await _mutualFeedRepository.addComment(postId, content);
+      
+      setState(() {
+        // Add comment to cache
+        _commentsCache[postId] = [...(_commentsCache[postId] ?? []), newComment];
+        
+        // Increment comment count in post
+        _posts = _posts.map((post) {
+          if (post.id == postId) {
+            return post.copyWith(commentCount: post.commentCount + 1);
+          }
+          return post;
+        }).toList();
+      });
+    } catch (e) {
+      print('Error adding comment: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,6 +146,7 @@ class _HomePageState extends State<HomePage> {
                   TrackMutualsSection(
                     posts: _posts,
                     onLike: _handleLike,
+                    onComment: _handleCommentClick,
                   ),
                 ],
               ),

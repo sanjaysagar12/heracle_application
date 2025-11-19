@@ -36,6 +36,7 @@ class MutualFeedService {
           'https://i.pravatar.cc/150?img=2',
           'https://i.pravatar.cc/150?img=3',
         ],
+        'commentCount': 5,
       },
       {
         'id': '2',
@@ -60,6 +61,7 @@ class MutualFeedService {
           'https://i.pravatar.cc/150?img=2',
           'https://i.pravatar.cc/150?img=3',
         ],
+        'commentCount': 3,
       },
       {
         'id': '3',
@@ -88,7 +90,93 @@ class MutualFeedService {
           'https://i.pravatar.cc/150?img=6',
           'https://i.pravatar.cc/150?img=7',
         ],
+        'commentCount': 0,
       },
     ];
+  }
+
+  Future<List<Map<String, dynamic>>> getPostComments(String postId) async {
+    // Simulate API delay
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // Return mock comments based on post ID
+    if (postId == '1') {
+      return [
+        {
+          'id': 'c1',
+          'username': 'john_doe',
+          'handle': '@john_fitness',
+          'profileImage': 'https://i.pravatar.cc/150?img=12',
+          'timeAgo': '1 day ago',
+          'content': 'Great workout bro! Keep it up 💪',
+          'likes': 5,
+          'replies': [
+            {
+              'id': 'r1',
+              'username': 'zhambo',
+              'handle': '@miyura_9812',
+              'profileImage': 'https://i.pravatar.cc/150?img=33',
+              'timeAgo': '1 day ago',
+              'content': 'Thanks man! Appreciate it',
+              'likes': 2,
+              'replies': [
+                {
+                  'id': 'r2',
+                  'username': 'jane_smith',
+                  'handle': '@jane_fit',
+                  'profileImage': 'https://i.pravatar.cc/150?img=45',
+                  'timeAgo': '20 hours ago',
+                  'content': 'You guys are awesome!',
+                  'likes': 1,
+                  'replies': [],
+                }
+              ],
+            }
+          ],
+        },
+        {
+          'id': 'c2',
+          'username': 'mike_fitness',
+          'handle': '@mike_lifts',
+          'profileImage': 'https://i.pravatar.cc/150?img=15',
+          'timeAgo': '2 days ago',
+          'content': 'What was your PR?',
+          'likes': 3,
+          'replies': [],
+        },
+      ];
+    } else if (postId == '2') {
+      return [
+        {
+          'id': 'c3',
+          'username': 'healthy_eater',
+          'handle': '@health_guru',
+          'profileImage': 'https://i.pravatar.cc/150?img=20',
+          'timeAgo': '5 hours ago',
+          'content': 'That looks delicious! Recipe please?',
+          'likes': 8,
+          'replies': [],
+        },
+      ];
+    }
+
+    return [];
+  }
+
+  Future<Map<String, dynamic>> addComment(String postId, String content) async {
+    // Simulate API delay
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // Return mock comment
+    return {
+      'id': 'c${DateTime.now().millisecondsSinceEpoch}',
+      'username': 'Eren Yeager',
+      'handle': '@eren_yeager',
+      'profileImage': 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
+      'timeAgo': 'Just now',
+      'content': content,
+      'likes': 0,
+      'replies': [],
+    };
   }
 }
