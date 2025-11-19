@@ -3,17 +3,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/mutual_feed_repository.dart';
 
-class NutritionPostCard extends StatelessWidget {
+class NutritionPostCard extends StatefulWidget {
   final String username;
   final String handle;
   final String profileImage;
   final String timeAgo;
-  final String content;
-  final List<String> images;
-  final int calories;
-  final int protein;
-  final int carbs;
-  final int fats;
+  final List<NutritionMeal> meals;
   final int likes;
   final List<LikedByUser> likedBy;
   final bool isLiked;
@@ -27,12 +22,7 @@ class NutritionPostCard extends StatelessWidget {
     required this.handle,
     required this.profileImage,
     required this.timeAgo,
-    required this.content,
-    required this.images,
-    required this.calories,
-    required this.protein,
-    required this.carbs,
-    required this.fats,
+    required this.meals,
     required this.likes,
     required this.likedBy,
     this.isLiked = false,
@@ -40,6 +30,20 @@ class NutritionPostCard extends StatelessWidget {
     required this.commentCount,
     required this.onComment,
   });
+
+  @override
+  State<NutritionPostCard> createState() => _NutritionPostCardState();
+}
+
+class _NutritionPostCardState extends State<NutritionPostCard> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +58,10 @@ class NutritionPostCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
+          const SizedBox(height: 16),
+          _buildMealCarousel(),
           const SizedBox(height: 12),
-          _buildContent(),
-          const SizedBox(height: 16),
-          _buildImages(),
-          const SizedBox(height: 16),
-          _buildNutritionStats(),
+          _buildPageIndicator(),
           const SizedBox(height: 16),
           _buildFooter(),
         ],
@@ -72,7 +74,7 @@ class NutritionPostCard extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 24,
-          backgroundImage: NetworkImage(profileImage),
+          backgroundImage: NetworkImage(widget.profileImage),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -80,7 +82,7 @@ class NutritionPostCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                username,
+                widget.username,
                 style: const TextStyle(
                   color: AppColors.pureWhite,
                   fontSize: 16,
@@ -88,7 +90,7 @@ class NutritionPostCard extends StatelessWidget {
                 ),
               ),
               Text(
-                handle,
+                widget.handle,
                 style: const TextStyle(
                   color: AppColors.white60,
                   fontSize: 14,
@@ -98,7 +100,7 @@ class NutritionPostCard extends StatelessWidget {
           ),
         ),
         Text(
-          timeAgo,
+          widget.timeAgo,
           style: const TextStyle(
             color: AppColors.white60,
             fontSize: 14,
@@ -108,29 +110,136 @@ class NutritionPostCard extends StatelessWidget {
     );
   }
 
-  Widget _buildContent() {
-    return Text(
-      content,
-      style: const TextStyle(
-        color: AppColors.pureWhite,
-        fontSize: 15,
-        height: 1.4,
+  Widget _buildMealCarousel() {
+    return SizedBox(
+      height: 340,
+      child: PageView.builder(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _currentPage = index;
+          });
+        },
+        itemCount: widget.meals.length,
+        itemBuilder: (context, index) {
+          return _buildMealCard(widget.meals[index]);
+        },
       ),
     );
   }
 
-  Widget _buildImages() {
-    return SizedBox(
-      height: 200,
-      child: Row(
+  Widget _buildMealCard(NutritionMeal meal) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: ClipRRect(
+          Text(
+            meal.content,
+            style: const TextStyle(
+              color: AppColors.pureWhite,
+              fontSize: 15,
+              height: 1.4,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+          _buildMealImages(meal.images, meal.mealType),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildMealNutritionItem('assets/icons/calories.svg', 'Calories', meal.calories.toString()),
+              _buildMealNutritionItem('assets/icons/protein.svg', 'Protein', '${meal.protein}g'),
+              _buildMealNutritionItem('assets/icons/carbs.svg', 'Carbs', '${meal.carbs}g'),
+              _buildMealNutritionItem('assets/icons/fat.svg', 'Fats', '${meal.fats}g'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMealImages(List<String> images, String mealType) {
+    if (images.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    if (images.length == 1) {
+      return SizedBox(
+        height: 180,
+        child: Stack(
+          children: [
+            ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
                 images[0],
                 fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
               ),
+            ),
+            Positioned(
+              top: 12,
+              left: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  mealType,
+                  style: const TextStyle(
+                    color: AppColors.pureWhite,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 180,
+      child: Row(
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    images[0],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      mealType,
+                      style: const TextStyle(
+                        color: AppColors.pureWhite,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 8),
@@ -173,19 +282,7 @@ class NutritionPostCard extends StatelessWidget {
     );
   }
 
-  Widget _buildNutritionStats() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _buildNutritionItem('assets/icons/calories.svg', 'Calories', calories.toString()),
-        _buildNutritionItem('assets/icons/protein.svg', 'Protein', '${protein}g'),
-        _buildNutritionItem('assets/icons/carbs.svg', 'Carbs', '${carbs}g'),
-        _buildNutritionItem('assets/icons/fat.svg', 'Fats', '${fats}g'),
-      ],
-    );
-  }
-
-  Widget _buildNutritionItem(String iconPath, String label, String value) {
+  Widget _buildMealNutritionItem(String iconPath, String label, String value) {
     return Column(
       children: [
         Row(
@@ -193,8 +290,8 @@ class NutritionPostCard extends StatelessWidget {
           children: [
             SvgPicture.asset(
               iconPath,
-              width: 14,
-              height: 14,
+              width: 12,
+              height: 12,
               colorFilter: const ColorFilter.mode(
                 AppColors.white60,
                 BlendMode.srcIn,
@@ -205,21 +302,39 @@ class NutritionPostCard extends StatelessWidget {
               label,
               style: const TextStyle(
                 color: AppColors.white60,
-                fontSize: 11,
+                fontSize: 10,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           value,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.primary,
-            fontSize: 20,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPageIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        widget.meals.length,
+        (index) => Container(
+          width: 8,
+          height: 8,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _currentPage == index ? AppColors.primary : AppColors.greyLight,
+          ),
+        ),
+      ),
     );
   }
 
@@ -231,16 +346,16 @@ class NutritionPostCard extends StatelessWidget {
         Row(
           children: [
             GestureDetector(
-              onTap: onLike,
+              onTap: widget.onLike,
               child: Icon(
-                isLiked ? Icons.favorite : Icons.favorite_border,
-                color: isLiked ? Colors.red : AppColors.pureWhite,
+                widget.isLiked ? Icons.favorite : Icons.favorite_border,
+                color: widget.isLiked ? Colors.red : AppColors.pureWhite,
                 size: 24,
               ),
             ),
             const SizedBox(width: 8),
             Text(
-              '$likes',
+              '${widget.likes}',
               style: const TextStyle(
                 color: AppColors.pureWhite,
                 fontSize: 16,
@@ -249,7 +364,7 @@ class NutritionPostCard extends StatelessWidget {
             ),
             const SizedBox(width: 24),
             GestureDetector(
-              onTap: onComment,
+              onTap: widget.onComment,
               child: const Icon(
                 Icons.chat_bubble_outline,
                 color: AppColors.pureWhite,
@@ -258,7 +373,7 @@ class NutritionPostCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '$commentCount',
+              '${widget.commentCount}',
               style: const TextStyle(
                 color: AppColors.pureWhite,
                 fontSize: 16,
@@ -270,10 +385,10 @@ class NutritionPostCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        if (likedBy.isNotEmpty)
+        if (widget.likedBy.isNotEmpty)
           Row(
             children: [
-              ...likedBy.take(3).map((user) => Align(
+              ...widget.likedBy.take(3).map((user) => Align(
                 widthFactor: 0.7,
                 child: CircleAvatar(
                   radius: 12,
@@ -283,7 +398,7 @@ class NutritionPostCard extends StatelessWidget {
               )),
               const SizedBox(width: 8),
               Text(
-                'Liked by ${likedBy[0].name} and others',
+                'Liked by ${widget.likedBy[0].name} and others',
                 style: const TextStyle(
                   color: AppColors.white60,
                   fontSize: 13,

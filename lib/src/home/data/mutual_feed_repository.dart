@@ -121,11 +121,40 @@ class WorkoutPost extends FeedPost {
   }
 }
 
-class NutritionPost extends FeedPost {
+class NutritionMeal {
+  final String mealType;
+  final String content;
+  final List<String> images;
   final int calories;
   final int protein;
   final int carbs;
   final int fats;
+
+  NutritionMeal({
+    required this.mealType,
+    required this.content,
+    required this.images,
+    required this.calories,
+    required this.protein,
+    required this.carbs,
+    required this.fats,
+  });
+
+  factory NutritionMeal.fromJson(Map<String, dynamic> json) {
+    return NutritionMeal(
+      mealType: json['mealType'] as String,
+      content: json['content'] as String,
+      images: List<String>.from(json['images']),
+      calories: json['calories'] as int,
+      protein: json['protein'] as int,
+      carbs: json['carbs'] as int,
+      fats: json['fats'] as int,
+    );
+  }
+}
+
+class NutritionPost extends FeedPost {
+  final List<NutritionMeal> meals;
 
   NutritionPost({
     required super.id,
@@ -138,31 +167,32 @@ class NutritionPost extends FeedPost {
     required super.likes,
     required super.likedBy,
     super.isLiked,
-    required this.calories,
-    required this.protein,
-    required this.carbs,
-    required this.fats,
     required super.commentCount,
+    required this.meals,
   });
 
   factory NutritionPost.fromJson(Map<String, dynamic> json) {
+    final meals = (json['meals'] as List)
+        .map((meal) => NutritionMeal.fromJson(meal))
+        .toList();
+    
+    // Collect all images from meals
+    final allImages = meals.expand((meal) => meal.images).toList();
+
     return NutritionPost(
       id: json['id'] as String,
       username: json['username'] as String,
       handle: json['handle'] as String,
       profileImage: json['profileImage'] as String,
       timeAgo: json['timeAgo'] as String,
-      content: json['content'] as String,
-      images: List<String>.from(json['images']),
-      calories: json['calories'] as int,
-      protein: json['protein'] as int,
-      carbs: json['carbs'] as int,
-      fats: json['fats'] as int,
+      content: meals.isNotEmpty ? meals[0].content : '',
+      images: allImages,
       likes: json['likes'] as int,
       likedBy: (json['likedBy'] as List)
           .map((user) => LikedByUser.fromJson(user))
           .toList(),
       commentCount: json['commentCount'] as int? ?? 0,
+      meals: meals,
     );
   }
 
@@ -176,14 +206,11 @@ class NutritionPost extends FeedPost {
       timeAgo: timeAgo,
       content: content,
       images: images,
-      calories: calories,
-      protein: protein,
-      carbs: carbs,
-      fats: fats,
       likes: likes ?? this.likes,
       likedBy: likedBy,
       isLiked: isLiked ?? this.isLiked,
       commentCount: commentCount ?? this.commentCount,
+      meals: meals,
     );
   }
 }
