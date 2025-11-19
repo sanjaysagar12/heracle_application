@@ -29,18 +29,32 @@ class _AuthScreenState extends State<AuthScreen> {
         automaticallyImplyLeading: false,
       ),
       body: Center(
-        child: TextButton(
-          onPressed: () async {
-            try {
-              await AuthRepository().signInWithGoogle();
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
-            } catch (e) {
-              print("Login failed: $e");
-            }
-          },
-          child: Text("Signin"),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // New: Dev Auth button — navigates directly to home without signing in
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+              },
+              child: const Text('Dev Auth'),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Existing Signin button (kept)
+            TextButton(
+              onPressed: () async {
+                try {
+                  await AuthRepository().signInWithGoogle();
+                  Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+                } catch (e) {
+                  print("Login failed: $e");
+                }
+              },
+              child: const Text('Signin'),
+            ),
+          ],
         ),
       ),
     );
