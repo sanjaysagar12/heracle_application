@@ -2,13 +2,35 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/mutual_feed_repository.dart';
 
-class LikesBottomSheet extends StatelessWidget {
+class LikesBottomSheet extends StatefulWidget {
   final List<LikedByUser> likedByUsers;
 
   const LikesBottomSheet({
     super.key,
     required this.likedByUsers,
   });
+
+  @override
+  State<LikesBottomSheet> createState() => _LikesBottomSheetState();
+}
+
+class _LikesBottomSheetState extends State<LikesBottomSheet> {
+  late Map<String, bool> _followingStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize following status from the user data
+    _followingStatus = {
+      for (var user in widget.likedByUsers) user.name: user.isFollowing
+    };
+  }
+
+  void _toggleFollow(String userName) {
+    setState(() {
+      _followingStatus[userName] = !(_followingStatus[userName] ?? false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +43,7 @@ class LikesBottomSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildHeader(context),
-          if (likedByUsers.isEmpty)
+          if (widget.likedByUsers.isEmpty)
             const Padding(
               padding: EdgeInsets.all(40),
               child: Text(
@@ -37,9 +59,9 @@ class LikesBottomSheet extends StatelessWidget {
               child: ListView.builder(
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: likedByUsers.length,
+                itemCount: widget.likedByUsers.length,
                 itemBuilder: (context, index) {
-                  return _buildUserItem(likedByUsers[index]);
+                  return _buildUserItem(widget.likedByUsers[index]);
                 },
               ),
             ),
@@ -72,6 +94,8 @@ class LikesBottomSheet extends StatelessWidget {
   }
 
   Widget _buildUserItem(LikedByUser user) {
+    final isFollowing = _followingStatus[user.name] ?? user.isFollowing;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -104,7 +128,10 @@ class LikesBottomSheet extends StatelessWidget {
               ],
             ),
           ),
-          _buildFollowButton(user.isFollowing),
+          GestureDetector(
+            onTap: () => _toggleFollow(user.name),
+            child: _buildFollowButton(isFollowing),
+          ),
         ],
       ),
     );
