@@ -84,15 +84,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              // start empty session - implement action as needed
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Start Empty Session')),
+                              // Navigate to select workouts tab/page (start empty session)
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => SelectWorkoutsTab(mode: 'start')),
                               );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
-                              minimumSize: const Size.fromHeight(56), // increased height
-                              padding: const EdgeInsets.symmetric(vertical: 18), // larger vertical padding
+                              minimumSize: const Size.fromHeight(48), // reduced height
+                              padding: const EdgeInsets.symmetric(vertical: 12), // reduced vertical padding
                               shape: const StadiumBorder(),
                               elevation: 0,
                             ),
@@ -100,13 +101,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: const [
-                                Icon(Icons.add, color: Colors.black, size: 24), // larger icon
+                                Icon(Icons.add, color: Colors.black, size: 20), // smaller icon
                                 SizedBox(width: 8),
                                 Text(
                                   'Start Empty Session',
                                   style: TextStyle(
                                     color: Colors.black,
-                                    fontSize: 18, // larger text
+                                    fontSize: 16, // smaller text
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -114,28 +115,28 @@ class _WorkoutPageState extends State<WorkoutPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 14), // slightly larger gap
+                        const SizedBox(height: 10), // reduced gap
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton(
                             onPressed: () {
-                              // Navigate to select workouts tab/page
+                              // Navigate to select workouts tab/page (create workout)
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const SelectWorkoutsTab()),
+                                MaterialPageRoute(builder: (_) => SelectWorkoutsTab(mode: 'create')),
                               );
                             },
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.primary, width: 1.8),
-                              minimumSize: const Size.fromHeight(56), // increased height
-                              padding: const EdgeInsets.symmetric(vertical: 18), // larger vertical padding
+                              side: const BorderSide(color: AppColors.primary, width: 1.6),
+                              minimumSize: const Size.fromHeight(48), // reduced height
+                              padding: const EdgeInsets.symmetric(vertical: 12), // reduced vertical padding
                               shape: const StadiumBorder(),
                             ),
                             child: const Text(
                               'Create Workout Session',
                               style: TextStyle(
                                 color: AppColors.primary,
-                                fontSize: 18, // larger text
+                                fontSize: 16, // smaller text
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
