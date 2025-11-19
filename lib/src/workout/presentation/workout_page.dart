@@ -3,6 +3,7 @@ import '../../../widgets/app_bar.dart';
 import '../../home/data/profile_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/bar_chart_card.dart';
+import '../data/progress_repository.dart'; // new import
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -13,30 +14,37 @@ class WorkoutPage extends StatefulWidget {
 
 class _WorkoutPageState extends State<WorkoutPage> {
   final ProfileRepository _profileRepository = ProfileRepository();
+  final ProgressRepository _progressRepository = ProgressRepository(); // new repo
   Profile? _profile;
   bool _isLoading = true;
-  // sample bar data for the chart
-  final List<BarData> _weeklyBarData = const [
-    BarData(label: 'Mon', value: 40),
-    BarData(label: 'Tue', value: 60),
-    BarData(label: 'Wed', value: 30),
-    BarData(label: 'Thu', value: 80),
-    BarData(label: 'Fri', value: 55),
-    BarData(label: 'Sat', value: 70),
-    BarData(label: 'Sun', value: 50),
-  ];
+  List<BarData> _weeklyBarData = []; // will be filled from repository
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadData(); // fetch profile + weekly data
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadData() async {
     try {
-      final profile = await _profileRepository.getProfile();
+      final results = await Future.wait([
+        _profileRepository.getProfile(),
+        _progressRepository.getWeeklyActivity(),
+      ]);
+
+      final profile = results[0] as Profile;
+      final weeklyValues = results[1] as List<double>;
+
+      // Map weekly values to BarData with labels Mon..Sun
+      const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      final barData = List<BarData>.generate(
+        weeklyValues.length,
+        (i) => BarData(label: labels.length > i ? labels[i] : 'Day${i+1}', value: weeklyValues[i]),
+      );
+
       setState(() {
         _profile = profile;
+        _weeklyBarData = barData;
         _isLoading = false;
       });
     } catch (_) {
@@ -59,7 +67,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       age: _profile!.age,
                       profileImageUrl: _profile!.profileImageUrl,
                     ),
-                  // bar chart card showing weekly data
+                  // bar chart card showing weekly data (uses fetched data)
                   BarChartCard(
                     title: 'Weekly Activity',
                     data: _weeklyBarData,
