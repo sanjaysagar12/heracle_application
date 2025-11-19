@@ -171,13 +171,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.black,
-      appBar: _isLoading || _profile == null
-          ? null
-          : CustomAppBar(
-              name: _profile!.name,
-              age: _profile!.age,
-              profileImageUrl: _profile!.profileImageUrl,
-            ),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(),
@@ -185,6 +178,12 @@ class _HomePageState extends State<HomePage> {
           : SingleChildScrollView(
               child: Column(
                 children: [
+                  if (_profile != null)
+                    CustomAppBar(
+                      name: _profile!.name,
+                      age: _profile!.age,
+                      profileImageUrl: _profile!.profileImageUrl,
+                    ),
                   if (_progress != null)
                     TodayProgressCard(
                       workoutsLeft: _progress!.workoutsLeft,

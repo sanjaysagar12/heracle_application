@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../core/theme/app_colors.dart';
 
-class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+class CustomAppBar extends StatelessWidget {
   final String name;
   final int age;
   final String profileImageUrl;
@@ -15,51 +15,45 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(80.0);
-
-  @override
   Widget build(BuildContext context) {
-    return AppBar(
-      toolbarHeight: 80.0,
-      backgroundColor: Colors.black,
-      elevation: 0,
-      leadingWidth: 70,
-      title: Row(
+    return Container(
+      height: 80.0,
+      color: Colors.black,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
         children: [
           CircleAvatar(
             radius: 28,
             backgroundImage: NetworkImage(profileImageUrl),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-                ],
-              ),
-              Text(
-                '$age years old',
-                style: const TextStyle(color: AppColors.white60, fontSize: 16),
-              ),
-            ],
+                    const SizedBox(width: 8),
+                    const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                  ],
+                ),
+                Text(
+                  '$age years old',
+                  style: const TextStyle(color: AppColors.white60, fontSize: 16),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 8.0),
-          child: Container(
+          Container(
             width: 40,
             height: 40,
             decoration: const BoxDecoration(
@@ -74,10 +68,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: 16.0),
-          child: Container(
+          const SizedBox(width: 12),
+          Container(
             width: 40,
             height: 40,
             decoration: const BoxDecoration(
@@ -96,8 +88,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
