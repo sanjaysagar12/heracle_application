@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/mutual_feed_repository.dart';
 
@@ -176,31 +177,46 @@ class NutritionPostCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildNutritionItem('🔥 Calories', calories.toString(), AppColors.white70),
-        _buildNutritionItem('💪 Protein', '${protein}g', AppColors.primary),
-        _buildNutritionItem('🍞 Carbs', '${carbs}g', AppColors.primary),
-        _buildNutritionItem('🥑 Fats', '${fats}g', AppColors.primary),
+        _buildNutritionItem('assets/icons/calories.svg', 'Calories', calories.toString()),
+        _buildNutritionItem('assets/icons/protein.svg', 'Protein', '${protein}g'),
+        _buildNutritionItem('assets/icons/carbs.svg', 'Carbs', '${carbs}g'),
+        _buildNutritionItem('assets/icons/fat.svg', 'Fats', '${fats}g'),
       ],
     );
   }
 
-  Widget _buildNutritionItem(String label, String value, Color valueColor) {
+  Widget _buildNutritionItem(String iconPath, String label, String value) {
     return Column(
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              iconPath,
+              width: 14,
+              height: 14,
+              colorFilter: const ColorFilter.mode(
+                AppColors.white60,
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.white60,
+                fontSize: 11,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.white60,
-            fontSize: 11,
+          value,
+          style: TextStyle(
+            color: AppColors.primary,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
