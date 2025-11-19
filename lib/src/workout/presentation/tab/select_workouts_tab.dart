@@ -71,6 +71,11 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final isAddMode = widget.mode == 'add';
+    final buttonLabel = isAddMode
+        ? 'Add ${_selectedIds.length} Exercises'
+        : 'Add ${_selectedIds.length} Exercises';
+
     return Scaffold(
       backgroundColor: AppColors.black,
       appBar: AppBar(
@@ -173,17 +178,34 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
             child: ElevatedButton(
               onPressed: _selectedIds.isEmpty ? null : () {
                 final selectedItems = _items.where((it) => _selectedIds.contains(it['id'])).toList();
+                
+                // if mode is 'add', return selected exercises to caller
+                if (isAddMode) {
+                  Navigator.pop(context, selectedItems);
+                  return;
+                }
+
                 if (widget.mode == 'create') {
-                  // Navigate to CreateWorkoutTab
+                  // Navigate to CreateSessionTab
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => CreateWorkoutTab(exercises: selectedItems)),
+                    MaterialPageRoute(builder: (_) => CreateSessionTab(exercises: selectedItems)),
                   );
                 } else {
                   // Navigate to LogWorkoutTab
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => LogWorkoutTab(mode: widget.mode, exercises: selectedItems)),
+                    MaterialPageRoute(
+                      builder: (_) => LogWorkoutTab(
+                        mode: widget.mode,
+                        exercises: selectedItems.map((e) => <String, dynamic>{
+                          'id': e['id'],
+                          'name': e['name'],
+                          'desc': e['desc'],
+                          'image': e['image'],
+                        }).toList(),
+                      ),
+                    ),
                   );
                 }
               },
@@ -191,7 +213,7 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
                 backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               ),
-              child: Text('Add ${_selectedIds.length} Exercises', style: const TextStyle(color: AppColors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+              child: Text(buttonLabel, style: const TextStyle(color: AppColors.black, fontSize: 16, fontWeight: FontWeight.w700)),
             ),
           ),
         ),

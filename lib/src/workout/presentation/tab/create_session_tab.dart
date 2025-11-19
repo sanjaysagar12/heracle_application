@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
 import '../../storage/workout_session_storage.dart';
+import 'select_workouts_tab.dart';
 
-class CreateWorkoutTab extends StatefulWidget {
+class CreateSessionTab extends StatefulWidget {
   final List<Map<String, String>> exercises;
 
-  const CreateWorkoutTab({super.key, required this.exercises});
+  const CreateSessionTab({super.key, required this.exercises});
 
   @override
-  State<CreateWorkoutTab> createState() => _CreateWorkoutTabState();
+  State<CreateSessionTab> createState() => _CreateSessionTabState();
 }
 
 class _SetLog {
@@ -33,7 +34,7 @@ class _ExerciseLog {
   });
 }
 
-class _CreateWorkoutTabState extends State<CreateWorkoutTab> {
+class _CreateSessionTabState extends State<CreateSessionTab> {
   late List<_ExerciseLog> _exerciseLogs;
   final SessionRepository _sessionRepository = SessionRepository();
   final TextEditingController _sessionNameController = TextEditingController();
@@ -98,8 +99,27 @@ class _CreateWorkoutTabState extends State<CreateWorkoutTab> {
     Navigator.pop(context);
   }
 
-  void _addWorkout() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add Workout tapped')));
+  Future<void> _addWorkout() async {
+    final result = await Navigator.push<List<Map<String, String>>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SelectWorkoutsTab(mode: 'add'),
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        for (var ex in result) {
+          _exerciseLogs.add(_ExerciseLog(
+            id: ex['id'] ?? '',
+            name: ex['name'] ?? '',
+            desc: ex['desc'] ?? '',
+            image: ex['image'] ?? '',
+            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')),
+          ));
+        }
+      });
+    }
   }
 
   Future<void> _createSession() async {
@@ -157,7 +177,7 @@ class _CreateWorkoutTabState extends State<CreateWorkoutTab> {
           icon: const Icon(Icons.arrow_back, color: AppColors.pureWhite),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Create Workout', style: TextStyle(color: AppColors.pureWhite)),
+        title: const Text('Create Session', style: TextStyle(color: AppColors.pureWhite)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
+import 'select_workouts_tab.dart';
 
 class LogWorkoutTab extends StatefulWidget {
   final String mode; // 'start' or 'create'
@@ -140,9 +141,27 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout discarded')));
   }
 
-  void _addWorkout() {
-    // placeholder: navigate to select workouts (or append sample)
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add Workout tapped')));
+  Future<void> _addWorkout() async {
+    final result = await Navigator.push<List<Map<String, String>>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SelectWorkoutsTab(mode: 'add'),
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        for (var ex in result) {
+          _exerciseLogs.add(_ExerciseLog(
+            id: ex['id'] ?? '',
+            name: ex['name'] ?? '',
+            desc: ex['desc'] ?? '',
+            image: ex['image'] ?? '',
+            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')),
+          ));
+        }
+      });
+    }
   }
 
   // Simplified: only finish session logic
