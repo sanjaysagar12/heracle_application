@@ -6,8 +6,13 @@ import 'nutrition_post_card.dart';
 
 class TrackMutualsSection extends StatefulWidget {
   final List<FeedPost> posts;
+  final Function(String) onLike;
 
-  const TrackMutualsSection({super.key, required this.posts});
+  const TrackMutualsSection({
+    super.key,
+    required this.posts,
+    required this.onLike,
+  });
 
   @override
   State<TrackMutualsSection> createState() => _TrackMutualsSectionState();
@@ -102,6 +107,8 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
             exercises: post.exercises,
             likes: post.likes,
             likedBy: post.likedBy,
+            isLiked: post.isLiked,
+            onLike: () => widget.onLike(post.id),
           );
         } else if (post is NutritionPost) {
           return NutritionPostCard(
@@ -117,6 +124,8 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
             fats: post.fats,
             likes: post.likes,
             likedBy: post.likedBy,
+            isLiked: post.isLiked,
+            onLike: () => widget.onLike(post.id),
           );
         }
         return const SizedBox.shrink();

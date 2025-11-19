@@ -6,6 +6,7 @@ class MutualFeedService {
     // Return mock data
     return [
       {
+        'id': '1',
         'type': 'workout',
         'username': 'zhambo',
         'handle': '@miyura_9812',
@@ -37,6 +38,7 @@ class MutualFeedService {
         ],
       },
       {
+        'id': '2',
         'type': 'nutrition',
         'username': 'zhambo',
         'handle': '@miyura_9812',
@@ -60,6 +62,7 @@ class MutualFeedService {
         ],
       },
       {
+        'id': '3',
         'type': 'workout',
         'username': 'john_doe',
         'handle': '@john_fitness',

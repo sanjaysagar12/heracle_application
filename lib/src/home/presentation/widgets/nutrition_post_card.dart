@@ -14,6 +14,8 @@ class NutritionPostCard extends StatelessWidget {
   final int fats;
   final int likes;
   final List<String> likedBy;
+  final bool isLiked;
+  final VoidCallback onLike;
 
   const NutritionPostCard({
     super.key,
@@ -29,6 +31,8 @@ class NutritionPostCard extends StatelessWidget {
     required this.fats,
     required this.likes,
     required this.likedBy,
+    this.isLiked = false,
+    required this.onLike,
   });
 
   @override
@@ -212,7 +216,14 @@ class NutritionPostCard extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            const Icon(Icons.favorite_border, color: AppColors.pureWhite, size: 24),
+            GestureDetector(
+              onTap: onLike,
+              child: Icon(
+                isLiked ? Icons.favorite : Icons.favorite_border,
+                color: isLiked ? Colors.red : AppColors.pureWhite,
+                size: 24,
+              ),
+            ),
             const SizedBox(width: 8),
             Text(
               '$likes',

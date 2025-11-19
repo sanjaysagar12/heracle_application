@@ -2,6 +2,7 @@ import '../api/mutual_feed_service.dart';
 import '../presentation/widgets/workout_post_card.dart';
 
 abstract class FeedPost {
+  final String id;
   final String username;
   final String handle;
   final String profileImage;
@@ -10,8 +11,10 @@ abstract class FeedPost {
   final List<String> images;
   final int likes;
   final List<String> likedBy;
+  final bool isLiked;
 
   FeedPost({
+    required this.id,
     required this.username,
     required this.handle,
     required this.profileImage,
@@ -20,7 +23,10 @@ abstract class FeedPost {
     required this.images,
     required this.likes,
     required this.likedBy,
+    this.isLiked = false,
   });
+
+  FeedPost copyWith({bool? isLiked, int? likes});
 }
 
 class WorkoutPost extends FeedPost {
@@ -31,6 +37,7 @@ class WorkoutPost extends FeedPost {
   final List<Exercise> exercises;
 
   WorkoutPost({
+    required super.id,
     required super.username,
     required super.handle,
     required super.profileImage,
@@ -39,6 +46,7 @@ class WorkoutPost extends FeedPost {
     required super.images,
     required super.likes,
     required super.likedBy,
+    super.isLiked,
     required this.tags,
     required this.duration,
     required this.volume,
@@ -48,6 +56,7 @@ class WorkoutPost extends FeedPost {
 
   factory WorkoutPost.fromJson(Map<String, dynamic> json) {
     return WorkoutPost(
+      id: json['id'] as String,
       username: json['username'] as String,
       handle: json['handle'] as String,
       profileImage: json['profileImage'] as String,
@@ -65,6 +74,27 @@ class WorkoutPost extends FeedPost {
       likedBy: List<String>.from(json['likedBy']),
     );
   }
+
+  @override
+  WorkoutPost copyWith({bool? isLiked, int? likes}) {
+    return WorkoutPost(
+      id: id,
+      username: username,
+      handle: handle,
+      profileImage: profileImage,
+      timeAgo: timeAgo,
+      content: content,
+      tags: tags,
+      images: images,
+      duration: duration,
+      volume: volume,
+      records: records,
+      exercises: exercises,
+      likes: likes ?? this.likes,
+      likedBy: likedBy,
+      isLiked: isLiked ?? this.isLiked,
+    );
+  }
 }
 
 class NutritionPost extends FeedPost {
@@ -74,6 +104,7 @@ class NutritionPost extends FeedPost {
   final int fats;
 
   NutritionPost({
+    required super.id,
     required super.username,
     required super.handle,
     required super.profileImage,
@@ -82,6 +113,7 @@ class NutritionPost extends FeedPost {
     required super.images,
     required super.likes,
     required super.likedBy,
+    super.isLiked,
     required this.calories,
     required this.protein,
     required this.carbs,
@@ -90,6 +122,7 @@ class NutritionPost extends FeedPost {
 
   factory NutritionPost.fromJson(Map<String, dynamic> json) {
     return NutritionPost(
+      id: json['id'] as String,
       username: json['username'] as String,
       handle: json['handle'] as String,
       profileImage: json['profileImage'] as String,
@@ -102,6 +135,26 @@ class NutritionPost extends FeedPost {
       fats: json['fats'] as int,
       likes: json['likes'] as int,
       likedBy: List<String>.from(json['likedBy']),
+    );
+  }
+
+  @override
+  NutritionPost copyWith({bool? isLiked, int? likes}) {
+    return NutritionPost(
+      id: id,
+      username: username,
+      handle: handle,
+      profileImage: profileImage,
+      timeAgo: timeAgo,
+      content: content,
+      images: images,
+      calories: calories,
+      protein: protein,
+      carbs: carbs,
+      fats: fats,
+      likes: likes ?? this.likes,
+      likedBy: likedBy,
+      isLiked: isLiked ?? this.isLiked,
     );
   }
 }

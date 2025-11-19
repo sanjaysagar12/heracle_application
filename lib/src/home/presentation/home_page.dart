@@ -52,6 +52,19 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _handleLike(String postId) {
+    setState(() {
+      _posts = _posts.map((post) {
+        if (post.id == postId) {
+          final newIsLiked = !post.isLiked;
+          final newLikes = newIsLiked ? post.likes + 1 : post.likes - 1;
+          return post.copyWith(isLiked: newIsLiked, likes: newLikes);
+        }
+        return post;
+      }).toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,7 +91,10 @@ class _HomePageState extends State<HomePage> {
                       calsTaken: _progress!.calsTaken,
                       proteinTaken: _progress!.proteinTaken,
                     ),
-                  TrackMutualsSection(posts: _posts),
+                  TrackMutualsSection(
+                    posts: _posts,
+                    onLike: _handleLike,
+                  ),
                 ],
               ),
             ),

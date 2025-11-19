@@ -15,6 +15,8 @@ class WorkoutPostCard extends StatelessWidget {
   final List<Exercise> exercises;
   final int likes;
   final List<String> likedBy;
+  final bool isLiked;
+  final VoidCallback onLike;
 
   const WorkoutPostCard({
     super.key,
@@ -31,6 +33,8 @@ class WorkoutPostCard extends StatelessWidget {
     required this.exercises,
     required this.likes,
     required this.likedBy,
+    this.isLiked = false,
+    required this.onLike,
   });
 
   @override
@@ -282,7 +286,14 @@ class WorkoutPostCard extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            const Icon(Icons.favorite_border, color: AppColors.pureWhite, size: 24),
+            GestureDetector(
+              onTap: onLike,
+              child: Icon(
+                isLiked ? Icons.favorite : Icons.favorite_border,
+                color: isLiked ? Colors.red : AppColors.pureWhite,
+                size: 24,
+              ),
+            ),
             const SizedBox(width: 8),
             Text(
               '$likes',
