@@ -1,4 +1,3 @@
-import 'package:heracle/core/network/dio_client.dart';
 import 'package:heracle/core/storage/local_storage.dart';
 import 'package:heracle/src/auth/api/auth_service.dart';
 

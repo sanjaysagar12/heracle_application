@@ -17,7 +17,7 @@ class _AppPageState extends State<AppPage> {
   int _index = 0;
 
   final pages = [
-    HomePage(),
+    const HomePage(),
     CameraPage(),
     FeedPage(),
     ProfilePage(),
