@@ -7,7 +7,7 @@ import '../data/progress_repository.dart'; // new import
 import './tab/select_workouts_tab.dart'; // navigation target
 import '../widgets/sessions_section.dart'; // added
 import '../data/session_repository.dart'; // add import
-import 'workout_logs_page.dart';
+import 'tab/workout_logs_tab.dart';
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -89,7 +89,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const WorkoutLogsPage()),
+                                MaterialPageRoute(builder: (_) => const WorkoutLogsTab()),
                               );
                             },
                             icon: const Icon(Icons.history, color: AppColors.primary, size: 20),

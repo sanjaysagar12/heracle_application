@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
-import '../data/session_repository.dart';
-import '../storage/workout_session_storage.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../data/session_repository.dart';
+import '../../storage/workout_session_storage.dart';
 
-class WorkoutLogsPage extends StatefulWidget {
-  const WorkoutLogsPage({super.key});
+class WorkoutLogsTab extends StatefulWidget {
+  const WorkoutLogsTab({super.key});
 
   @override
-  State<WorkoutLogsPage> createState() => _WorkoutLogsPageState();
+  State<WorkoutLogsTab> createState() => _WorkoutLogsTabState();
 }
 
-class _WorkoutLogsPageState extends State<WorkoutLogsPage> {
+class _WorkoutLogsTabState extends State<WorkoutLogsTab> {
   final SessionRepository _sessionRepository = SessionRepository();
   late Future<List<WorkoutLog>> _logsFuture;
 
