@@ -18,6 +18,30 @@ class Session {
   });
 }
 
+class WorkoutLog {
+  final String id;
+  final String? sessionId; // optional: links to original session template
+  final String title;
+  final DateTime completedAt;
+  final int duration; // in seconds
+  final int totalVolume; // kg
+  final int totalSets;
+  final int exercisesCount;
+  final List<Map<String, dynamic>> exercises;
+
+  WorkoutLog({
+    required this.id,
+    this.sessionId,
+    required this.title,
+    required this.completedAt,
+    required this.duration,
+    required this.totalVolume,
+    required this.totalSets,
+    required this.exercisesCount,
+    this.exercises = const [],
+  });
+}
+
 class SessionRepository {
   SessionRepository();
   
@@ -28,5 +52,13 @@ class SessionRepository {
 
   Future<void> saveSessionToDb(Session session) async {
     await WorkoutSessionStorage.instance.insertSession(session);
+  }
+
+  Future<void> saveWorkoutLogToDb(WorkoutLog log) async {
+    await WorkoutSessionStorage.instance.insertWorkoutLog(log);
+  }
+
+  Future<List<WorkoutLog>> getWorkoutLogsFromDb() async {
+    return await WorkoutSessionStorage.instance.getAllWorkoutLogs();
   }
 }

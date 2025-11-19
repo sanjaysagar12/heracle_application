@@ -168,7 +168,9 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   Future<void> _finishSession() async {
     // save completed workout to database
     try {
-      final sessionId = widget.sessionId ?? DateTime.now().millisecondsSinceEpoch.toString();
+      final logId = DateTime.now().millisecondsSinceEpoch.toString();
+      final duration = DateTime.now().difference(_startTime).inSeconds;
+      
       final exercises = _exerciseLogs.map((ex) {
         return {
           'id': ex.id,
@@ -178,20 +180,28 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
         };
       }).toList();
 
-      final session = Session(
-        id: sessionId,
+      final workoutLog = WorkoutLog(
+        id: logId,
+        sessionId: widget.sessionId, // link to original session if started from template
         title: widget.sessionName ?? 'Workout ${DateTime.now().toIso8601String().split('T').first}',
-        content: 'Completed workout session',
-        category: 'Workout History',
+        completedAt: DateTime.now(),
+        duration: duration,
+        totalVolume: _totalVolume,
+        totalSets: _totalSetCount,
         exercisesCount: exercises.length,
         exercises: exercises,
       );
 
-      await _sessionRepository.saveSessionToDb(session);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session finished & saved')));
-      Navigator.popUntil(context, (route) => route.isFirst);
+      await _sessionRepository.saveWorkoutLogToDb(workoutLog);
+       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout logged successfully')));
+        // Pop back to WorkoutPage (pop all routes until first/home)
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+      }
     }
   }
 

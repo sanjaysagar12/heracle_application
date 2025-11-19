@@ -159,8 +159,9 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
     try {
       await _sessionRepository.saveSessionToDb(session);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session created')));
-      Navigator.pop(context, true);
-      return;
+      // Pop both CreateSessionTab and SelectWorkoutsTab to return to WorkoutPage
+      Navigator.pop(context, true); // pop CreateSessionTab
+      Navigator.pop(context, true); // pop SelectWorkoutsTab
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e')));
     }
