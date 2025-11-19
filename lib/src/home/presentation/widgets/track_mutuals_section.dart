@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/mutual_feed_repository.dart';
+import 'workout_post_card.dart';
+import 'nutrition_post_card.dart';
 
 class TrackMutualsSection extends StatefulWidget {
-  const TrackMutualsSection({super.key});
+  final List<FeedPost> posts;
+
+  const TrackMutualsSection({super.key, required this.posts});
 
   @override
   State<TrackMutualsSection> createState() => _TrackMutualsSectionState();
@@ -42,6 +47,8 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
             },
           ),
         ),
+        const SizedBox(height: 16),
+        _buildWorkoutPosts(),
       ],
     );
   }
@@ -74,6 +81,46 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildWorkoutPosts() {
+    return Column(
+      children: widget.posts.map((post) {
+        if (post is WorkoutPost) {
+          return WorkoutPostCard(
+            username: post.username,
+            handle: post.handle,
+            profileImage: post.profileImage,
+            timeAgo: post.timeAgo,
+            content: post.content,
+            tags: post.tags,
+            images: post.images,
+            duration: post.duration,
+            volume: post.volume,
+            records: post.records,
+            exercises: post.exercises,
+            likes: post.likes,
+            likedBy: post.likedBy,
+          );
+        } else if (post is NutritionPost) {
+          return NutritionPostCard(
+            username: post.username,
+            handle: post.handle,
+            profileImage: post.profileImage,
+            timeAgo: post.timeAgo,
+            content: post.content,
+            images: post.images,
+            calories: post.calories,
+            protein: post.protein,
+            carbs: post.carbs,
+            fats: post.fats,
+            likes: post.likes,
+            likedBy: post.likedBy,
+          );
+        }
+        return const SizedBox.shrink();
+      }).toList(),
     );
   }
 }

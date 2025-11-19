@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../widgets/app_bar.dart';
 import '../data/profile_repository.dart';
 import '../data/progress_repository.dart';
+import '../data/mutual_feed_repository.dart';
 import 'widgets/progress_card.dart';
 import 'widgets/track_mutuals_section.dart';
 import '../../../core/theme/app_colors.dart';
@@ -16,8 +17,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final ProfileRepository _profileRepository = ProfileRepository();
   final ProgressRepository _progressRepository = ProgressRepository();
+  final MutualFeedRepository _mutualFeedRepository = MutualFeedRepository();
   Profile? _profile;
   ProgressCard? _progress;
+  List<FeedPost> _posts = [];
   bool _isLoading = true;
 
   @override
@@ -31,11 +34,13 @@ class _HomePageState extends State<HomePage> {
       final results = await Future.wait([
         _profileRepository.getProfile(),
         _progressRepository.getTodayProgress(),
+        _mutualFeedRepository.getMutualFeed(),
       ]);
 
       setState(() {
         _profile = results[0] as Profile;
         _progress = results[1] as ProgressCard;
+        _posts = results[2] as List<FeedPost>;
         _isLoading = false;
       });
     } catch (e) {
@@ -73,7 +78,7 @@ class _HomePageState extends State<HomePage> {
                       calsTaken: _progress!.calsTaken,
                       proteinTaken: _progress!.proteinTaken,
                     ),
-                  const TrackMutualsSection(),
+                  TrackMutualsSection(posts: _posts),
                 ],
               ),
             ),
