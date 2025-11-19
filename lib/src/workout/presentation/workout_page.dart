@@ -4,6 +4,7 @@ import '../../home/data/profile_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/bar_chart_card.dart';
 import '../data/progress_repository.dart'; // new import
+import './tab/select_workouts_tab.dart'; // navigation target
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -71,6 +72,76 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   BarChartCard(
                     title: 'Weekly Activity',
                     data: _weeklyBarData,
+                  ),
+                  const SizedBox(height: 16),
+                  // Action buttons
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // start empty session - implement action as needed
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Start Empty Session')),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              minimumSize: const Size.fromHeight(56), // increased height
+                              padding: const EdgeInsets.symmetric(vertical: 18), // larger vertical padding
+                              shape: const StadiumBorder(),
+                              elevation: 0,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Icon(Icons.add, color: Colors.black, size: 24), // larger icon
+                                SizedBox(width: 8),
+                                Text(
+                                  'Start Empty Session',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 18, // larger text
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14), // slightly larger gap
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              // Navigate to select workouts tab/page
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const SelectWorkoutsTab()),
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.primary, width: 1.8),
+                              minimumSize: const Size.fromHeight(56), // increased height
+                              padding: const EdgeInsets.symmetric(vertical: 18), // larger vertical padding
+                              shape: const StadiumBorder(),
+                            ),
+                            child: const Text(
+                              'Create Workout Session',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 18, // larger text
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                   const Center(
