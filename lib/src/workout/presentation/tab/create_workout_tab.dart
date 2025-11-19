@@ -15,7 +15,7 @@ class CreateWorkoutTab extends StatefulWidget {
 class _SetLog {
   String kg;
   String reps;
-  _SetLog({this.kg = '0', this.reps = '0'});
+  _SetLog({this.kg = '', this.reps = ''});
 }
 
 class _ExerciseLog {
@@ -51,7 +51,7 @@ class _CreateWorkoutTabState extends State<CreateWorkoutTab> {
         name: e['name'] ?? '',
         desc: e['desc'] ?? '',
         image: e['image'] ?? '',
-        sets: List.generate(3, (_) => _SetLog()), // start with 3 sets
+        sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')), // start with 3 sets
       );
     }).toList();
   }
@@ -84,7 +84,7 @@ class _CreateWorkoutTabState extends State<CreateWorkoutTab> {
 
   void _addSet(_ExerciseLog ex) {
     setState(() {
-      ex.sets.add(_SetLog());
+      ex.sets.add(_SetLog(kg: '', reps: ''));
     });
   }
 

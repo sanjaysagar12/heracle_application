@@ -24,7 +24,15 @@ class _SetLog {
   String kg;
   String reps;
   bool completed;
-  _SetLog({this.kg = '0', this.reps = '0', this.completed = false});
+  String? placeholderKg; // placeholder from saved session
+  String? placeholderReps; // placeholder from saved session
+  _SetLog({
+    this.kg = '',
+    this.reps = '',
+    this.completed = false,
+    this.placeholderKg,
+    this.placeholderReps,
+  });
 }
 
 class _ExerciseLog {
@@ -58,9 +66,13 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
       if (savedSets != null && savedSets is List && savedSets.isNotEmpty) {
         sets = savedSets.map((s) {
           final sMap = s as Map<String, dynamic>;
+          final savedKg = sMap['kg']?.toString() ?? '';
+          final savedReps = sMap['reps']?.toString() ?? '';
           return _SetLog(
-            kg: (sMap['kg']?.toString() ?? ''),
-            reps: (sMap['reps']?.toString() ?? ''),
+            kg: '', // keep empty - user will enter new values
+            reps: '', // keep empty
+            placeholderKg: savedKg.isNotEmpty && savedKg != '0' ? savedKg : null,
+            placeholderReps: savedReps.isNotEmpty && savedReps != '0' ? savedReps : null,
           );
         }).toList();
       } else {
@@ -101,7 +113,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
 
   void _addSet(_ExerciseLog ex) {
     setState(() {
-      ex.sets.add(_SetLog());
+      ex.sets.add(_SetLog(kg: '', reps: ''));
     });
   }
 
@@ -121,7 +133,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
     setState(() {
       // reset all sets to default
       for (var ex in _exerciseLogs) {
-        ex.sets = [for (var i = 0; i < 3; i++) _SetLog()];
+        ex.sets = [for (var i = 0; i < 3; i++) _SetLog(kg: '', reps: '')];
       }
       _startTime = DateTime.now();
     });
@@ -321,7 +333,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                             child: TextField(
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
-                                hintText: '',
+                                hintText: set.placeholderKg ?? '',
                                 hintStyle: const TextStyle(color: AppColors.white60),
                                 filled: true,
                                 fillColor: AppColors.greyDark,
@@ -347,7 +359,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                             child: TextField(
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
-                                hintText: '',
+                                hintText: set.placeholderReps ?? '',
                                 hintStyle: const TextStyle(color: AppColors.white60),
                                 filled: true,
                                 fillColor: AppColors.greyDark,
