@@ -3,6 +3,7 @@ import '../../../widgets/app_bar.dart';
 import '../data/profile_repository.dart';
 import '../data/progress_repository.dart';
 import 'widgets/progress_card.dart';
+import 'widgets/track_mutuals_section.dart';
 import '../../../core/theme/app_colors.dart';
 
 class HomePage extends StatefulWidget {
@@ -72,12 +73,7 @@ class _HomePageState extends State<HomePage> {
                       calsTaken: _progress!.calsTaken,
                       proteinTaken: _progress!.proteinTaken,
                     ),
-                  const Center(
-                    child: Text(
-                      "Home",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
+                  const TrackMutualsSection(),
                 ],
               ),
             ),
