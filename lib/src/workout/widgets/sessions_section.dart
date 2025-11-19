@@ -4,7 +4,6 @@ import '../data/session_repository.dart';
 
 class SessionsSection extends StatefulWidget {
   final SessionRepository? repository;
-
   const SessionsSection({super.key, this.repository});
 
   @override
@@ -12,104 +11,120 @@ class SessionsSection extends StatefulWidget {
 }
 
 class _SessionsSectionState extends State<SessionsSection> {
-  late final SessionRepository _repo;
-  List<Session> _sessions = [];
-  bool _isLoading = true;
+  late Future<List<Session>> _sessionsFuture;
   String _selectedFilter = 'All';
   List<String> _filters = ['All'];
 
   @override
   void initState() {
     super.initState();
-    _repo = widget.repository ?? SessionRepository();
-    _loadSessions();
+    _loadFuture();
   }
 
-  Future<void> _loadSessions() async {
-    try {
-      final data = await _repo.getSessions();
-      final cats = <String>{};
-      for (var s in data) cats.add(s.category);
-      setState(() {
-        _sessions = data;
-        _filters = ['All', ...cats.toList()];
-        _isLoading = false;
-      });
-    } catch (_) {
-      setState(() => _isLoading = false);
-    }
+  @override
+  void didUpdateWidget(covariant SessionsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // parent called setState — reload sessions from DB
+    _loadFuture();
+    setState(() {}); // trigger rebuild so FutureBuilder uses new future
   }
 
-  List<Session> get _filteredSessions {
-    if (_selectedFilter == 'All') return _sessions;
-    return _sessions.where((s) => s.category == _selectedFilter).toList();
+  void _loadFuture() {
+    final repo = widget.repository ?? SessionRepository();
+    _sessionsFuture = repo.getSessionsFromDb();
+  }
+
+  Future<void> _onRefresh() async {
+    _loadFuture();
+    // wait for future to complete
+    await _sessionsFuture;
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-      );
-    }
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      color: AppColors.primary,
+      child: FutureBuilder<List<Session>>(
+        future: _sessionsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return SizedBox(
+              height: 160,
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            );
+          }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Your Sessions',
-            style: TextStyle(
-              color: AppColors.pureWhite,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 40,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _filters.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, i) {
-                final label = _filters[i];
-                final selected = label == _selectedFilter;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedFilter = label),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: selected ? AppColors.primary : AppColors.black100,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Center(
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          color: selected ? AppColors.black : AppColors.white60,
-                          fontSize: 14,
-                          fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
-                        ),
-                      ),
-                    ),
+          final data = snapshot.data ?? [];
+          // build dynamic filters from sessions
+          final cats = <String>{};
+          for (var s in data) cats.add(s.category);
+          _filters = ['All', ...cats.toList()];
+          if (!_filters.contains(_selectedFilter)) _selectedFilter = 'All';
+
+          final sessions = _selectedFilter == 'All' ? data : data.where((s) => s.category == _selectedFilter).toList();
+
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Your Sessions',
+                  style: TextStyle(
+                    color: AppColors.pureWhite,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                );
-              },
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 40,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _filters.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, i) {
+                      final label = _filters[i];
+                      final selected = label == _selectedFilter;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedFilter = label),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: selected ? AppColors.primary : AppColors.black100,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Center(
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                color: selected ? AppColors.black : AppColors.white60,
+                                fontSize: 14,
+                                fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Column(
+                  children: sessions.map((s) => _buildSessionCard(s)).toList(),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Column(
-            children: _filteredSessions.map((s) => _buildSessionCard(s)).toList(),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
   Widget _buildSessionCard(Session s) {
+    final images = s.exercises.map((e) => (e['image']?.toString() ?? '')).where((i) => i.isNotEmpty).toList();
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -145,7 +160,7 @@ class _SessionsSectionState extends State<SessionsSection> {
                 ),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () {}, // implement edit/delete if required
                 icon: const Icon(Icons.more_horiz, color: AppColors.white60),
               ),
             ],
@@ -153,10 +168,15 @@ class _SessionsSectionState extends State<SessionsSection> {
           const SizedBox(height: 12),
           Row(
             children: [
-              ...s.avatars.take(3).map((a) => Padding(
+              ...images.take(3).map((a) => Padding(
                 padding: const EdgeInsets.only(right: 6),
                 child: CircleAvatar(radius: 12, backgroundImage: NetworkImage(a)),
               )),
+              if (images.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: CircleAvatar(radius: 12, backgroundColor: AppColors.greyDark, child: const Icon(Icons.fitness_center, color: AppColors.white60, size: 14)),
+                ),
               const SizedBox(width: 8),
               Text('${s.exercisesCount}+ exercises', style: const TextStyle(color: AppColors.white60)),
             ],

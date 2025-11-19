@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/session_repository.dart';
+import '../../storage/workout_session_storage.dart';
 
 class LogWorkoutTab extends StatefulWidget {
   final String mode; // 'start' or 'create'
@@ -36,6 +38,7 @@ class _ExerciseLog {
 class _LogWorkoutTabState extends State<LogWorkoutTab> {
   late List<_ExerciseLog> _exerciseLogs;
   late DateTime _startTime;
+  final SessionRepository _sessionRepository = SessionRepository();
 
   @override
   void initState() {
@@ -109,11 +112,40 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add Workout tapped')));
   }
 
-  void _primaryAction() {
+  // make async to save session when mode == 'create'
+  Future<void> _primaryAction() async {
     if (widget.mode == 'create') {
-      // create session logic
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session created')));
-      Navigator.pop(context);
+      // build Session from _exerciseLogs
+      final sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+      final exercises = _exerciseLogs.map((ex) {
+        return {
+          'id': ex.id,
+          'name': ex.name,
+          'image': ex.image,
+          'sets': ex.sets.map((s) => {'kg': int.tryParse(s.kg) ?? 0, 'reps': int.tryParse(s.reps) ?? 0}).toList(),
+        };
+      }).toList();
+
+      final session = Session(
+        id: sessionId,
+        title: 'Session ${DateTime.now().toIso8601String().split('T').first}',
+        content: 'Created from in-app workout',
+        category: 'Custom',
+        exercisesCount: exercises.length,
+        exercises: exercises,
+      );
+
+      try {
+        await _sessionRepository.saveSessionToDb(session);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session created')));
+        // return true so caller can refresh if desired
+        Navigator.pop(context, true);
+        return;
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+      }
+
+      // if save failed, fall through (stay on screen)
     } else {
       // finish session logic
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session finished')));
@@ -189,7 +221,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
               child: OutlinedButton.icon(
                 onPressed: _addWorkout,
                 icon: const Icon(Icons.add, color: AppColors.pureWhite),
-                label: const Text('+ Add Workout', style: TextStyle(color: AppColors.pureWhite)),
+                label: const Text('Add Workout', style: TextStyle(color: AppColors.pureWhite)),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: AppColors.white40),
                   padding: const EdgeInsets.symmetric(vertical: 12),

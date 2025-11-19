@@ -6,6 +6,7 @@ import '../widgets/bar_chart_card.dart';
 import '../data/progress_repository.dart'; // new import
 import './tab/select_workouts_tab.dart'; // navigation target
 import '../widgets/sessions_section.dart'; // added
+import '../data/session_repository.dart'; // add import
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -83,17 +84,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
                               // Navigate to select workouts tab/page (start empty session)
-                              Navigator.push(
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (_) => SelectWorkoutsTab(mode: 'start')),
                               );
+                              // refresh sessions section after returning
+                              setState(() {});
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
-                              minimumSize: const Size.fromHeight(48), // reduced height
-                              padding: const EdgeInsets.symmetric(vertical: 12), // reduced vertical padding
+                              minimumSize: const Size.fromHeight(48),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: const StadiumBorder(),
                               elevation: 0,
                             ),
@@ -101,13 +104,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: const [
-                                Icon(Icons.add, color: Colors.black, size: 20), // smaller icon
+                                Icon(Icons.add, color: Colors.black, size: 20),
                                 SizedBox(width: 8),
                                 Text(
                                   'Start Empty Session',
                                   style: TextStyle(
                                     color: Colors.black,
-                                    fontSize: 16, // smaller text
+                                    fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -115,28 +118,30 @@ class _WorkoutPageState extends State<WorkoutPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 10), // reduced gap
+                        const SizedBox(height: 10),
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton(
-                            onPressed: () {
+                            onPressed: () async {
                               // Navigate to select workouts tab/page (create workout)
-                              Navigator.push(
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (_) => SelectWorkoutsTab(mode: 'create')),
                               );
+                              // refresh sessions section after returning
+                              setState(() {});
                             },
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: AppColors.primary, width: 1.6),
-                              minimumSize: const Size.fromHeight(48), // reduced height
-                              padding: const EdgeInsets.symmetric(vertical: 12), // reduced vertical padding
+                              minimumSize: const Size.fromHeight(48),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: const StadiumBorder(),
                             ),
                             child: const Text(
                               'Create Workout Session',
                               style: TextStyle(
                                 color: AppColors.primary,
-                                fontSize: 16, // smaller text
+                                fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -147,7 +152,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ),
                   const SizedBox(height: 12),
                   // Sessions section (moved to its own widget & data layer)
-                  const SessionsSection(),
+                  SessionsSection(repository: SessionRepository()),
                 ],
               ),
             ),
