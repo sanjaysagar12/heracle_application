@@ -15,48 +15,46 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(80.0);
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      toolbarHeight: 80.0,
       backgroundColor: Colors.black,
       elevation: 0,
       leadingWidth: 70,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
-        child: CircleAvatar(
-          backgroundImage: NetworkImage(profileImageUrl),
-        ),
-      ),
-      title: Padding(
-        padding: const EdgeInsets.only(left: 8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+      title: Row(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundImage: NetworkImage(profileImageUrl),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-              ],
-            ),
-            Text(
-              "$age years old",
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
+                  const SizedBox(width: 8),
+                  const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                ],
               ),
-            ),
-          ],
-        ),
+              Text(
+                '$age years old',
+                style: const TextStyle(color: AppColors.white60, fontSize: 16),
+              ),
+            ],
+          ),
+        ],
       ),
       actions: [
         Padding(
