@@ -172,21 +172,14 @@ class NutritionPostCard extends StatelessWidget {
   }
 
   Widget _buildNutritionStats() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.greyDark,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNutritionItem('🔥 Calories', calories.toString(), AppColors.white70),
-          _buildNutritionItem('💪 Protein', '${protein}g', AppColors.primary),
-          _buildNutritionItem('🍞 Carbs', '${carbs}g', AppColors.primary),
-          _buildNutritionItem('🥑 Fats', '${fats}g', AppColors.primary),
-        ],
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _buildNutritionItem('🔥 Calories', calories.toString(), AppColors.white70),
+        _buildNutritionItem('💪 Protein', '${protein}g', AppColors.primary),
+        _buildNutritionItem('🍞 Carbs', '${carbs}g', AppColors.primary),
+        _buildNutritionItem('🥑 Fats', '${fats}g', AppColors.primary),
+      ],
     );
   }
 
@@ -255,7 +248,7 @@ class NutritionPostCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 24),
             const Icon(Icons.send_outlined, color: AppColors.pureWhite, size: 24),
           ],
         ),

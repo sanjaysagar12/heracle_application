@@ -325,7 +325,7 @@ class WorkoutPostCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 24),
             const Icon(Icons.send_outlined, color: AppColors.pureWhite, size: 24),
           ],
         ),
