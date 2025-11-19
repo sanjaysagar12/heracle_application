@@ -312,7 +312,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
           value,
           style: const TextStyle(
             color: AppColors.primary,
-            fontSize: 16,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -365,10 +365,10 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
             const SizedBox(width: 24),
             GestureDetector(
               onTap: widget.onComment,
-              child: const Icon(
-                Icons.chat_bubble_outline,
-                color: AppColors.pureWhite,
-                size: 24,
+              child: SvgPicture.asset(
+                'assets/icons/comment.svg',
+                width: 24,
+                height: 24,
               ),
             ),
             const SizedBox(width: 8),
@@ -381,7 +381,11 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
               ),
             ),
             const SizedBox(width: 24),
-            const Icon(Icons.send_outlined, color: AppColors.pureWhite, size: 24),
+            SvgPicture.asset(
+              'assets/icons/share.svg',
+              width: 24,
+              height: 24,
+            ),
           ],
         ),
         const SizedBox(height: 12),

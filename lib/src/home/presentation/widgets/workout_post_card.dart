@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/mutual_feed_repository.dart';
 
@@ -311,10 +312,10 @@ class WorkoutPostCard extends StatelessWidget {
             const SizedBox(width: 24),
             GestureDetector(
               onTap: onComment,
-              child: const Icon(
-                Icons.chat_bubble_outline,
-                color: AppColors.pureWhite,
-                size: 24,
+              child: SvgPicture.asset(
+                'assets/icons/comment.svg',
+                width: 24,
+                height: 24,
               ),
             ),
             const SizedBox(width: 8),
@@ -327,7 +328,11 @@ class WorkoutPostCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 24),
-            const Icon(Icons.send_outlined, color: AppColors.pureWhite, size: 24),
+            SvgPicture.asset(
+              'assets/icons/share.svg',
+              width: 24,
+              height: 24,
+            ),
           ],
         ),
         const SizedBox(height: 12),
