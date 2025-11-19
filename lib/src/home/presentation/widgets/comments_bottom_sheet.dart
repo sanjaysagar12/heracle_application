@@ -65,31 +65,28 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           _buildHeader(context),
-          if (widget.comments.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(40),
-              child: Text(
-                'No comments yet',
-                style: TextStyle(
-                  color: AppColors.white60,
-                  fontSize: 16,
-                ),
-              ),
-            )
-          else
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: widget.comments.length,
-                itemBuilder: (context, index) {
-                  return _buildCommentItem(widget.comments[index], 0);
-                },
-              ),
-            ),
+          Expanded(
+            child: widget.comments.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No comments yet\nBe the first to comment!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.white60,
+                        fontSize: 16,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: widget.comments.length,
+                    itemBuilder: (context, index) {
+                      return _buildCommentItem(widget.comments[index], 0);
+                    },
+                  ),
+          ),
           if (_replyingToUsername != null) _buildReplyingToBar(),
           _buildCommentInput(),
         ],
