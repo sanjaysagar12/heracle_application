@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'log_workout_tab.dart';
+import '../../data/exercise_repository.dart';
 
 class SelectWorkoutsTab extends StatefulWidget {
   final String mode; // 'start' or 'create'
@@ -13,27 +14,46 @@ class SelectWorkoutsTab extends StatefulWidget {
 class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
-  String _selectedFilter = 'Functional';
-  final List<String> _filters = ['Functional', 'Biceps', 'Triceps', 'Chest', 'Legs', 'Other'];
-
-  final List<Map<String, String>> _items = [
-    {'id': 'w1','name': 'Bench Press (Barbell)','desc':'Chest','image':'https://images.unsplash.com/photo-1558611848-73f7eb4001d7?w=200','category':'Chest'},
-    {'id': 'w2','name': 'Incline Dumbbell Press','desc':'Chest','image':'https://images.unsplash.com/photo-1554284126-0c3d1d1cc2a0?w=200','category':'Chest'},
-    {'id': 'w3','name': 'Barbell Curl','desc':'Biceps','image':'https://images.unsplash.com/photo-1526403222633-3c9b7f3c6f6f?w=200','category':'Biceps'},
-    {'id': 'w4','name': 'Tricep Dip','desc':'Triceps','image':'https://images.unsplash.com/photo-1517976487492-5750f3195933?w=200','category':'Triceps'},
-    {'id': 'w5','name': 'Squat','desc':'Legs','image':'https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=200','category':'Legs'},
-    {'id': 'w6','name': 'Push Up','desc':'Functional','image':'https://images.unsplash.com/photo-1594737625785-0a6d7b5b6c1a?w=200','category':'Functional'},
-    // ...add more as needed...
-  ];
+  String _selectedFilter = 'All';
+  List<String> _filters = ['All'];
+  List<Map<String, String>> _items = [];
+  final ExerciseRepository _exerciseRepository = ExerciseRepository();
 
   final Set<String> _selectedIds = {};
 
   List<Map<String, String>> get _filteredItems {
-    var list = _items.where((it) => it['category'] == _selectedFilter).toList();
+    var list = _items;
+    if (_selectedFilter != 'All') {
+      list = list.where((it) => it['category'] == _selectedFilter).toList();
+    }
     if (_query.isNotEmpty) {
       list = list.where((it) => it['name']!.toLowerCase().contains(_query.toLowerCase())).toList();
     }
     return list;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExercises();
+  }
+
+  Future<void> _loadExercises() async {
+    try {
+      final data = await _exerciseRepository.getExercises();
+      final cats = <String>{};
+      for (var it in data) {
+        final cat = it['category'] ?? 'Other';
+        cats.add(cat);
+      }
+      setState(() {
+        _items = data;
+        _filters = ['All', ...cats.toList()];
+        // keep selected filter 'All' by default
+      });
+    } catch (_) {
+      // keep defaults on error
+    }
   }
 
   @override
