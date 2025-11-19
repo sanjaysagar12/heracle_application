@@ -246,13 +246,23 @@ class WorkoutPostCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: const BoxDecoration(
-                  color: AppColors.greyDark,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.fitness_center,
-                  color: AppColors.white60,
-                  size: 20,
+                child: ClipOval(
+                  child: Image.network(
+                    exercise.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: AppColors.greyDark,
+                        child: const Icon(
+                          Icons.fitness_center,
+                          color: AppColors.white60,
+                          size: 20,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -361,10 +371,4 @@ class WorkoutPostCard extends StatelessWidget {
       ],
     );
   }
-}
-
-class Exercise {
-  final String name;
-
-  Exercise({required this.name});
 }

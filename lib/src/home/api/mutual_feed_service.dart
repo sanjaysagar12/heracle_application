@@ -25,11 +25,26 @@ class MutualFeedService {
         'volume': '5,355.6kg',
         'records': 'nil',
         'exercises': [
-          '4 sets Bicep Curl (Dumbbell)',
-          '4 sets Preacher Curl (Machine)',
-          '3 sets Pull Up (Assisted)',
-          '3 sets Lat Pulldown',
-          '4 sets Cable Row',
+          {
+            'name': '4 sets Bicep Curl (Dumbbell)',
+            'imageUrl': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
+          },
+          {
+            'name': '4 sets Preacher Curl (Machine)',
+            'imageUrl': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400',
+          },
+          {
+            'name': '3 sets Pull Up (Assisted)',
+            'imageUrl': 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400',
+          },
+          {
+            'name': '3 sets Lat Pulldown',
+            'imageUrl': 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400',
+          },
+          {
+            'name': '4 sets Cable Row',
+            'imageUrl': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
+          },
         ],
         'likes': 23,
         'likedBy': [
@@ -144,9 +159,18 @@ class MutualFeedService {
         'volume': '4,200kg',
         'records': '2 PRs',
         'exercises': [
-          '5 sets Squats (Barbell)',
-          '4 sets Leg Press',
-          '3 sets Lunges',
+          {
+            'name': '5 sets Squats (Barbell)',
+            'imageUrl': 'https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=400',
+          },
+          {
+            'name': '4 sets Leg Press',
+            'imageUrl': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400',
+          },
+          {
+            'name': '3 sets Lunges',
+            'imageUrl': 'https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=400',
+          },
         ],
         'likes': 45,
         'likedBy': [

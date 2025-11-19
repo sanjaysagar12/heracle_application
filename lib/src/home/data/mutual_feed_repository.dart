@@ -48,6 +48,23 @@ abstract class FeedPost {
   FeedPost copyWith({bool? isLiked, int? likes, int? commentCount});
 }
 
+class Exercise {
+  final String name;
+  final String imageUrl;
+
+  Exercise({
+    required this.name,
+    required this.imageUrl,
+  });
+
+  factory Exercise.fromJson(Map<String, dynamic> json) {
+    return Exercise(
+      name: json['name'] as String,
+      imageUrl: json['imageUrl'] as String,
+    );
+  }
+}
+
 class WorkoutPost extends FeedPost {
   final List<String> tags;
   final String duration;
@@ -88,7 +105,7 @@ class WorkoutPost extends FeedPost {
       volume: json['volume'] as String,
       records: json['records'] as String,
       exercises: (json['exercises'] as List)
-          .map((e) => Exercise(name: e as String))
+          .map((e) => Exercise.fromJson(e))
           .toList(),
       likes: json['likes'] as int,
       likedBy: (json['likedBy'] as List)
