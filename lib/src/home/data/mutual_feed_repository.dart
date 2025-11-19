@@ -4,16 +4,19 @@ import '../presentation/widgets/workout_post_card.dart';
 class LikedByUser {
   final String name;
   final String profileImage;
+  final bool isFollowing;
 
   LikedByUser({
     required this.name,
     required this.profileImage,
+    this.isFollowing = false,
   });
 
   factory LikedByUser.fromJson(Map<String, dynamic> json) {
     return LikedByUser(
       name: json['name'] as String,
       profileImage: json['profileImage'] as String,
+      isFollowing: json['isFollowing'] as bool? ?? false,
     );
   }
 }

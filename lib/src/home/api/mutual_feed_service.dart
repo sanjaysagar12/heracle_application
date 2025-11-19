@@ -51,14 +51,17 @@ class MutualFeedService {
           {
             'name': 'john_doe',
             'profileImage': 'https://i.pravatar.cc/150?img=1',
+            'isFollowing': true,
           },
           {
             'name': 'jane_smith',
             'profileImage': 'https://i.pravatar.cc/150?img=2',
+            'isFollowing': false,
           },
           {
             'name': 'mike_fitness',
             'profileImage': 'https://i.pravatar.cc/150?img=3',
+            'isFollowing': true,
           },
         ],
         'commentCount': 5,

@@ -8,6 +8,7 @@ import 'widgets/track_mutuals_section.dart';
 import '../../../core/theme/app_colors.dart';
 import 'widgets/comments_bottom_sheet.dart';
 import 'widgets/skeleton_loading.dart';
+import 'widgets/likes_bottom_sheet.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -168,6 +169,22 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _handleLikesClick(List<LikedByUser> likedByUsers) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => LikesBottomSheet(
+          likedByUsers: likedByUsers,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -195,6 +212,7 @@ class _HomePageState extends State<HomePage> {
                     posts: _posts,
                     onLike: _handleLike,
                     onComment: _handleCommentClick,
+                    onLikesClick: _handleLikesClick,
                   ),
                 ],
               ),

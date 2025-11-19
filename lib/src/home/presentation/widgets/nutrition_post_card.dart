@@ -15,6 +15,7 @@ class NutritionPostCard extends StatefulWidget {
   final VoidCallback onLike;
   final int commentCount;
   final VoidCallback onComment;
+  final VoidCallback onLikesClick;
 
   const NutritionPostCard({
     super.key,
@@ -29,6 +30,7 @@ class NutritionPostCard extends StatefulWidget {
     required this.onLike,
     required this.commentCount,
     required this.onComment,
+    required this.onLikesClick,
   });
 
   @override
@@ -354,12 +356,15 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              '${widget.likes}',
-              style: const TextStyle(
-                color: AppColors.pureWhite,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            GestureDetector(
+              onTap: widget.onLikesClick,
+              child: Text(
+                '${widget.likes}',
+                style: const TextStyle(
+                  color: AppColors.pureWhite,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const SizedBox(width: 24),
@@ -390,25 +395,28 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
         ),
         const SizedBox(height: 12),
         if (widget.likedBy.isNotEmpty)
-          Row(
-            children: [
-              ...widget.likedBy.take(3).map((user) => Align(
-                widthFactor: 0.7,
-                child: CircleAvatar(
-                  radius: 12,
-                  backgroundColor: AppColors.greyDark,
-                  backgroundImage: NetworkImage(user.profileImage),
+          GestureDetector(
+            onTap: widget.onLikesClick,
+            child: Row(
+              children: [
+                ...widget.likedBy.take(3).map((user) => Align(
+                  widthFactor: 0.7,
+                  child: CircleAvatar(
+                    radius: 12,
+                    backgroundColor: AppColors.greyDark,
+                    backgroundImage: NetworkImage(user.profileImage),
+                  ),
+                )),
+                const SizedBox(width: 8),
+                Text(
+                  'Liked by ${widget.likedBy[0].name} and others',
+                  style: const TextStyle(
+                    color: AppColors.white60,
+                    fontSize: 13,
+                  ),
                 ),
-              )),
-              const SizedBox(width: 8),
-              Text(
-                'Liked by ${widget.likedBy[0].name} and others',
-                style: const TextStyle(
-                  color: AppColors.white60,
-                  fontSize: 13,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
       ],
     );
