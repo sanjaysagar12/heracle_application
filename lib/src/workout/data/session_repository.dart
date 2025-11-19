@@ -5,6 +5,7 @@ class Session {
   final String category;
   final List<String> avatars;
   final int exercisesCount;
+  final List<Map<String, dynamic>> exercises; // new: list of exercise entries
 
   Session({
     required this.id,
@@ -13,6 +14,7 @@ class Session {
     required this.category,
     required this.avatars,
     required this.exercisesCount,
+    this.exercises = const [], // default empty
   });
 }
 
@@ -33,6 +35,24 @@ class SessionRepository {
           'https://i.pravatar.cc/150?img=3',
         ],
         exercisesCount: 4,
+        exercises: [
+          {
+            'id': 'w1',
+            'name': 'Push Up',
+            'sets': [
+              {'kg': 0, 'reps': 12},
+              {'kg': 0, 'reps': 10},
+            ],
+          },
+          {
+            'id': 'w2',
+            'name': 'Squat',
+            'sets': [
+              {'kg': 60, 'reps': 8},
+              {'kg': 60, 'reps': 8},
+            ],
+          },
+        ],
       ),
       Session(
         id: 's2',
@@ -45,6 +65,16 @@ class SessionRepository {
           'https://i.pravatar.cc/150?img=6',
         ],
         exercisesCount: 5,
+        exercises: [
+          {
+            'id': 'w3',
+            'name': 'Bench Press (Barbell)',
+            'sets': [
+              {'kg': 80, 'reps': 5},
+              {'kg': 80, 'reps': 5},
+            ],
+          }
+        ],
       ),
       // add more mock sessions as needed
     ];
