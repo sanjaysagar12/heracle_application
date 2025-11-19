@@ -168,6 +168,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
       return const SizedBox.shrink();
     }
 
+    // single image - keep badge centered on that image
     if (images.length == 1) {
       return SizedBox(
         height: 180,
@@ -184,7 +185,94 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
             ),
             Positioned(
               top: 12,
-              left: 12,
+              left: 0,
+              right: 0,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    mealType,
+                    style: const TextStyle(
+                      color: AppColors.pureWhite,
+                      fontSize: 13,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // multiple images - stack the row and place one centered badge on top
+    return SizedBox(
+      height: 180,
+      child: Stack(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    images[0],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        images[1],
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
+                    if (images.length > 2)
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '+${images.length - 2}',
+                              style: const TextStyle(
+                                color: AppColors.pureWhite,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // single badge centered across the entire images area
+          Positioned(
+            top: 12,
+            left: 0,
+            right: 0,
+            child: Align(
+              alignment: Alignment.topCenter,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -196,87 +284,10 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                   style: const TextStyle(
                     color: AppColors.pureWhite,
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.normal,
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 180,
-      child: Row(
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    images[0],
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      mealType,
-                      style: const TextStyle(
-                        color: AppColors.pureWhite,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    images[1],
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                  ),
-                ),
-                if (images.length > 2)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '+${images.length - 2}',
-                          style: const TextStyle(
-                            color: AppColors.pureWhite,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
             ),
           ),
         ],
