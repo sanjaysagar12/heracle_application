@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
+import '../../storage/workout_session_storage.dart';
 
 class CreateWorkoutTab extends StatefulWidget {
   final List<Map<String, String>> exercises;
@@ -37,10 +38,13 @@ class _CreateWorkoutTabState extends State<CreateWorkoutTab> {
   final SessionRepository _sessionRepository = SessionRepository();
   final TextEditingController _sessionNameController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
+  List<String> _existingCategories = [];
+  bool _showCategorySuggestions = false;
 
   @override
   void initState() {
     super.initState();
+    _loadExistingCategories();
     _exerciseLogs = widget.exercises.map((e) {
       return _ExerciseLog(
         id: e['id'] ?? '',
@@ -50,6 +54,23 @@ class _CreateWorkoutTabState extends State<CreateWorkoutTab> {
         sets: List.generate(3, (_) => _SetLog()), // start with 3 sets
       );
     }).toList();
+  }
+
+  Future<void> _loadExistingCategories() async {
+    try {
+      final sessions = await WorkoutSessionStorage.instance.getAllSessions();
+      final categories = <String>{};
+      for (var session in sessions) {
+        if (session.category.isNotEmpty) {
+          categories.add(session.category);
+        }
+      }
+      setState(() {
+        _existingCategories = categories.toList()..sort();
+      });
+    } catch (e) {
+      print('Failed to load existing categories: $e');
+    }
   }
 
   @override
@@ -161,23 +182,74 @@ class _CreateWorkoutTabState extends State<CreateWorkoutTab> {
               ),
             ),
             const SizedBox(height: 12),
-            // Category Input
-            TextField(
-              controller: _categoryController,
-              style: const TextStyle(color: AppColors.pureWhite),
-              decoration: InputDecoration(
-                labelText: 'Category',
-                labelStyle: const TextStyle(color: AppColors.white60),
-                hintText: 'e.g., Strength, Cardio, Custom',
-                hintStyle: const TextStyle(color: AppColors.white60),
-                filled: true,
-                fillColor: AppColors.black100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            // Category Input with suggestions
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _categoryController,
+                  style: const TextStyle(color: AppColors.pureWhite),
+                  onTap: () {
+                    setState(() {
+                      _showCategorySuggestions = true;
+                    });
+                  },
+                  onChanged: (value) {
+                    setState(() {
+                      _showCategorySuggestions = value.isEmpty && _existingCategories.isNotEmpty;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Category',
+                    labelStyle: const TextStyle(color: AppColors.white60),
+                    hintText: 'e.g., Strength, Cardio, Custom',
+                    hintStyle: const TextStyle(color: AppColors.white60),
+                    filled: true,
+                    fillColor: AppColors.black100,
+                    suffixIcon: _existingCategories.isNotEmpty
+                        ? Icon(
+                            _showCategorySuggestions ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                            color: AppColors.white60,
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              ),
+                if (_showCategorySuggestions && _existingCategories.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.black100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.greyDark),
+                    ),
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _existingCategories.length,
+                      itemBuilder: (context, index) {
+                        final category = _existingCategories[index];
+                        return ListTile(
+                          dense: true,
+                          title: Text(
+                            category,
+                            style: const TextStyle(color: AppColors.pureWhite),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              _categoryController.text = category;
+                              _showCategorySuggestions = false;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 12),
             // Workout count chip
