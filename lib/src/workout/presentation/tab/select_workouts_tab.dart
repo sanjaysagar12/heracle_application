@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'log_workout_tab.dart';
+import 'create_workout_tab.dart';
 import '../../data/exercise_repository.dart';
 
 class SelectWorkoutsTab extends StatefulWidget {
@@ -172,10 +173,19 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
             child: ElevatedButton(
               onPressed: _selectedIds.isEmpty ? null : () {
                 final selectedItems = _items.where((it) => _selectedIds.contains(it['id'])).toList();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => LogWorkoutTab(mode: widget.mode, exercises: selectedItems)),
-                );
+                if (widget.mode == 'create') {
+                  // Navigate to CreateWorkoutTab
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => CreateWorkoutTab(exercises: selectedItems)),
+                  );
+                } else {
+                  // Navigate to LogWorkoutTab
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => LogWorkoutTab(mode: widget.mode, exercises: selectedItems)),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,

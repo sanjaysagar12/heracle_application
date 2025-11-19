@@ -2,21 +2,19 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
 
-class LogWorkoutTab extends StatefulWidget {
-  final String mode; // 'start' or 'create'
+class CreateWorkoutTab extends StatefulWidget {
   final List<Map<String, String>> exercises;
 
-  const LogWorkoutTab({super.key, required this.mode, required this.exercises});
+  const CreateWorkoutTab({super.key, required this.exercises});
 
   @override
-  State<LogWorkoutTab> createState() => _LogWorkoutTabState();
+  State<CreateWorkoutTab> createState() => _CreateWorkoutTabState();
 }
 
 class _SetLog {
   String kg;
   String reps;
-  bool completed;
-  _SetLog({this.kg = '0', this.reps = '0', this.completed = false});
+  _SetLog({this.kg = '0', this.reps = '0'});
 }
 
 class _ExerciseLog {
@@ -34,15 +32,15 @@ class _ExerciseLog {
   });
 }
 
-class _LogWorkoutTabState extends State<LogWorkoutTab> {
+class _CreateWorkoutTabState extends State<CreateWorkoutTab> {
   late List<_ExerciseLog> _exerciseLogs;
-  late DateTime _startTime;
   final SessionRepository _sessionRepository = SessionRepository();
+  final TextEditingController _sessionNameController = TextEditingController();
+  final TextEditingController _categoryController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _startTime = DateTime.now();
     _exerciseLogs = widget.exercises.map((e) {
       return _ExerciseLog(
         id: e['id'] ?? '',
@@ -54,38 +52,18 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
     }).toList();
   }
 
-  int get _totalSetCount => _exerciseLogs.fold(0, (s, ex) => s + ex.sets.length);
+  @override
+  void dispose() {
+    _sessionNameController.dispose();
+    _categoryController.dispose();
+    super.dispose();
+  }
 
   int get _workoutCount => _exerciseLogs.length;
-
-  int get _totalVolume {
-    var total = 0;
-    for (var ex in _exerciseLogs) {
-      for (var st in ex.sets) {
-        final kg = int.tryParse(st.kg) ?? 0;
-        final reps = int.tryParse(st.reps) ?? 0;
-        total += kg * reps;
-      }
-    }
-    return total;
-  }
-
-  String get _durationStr {
-    final dur = DateTime.now().difference(_startTime);
-    if (dur.inHours > 0) return '${dur.inHours}h ${dur.inMinutes % 60}m';
-    if (dur.inMinutes > 0) return '${dur.inMinutes}m ${dur.inSeconds % 60}s';
-    return '${dur.inSeconds}s';
-  }
 
   void _addSet(_ExerciseLog ex) {
     setState(() {
       ex.sets.add(_SetLog());
-    });
-  }
-
-  void _toggleComplete(_SetLog set) {
-    setState(() {
-      set.completed = !set.completed;
     });
   }
 
@@ -96,26 +74,55 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   }
 
   void _discardWorkout() {
-    setState(() {
-      // reset all sets to default
-      for (var ex in _exerciseLogs) {
-        ex.sets = [for (var i = 0; i < 3; i++) _SetLog()];
-      }
-      _startTime = DateTime.now();
-    });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout discarded')));
+    Navigator.pop(context);
   }
 
   void _addWorkout() {
-    // placeholder: navigate to select workouts (or append sample)
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add Workout tapped')));
   }
 
-  // Simplified: only finish session logic
-  Future<void> _finishSession() async {
-    // finish session logic - could save to history/analytics
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session finished')));
-    Navigator.popUntil(context, (route) => route.isFirst);
+  Future<void> _createSession() async {
+    final sessionName = _sessionNameController.text.trim();
+    final category = _categoryController.text.trim();
+
+    if (sessionName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a session name')));
+      return;
+    }
+
+    if (category.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a category')));
+      return;
+    }
+
+    // build Session from _exerciseLogs
+    final sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+    final exercises = _exerciseLogs.map((ex) {
+      return {
+        'id': ex.id,
+        'name': ex.name,
+        'image': ex.image,
+        'sets': ex.sets.map((s) => {'kg': int.tryParse(s.kg) ?? 0, 'reps': int.tryParse(s.reps) ?? 0}).toList(),
+      };
+    }).toList();
+
+    final session = Session(
+      id: sessionId,
+      title: sessionName,
+      content: 'Created from in-app workout',
+      category: category,
+      exercisesCount: exercises.length,
+      exercises: exercises,
+    );
+
+    try {
+      await _sessionRepository.saveSessionToDb(session);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session created')));
+      Navigator.pop(context, true);
+      return;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+    }
   }
 
   @override
@@ -129,24 +136,63 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           icon: const Icon(Icons.arrow_back, color: AppColors.pureWhite),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Log Workout', style: TextStyle(color: AppColors.pureWhite)),
+        title: const Text('Create Workout', style: TextStyle(color: AppColors.pureWhite)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Top summary chips
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+            // Session Name Input
+            TextField(
+              controller: _sessionNameController,
+              style: const TextStyle(color: AppColors.pureWhite),
+              decoration: InputDecoration(
+                labelText: 'Session Name',
+                labelStyle: const TextStyle(color: AppColors.white60),
+                hintText: 'e.g., Morning Workout',
+                hintStyle: const TextStyle(color: AppColors.white60),
+                filled: true,
+                fillColor: AppColors.black100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Category Input
+            TextField(
+              controller: _categoryController,
+              style: const TextStyle(color: AppColors.pureWhite),
+              decoration: InputDecoration(
+                labelText: 'Category',
+                labelStyle: const TextStyle(color: AppColors.white60),
+                hintText: 'e.g., Strength, Cardio, Custom',
+                hintStyle: const TextStyle(color: AppColors.white60),
+                filled: true,
+                fillColor: AppColors.black100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Workout count chip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.black100,
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _summaryChip(_durationStr, 'Duration'),
+                  const Icon(Icons.fitness_center, color: AppColors.primary, size: 20),
                   const SizedBox(width: 8),
-                  _summaryChip('$_totalVolume kg', 'Volume'),
-                  const SizedBox(width: 8),
-                  _summaryChip('$_totalSetCount', 'Set Count'),
-                  const SizedBox(width: 8),
-                  _summaryChip('$_workoutCount', 'Workouts'),
+                  Text('$_workoutCount Exercises', style: const TextStyle(color: AppColors.pureWhite, fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -163,13 +209,13 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
               ),
             ),
             const SizedBox(height: 12),
-            // Finish Session button
+            // Create Session button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _finishSession,
-                icon: const Icon(Icons.flag, color: Colors.black),
-                label: const Text('Finish Session', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+                onPressed: _createSession,
+                icon: const Icon(Icons.save, color: Colors.black),
+                label: const Text('Create Session', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -186,19 +232,19 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                 icon: const Icon(Icons.add, color: AppColors.pureWhite),
                 label: const Text('Add Workout', style: TextStyle(color: AppColors.pureWhite)),
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppColors.white40),
+                  side: const BorderSide(color: AppColors.white40),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
             const SizedBox(height: 8),
-            // Discard Workout (danger)
+            // Discard button
             SizedBox(
               width: double.infinity,
               child: TextButton(
                 onPressed: _discardWorkout,
-                child: const Text('Discard Workout', style: TextStyle(color: Colors.red)),
+                child: const Text('Discard', style: TextStyle(color: Colors.red)),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -206,23 +252,6 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _summaryChip(String value, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.black100,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Text(value, style: const TextStyle(color: AppColors.pureWhite, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 6),
-          Text(label, style: const TextStyle(color: AppColors.white60, fontSize: 12)),
-        ],
       ),
     );
   }
@@ -336,7 +365,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
               onPressed: () => _addSet(ex),
               child: const Text('+ Add Set', style: TextStyle(color: AppColors.pureWhite)),
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: AppColors.white40),
+                side: const BorderSide(color: AppColors.white40),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
