@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../widgets/bar_chart_card.dart';
 import '../data/progress_repository.dart'; // new import
 import './tab/select_workouts_tab.dart'; // navigation target
+import '../widgets/sessions_section.dart'; // added
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -143,13 +144,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Center(
-                    child: Text(
-                      "Workout Page",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
+                  const SizedBox(height: 12),
+                  // Sessions section (moved to its own widget & data layer)
+                  const SessionsSection(),
                 ],
               ),
             ),
