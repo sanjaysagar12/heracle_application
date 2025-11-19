@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../widgets/app_bar.dart';
 import '../data/profile_repository.dart';
+import '../data/progress_repository.dart';
+import 'widgets/progress_card.dart';
+import '../../../core/theme/app_colors.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,20 +14,27 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final ProfileRepository _profileRepository = ProfileRepository();
+  final ProgressRepository _progressRepository = ProgressRepository();
   Profile? _profile;
+  ProgressCard? _progress;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadData();
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadData() async {
     try {
-      final profile = await _profileRepository.getProfile();
+      final results = await Future.wait([
+        _profileRepository.getProfile(),
+        _progressRepository.getTodayProgress(),
+      ]);
+
       setState(() {
-        _profile = profile;
+        _profile = results[0] as Profile;
+        _progress = results[1] as ProgressCard;
         _isLoading = false;
       });
     } catch (e) {
@@ -32,13 +42,14 @@ class _HomePageState extends State<HomePage> {
         _isLoading = false;
       });
       // Handle error
-      print('Error loading profile: $e');
+      print('Error loading data: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.black,
       appBar: _isLoading || _profile == null
           ? null
           : CustomAppBar(
@@ -50,10 +61,24 @@ class _HomePageState extends State<HomePage> {
           ? const Center(
               child: CircularProgressIndicator(),
             )
-          : const Center(
-              child: Text(
-                "Home",
-                style: TextStyle(color: Colors.white),
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  if (_progress != null)
+                    TodayProgressCard(
+                      workoutsLeft: _progress!.workoutsLeft,
+                      steps: _progress!.steps,
+                      calsBurned: _progress!.calsBurned,
+                      calsTaken: _progress!.calsTaken,
+                      proteinTaken: _progress!.proteinTaken,
+                    ),
+                  const Center(
+                    child: Text(
+                      "Home",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
             ),
     );
