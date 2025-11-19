@@ -4,9 +4,17 @@ import '../../data/session_repository.dart';
 
 class LogWorkoutTab extends StatefulWidget {
   final String mode; // 'start' or 'create'
-  final List<Map<String, String>> exercises;
+  final List<Map<String, dynamic>> exercises;
+  final String? sessionId; // optional: if starting from saved session
+  final String? sessionName; // optional: session name
 
-  const LogWorkoutTab({super.key, required this.mode, required this.exercises});
+  const LogWorkoutTab({
+    super.key,
+    required this.mode,
+    required this.exercises,
+    this.sessionId,
+    this.sessionName,
+  });
 
   @override
   State<LogWorkoutTab> createState() => _LogWorkoutTabState();
@@ -44,12 +52,26 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
     super.initState();
     _startTime = DateTime.now();
     _exerciseLogs = widget.exercises.map((e) {
+      // if exercise has saved sets, use them; otherwise create 3 empty sets
+      final savedSets = e['sets'];
+      List<_SetLog> sets;
+      if (savedSets != null && savedSets is List && savedSets.isNotEmpty) {
+        sets = savedSets.map((s) {
+          final sMap = s as Map<String, dynamic>;
+          return _SetLog(
+            kg: (sMap['kg']?.toString() ?? ''),
+            reps: (sMap['reps']?.toString() ?? ''),
+          );
+        }).toList();
+      } else {
+        sets = List.generate(3, (_) => _SetLog(kg: '', reps: ''));
+      }
       return _ExerciseLog(
         id: e['id'] ?? '',
         name: e['name'] ?? '',
         desc: e['desc'] ?? '',
         image: e['image'] ?? '',
-        sets: List.generate(3, (_) => _SetLog()), // start with 3 sets
+        sets: sets,
       );
     }).toList();
   }
@@ -113,9 +135,33 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
 
   // Simplified: only finish session logic
   Future<void> _finishSession() async {
-    // finish session logic - could save to history/analytics
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session finished')));
-    Navigator.popUntil(context, (route) => route.isFirst);
+    // save completed workout to database
+    try {
+      final sessionId = widget.sessionId ?? DateTime.now().millisecondsSinceEpoch.toString();
+      final exercises = _exerciseLogs.map((ex) {
+        return {
+          'id': ex.id,
+          'name': ex.name,
+          'image': ex.image,
+          'sets': ex.sets.map((s) => {'kg': int.tryParse(s.kg) ?? 0, 'reps': int.tryParse(s.reps) ?? 0}).toList(),
+        };
+      }).toList();
+
+      final session = Session(
+        id: sessionId,
+        title: widget.sessionName ?? 'Workout ${DateTime.now().toIso8601String().split('T').first}',
+        content: 'Completed workout session',
+        category: 'Workout History',
+        exercisesCount: exercises.length,
+        exercises: exercises,
+      );
+
+      await _sessionRepository.saveSessionToDb(session);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session finished & saved')));
+      Navigator.popUntil(context, (route) => route.isFirst);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+    }
   }
 
   @override
@@ -129,7 +175,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           icon: const Icon(Icons.arrow_back, color: AppColors.pureWhite),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Log Workout', style: TextStyle(color: AppColors.pureWhite)),
+        title: Text(widget.sessionName ?? 'Log Workout', style: const TextStyle(color: AppColors.pureWhite)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -275,7 +321,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                             child: TextField(
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
-                                hintText: '0',
+                                hintText: '',
                                 hintStyle: const TextStyle(color: AppColors.white60),
                                 filled: true,
                                 fillColor: AppColors.greyDark,
@@ -301,7 +347,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                             child: TextField(
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
-                                hintText: '0',
+                                hintText: '',
                                 hintStyle: const TextStyle(color: AppColors.white60),
                                 filled: true,
                                 fillColor: AppColors.greyDark,

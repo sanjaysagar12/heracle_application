@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/session_repository.dart';
+import '../presentation/tab/log_workout_tab.dart';
 
 class SessionsSection extends StatefulWidget {
   final SessionRepository? repository;
@@ -24,9 +25,8 @@ class _SessionsSectionState extends State<SessionsSection> {
   @override
   void didUpdateWidget(covariant SessionsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // parent called setState — reload sessions from DB
     _loadFuture();
-    setState(() {}); // trigger rebuild so FutureBuilder uses new future
+    setState(() {});
   }
 
   void _loadFuture() {
@@ -36,7 +36,6 @@ class _SessionsSectionState extends State<SessionsSection> {
 
   Future<void> _onRefresh() async {
     _loadFuture();
-    // wait for future to complete
     await _sessionsFuture;
     setState(() {});
   }
@@ -50,14 +49,13 @@ class _SessionsSectionState extends State<SessionsSection> {
         future: _sessionsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return SizedBox(
+            return const SizedBox(
               height: 160,
               child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
             );
           }
 
           final data = snapshot.data ?? [];
-          // build dynamic filters from sessions
           final cats = <String>{};
           for (var s in data) cats.add(s.category);
           _filters = ['All', ...cats.toList()];
@@ -160,7 +158,7 @@ class _SessionsSectionState extends State<SessionsSection> {
                 ),
               ),
               IconButton(
-                onPressed: () {}, // implement edit/delete if required
+                onPressed: () {},
                 icon: const Icon(Icons.more_horiz, color: AppColors.white60),
               ),
             ],
@@ -173,12 +171,12 @@ class _SessionsSectionState extends State<SessionsSection> {
                 child: CircleAvatar(radius: 12, backgroundImage: NetworkImage(a)),
               )),
               if (images.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: CircleAvatar(radius: 12, backgroundColor: AppColors.greyDark, child: const Icon(Icons.fitness_center, color: AppColors.white60, size: 14)),
+                const Padding(
+                  padding: EdgeInsets.only(right: 6),
+                  child: CircleAvatar(radius: 12, backgroundColor: AppColors.greyDark, child: Icon(Icons.fitness_center, color: AppColors.white60, size: 14)),
                 ),
               const SizedBox(width: 8),
-              Text('${s.exercisesCount}+ exercises', style: const TextStyle(color: AppColors.white60)),
+              Text('${s.exercisesCount} exercises', style: const TextStyle(color: AppColors.white60)),
             ],
           ),
           const SizedBox(height: 12),
@@ -186,7 +184,27 @@ class _SessionsSectionState extends State<SessionsSection> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Start ${s.title}')));
+                final exercisesForLog = s.exercises.map((e) {
+                  return <String, dynamic>{
+                    'id': e['id']?.toString() ?? '',
+                    'name': e['name']?.toString() ?? '',
+                    'desc': '',
+                    'image': e['image']?.toString() ?? '',
+                    'sets': e['sets'],
+                  };
+                }).toList();
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LogWorkoutTab(
+                      mode: 'start',
+                      exercises: exercisesForLog,
+                      sessionId: s.id,
+                      sessionName: s.title,
+                    ),
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
