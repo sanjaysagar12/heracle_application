@@ -4,12 +4,14 @@ import '../../data/mutual_feed_repository.dart';
 
 class CommentsBottomSheet extends StatefulWidget {
   final List<Comment> comments;
-  final Function(String) onAddComment;
+  final Future<void> Function(String) onAddComment;
+  final Future<void> Function(String, String) onAddReply;
 
   const CommentsBottomSheet({
     super.key,
     required this.comments,
     required this.onAddComment,
+    required this.onAddReply,
   });
 
   @override
@@ -18,13 +20,8 @@ class CommentsBottomSheet extends StatefulWidget {
 
 class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   final TextEditingController _commentController = TextEditingController();
-  List<Comment> _displayComments = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _displayComments = List.from(widget.comments);
-  }
+  String? _replyingToId;
+  String? _replyingToUsername;
 
   @override
   void dispose() {
@@ -32,26 +29,31 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     super.dispose();
   }
 
-  void _handleAddComment() {
+  Future<void> _handleAddComment() async {
     final content = _commentController.text.trim();
     if (content.isEmpty) return;
 
-    widget.onAddComment(content);
-    _commentController.clear();
+    if (_replyingToId != null) {
+      await widget.onAddReply(_replyingToId!, content);
+      _cancelReply();
+    } else {
+      await widget.onAddComment(content);
+    }
 
-    // Optimistically add comment to UI
+    _commentController.clear();
+  }
+
+  void _startReply(String commentId, String username) {
     setState(() {
-      _displayComments.add(Comment(
-        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-        username: 'Eren Yeager',
-        handle: '@eren_yeager',
-        profileImage:
-            'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
-        timeAgo: 'Just now',
-        content: content,
-        likes: 0,
-        replies: [],
-      ));
+      _replyingToId = commentId;
+      _replyingToUsername = username;
+    });
+  }
+
+  void _cancelReply() {
+    setState(() {
+      _replyingToId = null;
+      _replyingToUsername = null;
     });
   }
 
@@ -66,7 +68,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildHeader(context),
-          if (_displayComments.isEmpty)
+          if (widget.comments.isEmpty)
             const Padding(
               padding: EdgeInsets.all(40),
               child: Text(
@@ -82,12 +84,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               child: ListView.builder(
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: _displayComments.length,
+                itemCount: widget.comments.length,
                 itemBuilder: (context, index) {
-                  return _buildCommentItem(_displayComments[index], 0);
+                  return _buildCommentItem(widget.comments[index], 0);
                 },
               ),
             ),
+          if (_replyingToUsername != null) _buildReplyingToBar(),
           _buildCommentInput(),
         ],
       ),
@@ -165,34 +168,16 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.favorite_border,
+                    GestureDetector(
+                      onTap: () => _startReply(comment.id, comment.username),
+                      child: const Text(
+                        'Reply',
+                        style: TextStyle(
                           color: AppColors.white60,
-                          size: 16,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${comment.likes}',
-                          style: const TextStyle(
-                            color: AppColors.white60,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        GestureDetector(
-                          onTap: () {},
-                          child: const Text(
-                            'Reply',
-                            style: TextStyle(
-                              color: AppColors.white60,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -208,6 +193,36 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     .toList(),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReplyingToBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: const BoxDecoration(
+        color: AppColors.greyDark,
+        border: Border(
+          top: BorderSide(color: AppColors.greyLight, width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Replying to $_replyingToUsername',
+            style: const TextStyle(
+              color: AppColors.white60,
+              fontSize: 13,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: _cancelReply,
+            icon: const Icon(Icons.close, color: AppColors.white60, size: 20),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
         ],
       ),
     );
@@ -235,7 +250,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               controller: _commentController,
               style: const TextStyle(color: AppColors.pureWhite),
               decoration: InputDecoration(
-                hintText: 'Add a comment...',
+                hintText: _replyingToUsername != null
+                    ? 'Reply to $_replyingToUsername...'
+                    : 'Add a comment...',
                 hintStyle: const TextStyle(color: AppColors.white60),
                 filled: true,
                 fillColor: AppColors.greyDark,

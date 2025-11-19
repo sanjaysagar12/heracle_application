@@ -109,7 +109,6 @@ class MutualFeedService {
           'profileImage': 'https://i.pravatar.cc/150?img=12',
           'timeAgo': '1 day ago',
           'content': 'Great workout bro! Keep it up 💪',
-          'likes': 5,
           'replies': [
             {
               'id': 'r1',
@@ -118,7 +117,6 @@ class MutualFeedService {
               'profileImage': 'https://i.pravatar.cc/150?img=33',
               'timeAgo': '1 day ago',
               'content': 'Thanks man! Appreciate it',
-              'likes': 2,
               'replies': [
                 {
                   'id': 'r2',
@@ -127,7 +125,6 @@ class MutualFeedService {
                   'profileImage': 'https://i.pravatar.cc/150?img=45',
                   'timeAgo': '20 hours ago',
                   'content': 'You guys are awesome!',
-                  'likes': 1,
                   'replies': [],
                 }
               ],
@@ -141,7 +138,6 @@ class MutualFeedService {
           'profileImage': 'https://i.pravatar.cc/150?img=15',
           'timeAgo': '2 days ago',
           'content': 'What was your PR?',
-          'likes': 3,
           'replies': [],
         },
       ];
@@ -154,7 +150,6 @@ class MutualFeedService {
           'profileImage': 'https://i.pravatar.cc/150?img=20',
           'timeAgo': '5 hours ago',
           'content': 'That looks delicious! Recipe please?',
-          'likes': 8,
           'replies': [],
         },
       ];
@@ -175,7 +170,22 @@ class MutualFeedService {
       'profileImage': 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
       'timeAgo': 'Just now',
       'content': content,
-      'likes': 0,
+      'replies': [],
+    };
+  }
+
+  Future<Map<String, dynamic>> addReply(String postId, String commentId, String content) async {
+    // Simulate API delay
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // Return mock reply
+    return {
+      'id': 'r${DateTime.now().millisecondsSinceEpoch}',
+      'username': 'Eren Yeager',
+      'handle': '@eren_yeager',
+      'profileImage': 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
+      'timeAgo': 'Just now',
+      'content': content,
       'replies': [],
     };
   }

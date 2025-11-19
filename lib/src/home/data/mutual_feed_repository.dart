@@ -174,7 +174,6 @@ class Comment {
   final String profileImage;
   final String timeAgo;
   final String content;
-  final int likes;
   final List<Comment> replies;
 
   Comment({
@@ -184,7 +183,6 @@ class Comment {
     required this.profileImage,
     required this.timeAgo,
     required this.content,
-    required this.likes,
     required this.replies,
   });
 
@@ -196,10 +194,21 @@ class Comment {
       profileImage: json['profileImage'] as String,
       timeAgo: json['timeAgo'] as String,
       content: json['content'] as String,
-      likes: json['likes'] as int,
       replies: (json['replies'] as List)
           .map((reply) => Comment.fromJson(reply))
           .toList(),
+    );
+  }
+
+  Comment copyWithReply(Comment newReply) {
+    return Comment(
+      id: id,
+      username: username,
+      handle: handle,
+      profileImage: profileImage,
+      timeAgo: timeAgo,
+      content: content,
+      replies: [...replies, newReply],
     );
   }
 }
@@ -242,6 +251,15 @@ class MutualFeedRepository {
       return Comment.fromJson(data);
     } catch (e) {
       throw Exception('Failed to add comment: $e');
+    }
+  }
+
+  Future<Comment> addReply(String postId, String commentId, String content) async {
+    try {
+      final data = await _mutualFeedService.addReply(postId, commentId, content);
+      return Comment.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to add reply: $e');
     }
   }
 }

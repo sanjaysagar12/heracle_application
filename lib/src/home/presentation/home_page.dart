@@ -67,35 +67,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _handleCommentClick(String postId) async {
-    try {
-      // Load comments if not cached
-      if (!_commentsCache.containsKey(postId)) {
-        final comments = await _mutualFeedRepository.getPostComments(postId);
-        _commentsCache[postId] = comments;
-      }
-      
-      if (!mounted) return;
-      
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) => CommentsBottomSheet(
-            comments: _commentsCache[postId] ?? [],
-            onAddComment: (content) => _handleAddComment(postId, content),
-          ),
-        ),
-      );
-    } catch (e) {
-      print('Error loading comments: $e');
-    }
-  }
-
   Future<void> _handleAddComment(String postId, String content) async {
     try {
       final newComment = await _mutualFeedRepository.addComment(postId, content);
@@ -114,6 +85,85 @@ class _HomePageState extends State<HomePage> {
       });
     } catch (e) {
       print('Error adding comment: $e');
+    }
+  }
+
+  Future<void> _handleAddReply(String postId, String commentId, String content) async {
+    try {
+      final newReply = await _mutualFeedRepository.addReply(postId, commentId, content);
+      
+      setState(() {
+        // Add reply to the comment in cache
+        _commentsCache[postId] = _addReplyToComment(
+          _commentsCache[postId] ?? [],
+          commentId,
+          newReply,
+        );
+      });
+    } catch (e) {
+      print('Error adding reply: $e');
+    }
+  }
+
+  List<Comment> _addReplyToComment(List<Comment> comments, String commentId, Comment newReply) {
+    return comments.map((comment) {
+      if (comment.id == commentId) {
+        return comment.copyWithReply(newReply);
+      }
+      if (comment.replies.isNotEmpty) {
+        return Comment(
+          id: comment.id,
+          username: comment.username,
+          handle: comment.handle,
+          profileImage: comment.profileImage,
+          timeAgo: comment.timeAgo,
+          content: comment.content,
+          replies: _addReplyToComment(comment.replies, commentId, newReply),
+        );
+      }
+      return comment;
+    }).toList();
+  }
+
+  void _handleCommentClick(String postId) async {
+    try {
+      // Load comments if not cached
+      if (!_commentsCache.containsKey(postId)) {
+        final comments = await _mutualFeedRepository.getPostComments(postId);
+        setState(() {
+          _commentsCache[postId] = comments;
+        });
+      }
+      
+      if (!mounted) return;
+      
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setModalState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.7,
+              minChildSize: 0.5,
+              maxChildSize: 0.95,
+              builder: (context, scrollController) => CommentsBottomSheet(
+                comments: _commentsCache[postId] ?? [],
+                onAddComment: (content) async {
+                  await _handleAddComment(postId, content);
+                  setModalState(() {}); // Update modal state
+                },
+                onAddReply: (commentId, content) async {
+                  await _handleAddReply(postId, commentId, content);
+                  setModalState(() {}); // Update modal state
+                },
+              ),
+            );
+          },
+        ),
+      );
+    } catch (e) {
+      print('Error loading comments: $e');
     }
   }
 
