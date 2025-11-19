@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'log_workout_tab.dart';
-import 'create_workout_tab.dart';
+import 'create_session_tab.dart';
 import '../../data/exercise_repository.dart';
 
 class SelectWorkoutsTab extends StatefulWidget {
