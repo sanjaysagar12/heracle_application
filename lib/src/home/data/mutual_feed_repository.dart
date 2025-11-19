@@ -1,5 +1,4 @@
 import '../api/mutual_feed_service.dart';
-import '../presentation/widgets/workout_post_card.dart';
 
 class LikedByUser {
   final String name;
