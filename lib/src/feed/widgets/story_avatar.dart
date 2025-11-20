@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_colors.dart';
 
 class StoryAvatar extends StatelessWidget {
   final String imageUrl;
@@ -24,7 +24,8 @@ class StoryAvatar extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(right: 12),
+        width: 75, // Fixed width container
+        margin: const EdgeInsets.only(right: 8), // Reduced margin
         child: Column(
           children: [
             Stack(
@@ -91,12 +92,13 @@ class StoryAvatar extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             SizedBox(
-              width: 70,
+              width: 75,
               child: Text(
                 username,
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                softWrap: false,
                 style: const TextStyle(
                   color: AppColors.pureWhite,
                   fontSize: 11,

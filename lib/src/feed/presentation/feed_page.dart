@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/stories_repository.dart';
-import 'widgets/stories_section.dart';
-import 'widgets/discover_stories_grid.dart';
-import 'widgets/feed_skeleton_loading.dart';
-import 'widgets/story_viewer.dart';
+import '../widgets/stories_section.dart';
+import '../widgets/discover_stories_grid.dart';
+import '../widgets/feed_skeleton_loading.dart';
+import '../widgets/story_viewer.dart';
 import 'tab/reels_tab.dart';
 
 /// Feed Page - Main stories and discover feed
