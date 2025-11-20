@@ -46,6 +46,18 @@ class DatabaseHelper {
   Future<void> _createTables(Database db, int version) async {
     final batch = db.batch();
     
+    // Create exercises table (master data)
+    batch.execute('''
+      CREATE TABLE exercises (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        image_url TEXT,
+        category TEXT,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+
     // Create sessions table
     batch.execute('''
       CREATE TABLE sessions (
@@ -63,14 +75,12 @@ class DatabaseHelper {
       CREATE TABLE session_exercises (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         session_id TEXT NOT NULL,
-        exercise_id TEXT,
-        name TEXT NOT NULL,
-        description TEXT,
-        image_url TEXT,
+        exercise_id TEXT NOT NULL,
         sets_data TEXT,
         position INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL,
-        FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE
+        FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE,
+        FOREIGN KEY (exercise_id) REFERENCES exercises (id) ON DELETE CASCADE
       )
     ''');
 
@@ -95,22 +105,23 @@ class DatabaseHelper {
       CREATE TABLE workout_log_exercises (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         workout_log_id TEXT NOT NULL,
-        exercise_id TEXT,
-        name TEXT NOT NULL,
-        description TEXT,
-        image_url TEXT,
+        exercise_id TEXT NOT NULL,
         sets_data TEXT,
         position INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL,
-        FOREIGN KEY (workout_log_id) REFERENCES workout_logs (id) ON DELETE CASCADE
+        FOREIGN KEY (workout_log_id) REFERENCES workout_logs (id) ON DELETE CASCADE,
+        FOREIGN KEY (exercise_id) REFERENCES exercises (id) ON DELETE CASCADE
       )
     ''');
 
     // Create indexes for better performance
+    batch.execute('CREATE INDEX idx_exercises_category ON exercises (category)');
     batch.execute('CREATE INDEX idx_sessions_created_at ON sessions (created_at DESC)');
     batch.execute('CREATE INDEX idx_session_exercises_session_id ON session_exercises (session_id)');
+    batch.execute('CREATE INDEX idx_session_exercises_exercise_id ON session_exercises (exercise_id)');
     batch.execute('CREATE INDEX idx_workout_logs_completed_at ON workout_logs (completed_at DESC)');
     batch.execute('CREATE INDEX idx_workout_log_exercises_log_id ON workout_log_exercises (workout_log_id)');
+    batch.execute('CREATE INDEX idx_workout_log_exercises_exercise_id ON workout_log_exercises (exercise_id)');
 
     await batch.commit();
     print('DatabaseHelper: All tables created successfully');
@@ -121,8 +132,20 @@ class DatabaseHelper {
     
     // Handle future database migrations here
     if (oldVersion < 2) {
-      // Example: Add new columns or tables for version 2
-      // await db.execute('ALTER TABLE sessions ADD COLUMN new_field TEXT');
+      // Add exercises table and update existing tables
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS exercises (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          description TEXT,
+          image_url TEXT,
+          category TEXT,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+      
+      // Note: In a real migration, you'd need to migrate existing data
+      // and update the table structure carefully
     }
   }
 

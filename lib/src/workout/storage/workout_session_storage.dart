@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:sqflite/sqflite.dart';
 import '../../../core/helper/database_helper.dart';
 import '../data/session_repository.dart';
 
@@ -57,12 +58,12 @@ class WorkoutSessionStorage {
     try {
       final db = await _dbHelper.database;
       
+      // First ensure the exercise exists in exercises table
+      await _insertOrUpdateExercise(exercise, createdAt);
+      
       final exerciseMap = {
         'session_id': sessionId,
-        'exercise_id': exercise['id']?.toString(),
-        'name': exercise['name']?.toString() ?? '',
-        'description': exercise['desc']?.toString() ?? '',
-        'image_url': exercise['image']?.toString() ?? '',
+        'exercise_id': exercise['id']?.toString() ?? '',
         'sets_data': jsonEncode(exercise['sets'] ?? []),
         'position': position,
         'created_at': createdAt,
@@ -76,6 +77,29 @@ class WorkoutSessionStorage {
         return;
       }
       rethrow;
+    }
+  }
+
+  Future<void> _insertOrUpdateExercise(Map<String, dynamic> exercise, int createdAt) async {
+    try {
+      final db = await _dbHelper.database;
+      final exerciseId = exercise['id']?.toString() ?? '';
+      
+      if (exerciseId.isEmpty) return;
+      
+      final exerciseData = {
+        'id': exerciseId,
+        'name': exercise['name']?.toString() ?? '',
+        'description': exercise['desc']?.toString() ?? '',
+        'image_url': exercise['image']?.toString() ?? '',
+        'category': exercise['category']?.toString() ?? '',
+        'created_at': createdAt,
+      };
+      
+      await db.insert('exercises', exerciseData, conflictAlgorithm: ConflictAlgorithm.replace);
+    } catch (e) {
+      // Ignore errors for fallback scenarios
+      print('Failed to insert exercise: $e');
     }
   }
 
@@ -95,12 +119,14 @@ class WorkoutSessionStorage {
   Future<List<Map<String, dynamic>>> getExercisesForSession(String sessionId) async {
     try {
       final db = await _dbHelper.database;
-      final rows = await db.query(
-        'session_exercises',
-        where: 'session_id = ?',
-        whereArgs: [sessionId],
-        orderBy: 'position ASC',
-      );
+      final rows = await db.rawQuery('''
+        SELECT se.exercise_id, se.sets_data, se.position,
+               e.name, e.description, e.image_url, e.category
+        FROM session_exercises se
+        LEFT JOIN exercises e ON se.exercise_id = e.id
+        WHERE se.session_id = ?
+        ORDER BY se.position ASC
+      ''', [sessionId]);
 
       return rows.map((row) => _mapRowToExercise(row)).toList();
     } catch (e) {
@@ -243,6 +269,7 @@ class WorkoutSessionStorage {
       'name': row['name'] as String? ?? '',
       'desc': row['description'] as String? ?? '',
       'image': row['image_url'] as String? ?? '',
+      'category': row['category'] as String? ?? '',
       'sets': sets,
     };
   }

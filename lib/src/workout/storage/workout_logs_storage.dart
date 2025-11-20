@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:sqflite/sqflite.dart';
 import '../../../core/helper/database_helper.dart';
 import '../data/session_repository.dart';
 
@@ -66,12 +67,12 @@ class WorkoutLogsStorage {
     try {
       final db = await _dbHelper.database;
       
+      // First ensure the exercise exists in exercises table
+      await _insertOrUpdateExercise(exercise, createdAt);
+      
       final exerciseMap = {
         'workout_log_id': logId,
-        'exercise_id': exercise['id']?.toString(),
-        'name': exercise['name']?.toString() ?? '',
-        'description': exercise['desc']?.toString() ?? '',
-        'image_url': exercise['image']?.toString() ?? '',
+        'exercise_id': exercise['id']?.toString() ?? '',
         'sets_data': jsonEncode(exercise['sets'] ?? []),
         'position': position,
         'created_at': createdAt,
@@ -85,6 +86,29 @@ class WorkoutLogsStorage {
         return;
       }
       rethrow;
+    }
+  }
+
+  Future<void> _insertOrUpdateExercise(Map<String, dynamic> exercise, int createdAt) async {
+    try {
+      final db = await _dbHelper.database;
+      final exerciseId = exercise['id']?.toString() ?? '';
+      
+      if (exerciseId.isEmpty) return;
+      
+      final exerciseData = {
+        'id': exerciseId,
+        'name': exercise['name']?.toString() ?? '',
+        'description': exercise['desc']?.toString() ?? '',
+        'image_url': exercise['image']?.toString() ?? '',
+        'category': exercise['category']?.toString() ?? '',
+        'created_at': createdAt,
+      };
+      
+      await db.insert('exercises', exerciseData, conflictAlgorithm: ConflictAlgorithm.replace);
+    } catch (e) {
+      // Ignore errors for fallback scenarios
+      print('Failed to insert exercise: $e');
     }
   }
 
@@ -104,12 +128,14 @@ class WorkoutLogsStorage {
   Future<List<Map<String, dynamic>>> getWorkoutLogExercises(String logId) async {
     try {
       final db = await _dbHelper.database;
-      final rows = await db.query(
-        'workout_log_exercises',
-        where: 'workout_log_id = ?',
-        whereArgs: [logId],
-        orderBy: 'position ASC',
-      );
+      final rows = await db.rawQuery('''
+        SELECT wle.exercise_id, wle.sets_data, wle.position,
+               e.name, e.description, e.image_url, e.category
+        FROM workout_log_exercises wle
+        LEFT JOIN exercises e ON wle.exercise_id = e.id
+        WHERE wle.workout_log_id = ?
+        ORDER BY wle.position ASC
+      ''', [logId]);
 
       return rows.map((row) => _mapRowToExercise(row)).toList();
     } catch (e) {
@@ -302,6 +328,7 @@ class WorkoutLogsStorage {
       'name': row['name'] as String? ?? '',
       'desc': row['description'] as String? ?? '',
       'image': row['image_url'] as String? ?? '',
+      'category': row['category'] as String? ?? '',
       'sets': sets,
     };
   }
