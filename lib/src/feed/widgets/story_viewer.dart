@@ -25,6 +25,11 @@ class _StoryViewerState extends State<StoryViewer>
   int _currentUserIndex = 0;
   int _currentStoryIndex = 0;
 
+  // Local like state for the currently visible story (UI only)
+  bool _isLiked = false;
+  // Controls whether the like (heart) animation is shown on double-tap
+  bool _showLikeAnimation = false;
+
   @override
   void initState() {
     super.initState();
@@ -96,6 +101,48 @@ class _StoryViewerState extends State<StoryViewer>
     Navigator.of(context).pop();
   }
 
+  void _showStoryOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.black100,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.report, color: Colors.red),
+              title: const Text('Report', style: TextStyle(color: AppColors.pureWhite)),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Reported'),
+                  backgroundColor: Color(0xFFD4FC79),
+                ));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.volume_off, color: AppColors.pureWhite),
+              title: const Text('Mute', style: TextStyle(color: AppColors.pureWhite)),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Muted'),
+                  backgroundColor: Color(0xFFD4FC79),
+                ));
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _onUserPageChanged(int index) {
     setState(() {
       _currentUserIndex = index;
@@ -146,27 +193,55 @@ class _StoryViewerState extends State<StoryViewer>
         child: Stack(
           children: [
             // Story content
-            PageView.builder(
-              controller: _userPageController,
-              onPageChanged: _onUserPageChanged,
-              itemCount: widget.stories.length,
-              itemBuilder: (context, userIndex) {
-                final user = widget.stories[userIndex];
-                if (user.stories.isEmpty) {
-                  return _buildEmptyStory(user);
-                }
-                
-                // Only show current story index for current user
-                if (userIndex == _currentUserIndex) {
-                  return _buildStoryContent(
-                    user,
-                    user.stories[_currentStoryIndex],
+            // Story content with parallax/scale transition between users
+            SizedBox.expand(
+              child: PageView.builder(
+                controller: _userPageController,
+                onPageChanged: _onUserPageChanged,
+                itemCount: widget.stories.length,
+                itemBuilder: (context, userIndex) {
+                  final user = widget.stories[userIndex];
+                  return AnimatedBuilder(
+                    animation: _userPageController,
+                    builder: (context, child) {
+                      final pageValue = (_userPageController.hasClients && _userPageController.page != null)
+                          ? _userPageController.page!
+                          : _currentUserIndex.toDouble();
+
+                      final offset = (pageValue - userIndex);
+                      final clamped = offset.clamp(-1.0, 1.0);
+
+                      // horizontal translation (parallax) - adjust multiplier for stronger/weaker effect
+                      final dx = clamped * MediaQuery.of(context).size.width * 0.6;
+
+                      // slight scale when moving between pages
+                      final scale = (1 - clamped.abs() * 0.06).clamp(0.94, 1.0);
+
+                      // subtle fade at edges
+                      final opacity = (1 - clamped.abs() * 0.4).clamp(0.0, 1.0);
+
+                      // select story content for this user (current user's active story, otherwise first)
+                      final StoryContent? storyContent = user.stories.isEmpty
+                          ? null
+                          : (userIndex == _currentUserIndex ? user.stories[_currentStoryIndex] : user.stories[0]);
+
+                      final pageChild = storyContent == null ? _buildEmptyStory(user) : _buildStoryContent(user, storyContent);
+
+                      return Transform.translate(
+                        offset: Offset(dx, 0),
+                        child: Transform.scale(
+                          scale: scale,
+                          alignment: Alignment.center,
+                          child: Opacity(
+                            opacity: opacity,
+                            child: pageChild,
+                          ),
+                        ),
+                      );
+                    },
                   );
-                }
-                
-                // For other users, show first story
-                return _buildStoryContent(user, user.stories[0]);
-              },
+                },
+              ),
             ),
 
             // Top gradient overlay
@@ -197,12 +272,20 @@ class _StoryViewerState extends State<StoryViewer>
               child: _buildProgressBars(),
             ),
 
-            // Header
+            // Header (updated: loading ring + avatar, username, 3-dot menu)
             Positioned(
               top: 65,
               left: 16,
               right: 16,
               child: _buildHeader(),
+            ),
+
+            // Bottom action bar (message input, like, share)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 24,
+              child: _buildBottomActions(),
             ),
           ],
         ),
@@ -264,31 +347,6 @@ class _StoryViewerState extends State<StoryViewer>
           fit: BoxFit.cover,
         ),
       ),
-      child: story.text != null
-          ? Container(
-              alignment: Alignment.bottomCenter,
-              padding: const EdgeInsets.all(24),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Text(
-                  story.text!,
-                  style: const TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            )
-          : null,
     );
   }
 
@@ -371,9 +429,29 @@ class _StoryViewerState extends State<StoryViewer>
     final user = widget.stories[_currentUserIndex];
     return Row(
       children: [
-        CircleAvatar(
-          radius: 20,
-          backgroundImage: NetworkImage(user.profileImage),
+        // Loading ring around avatar
+        SizedBox(
+          width: 44,
+          height: 44,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: CircularProgressIndicator(
+                  value: _progressController.isAnimating ? _progressController.value : null,
+                  strokeWidth: 2.8,
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.pureWhite),
+                  backgroundColor: AppColors.white40,
+                ),
+              ),
+              CircleAvatar(
+                radius: 18,
+                backgroundImage: NetworkImage(user.profileImage),
+              ),
+            ],
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -387,10 +465,12 @@ class _StoryViewerState extends State<StoryViewer>
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const Text(
+              Text(
                 'Just now',
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.white70,
                   fontSize: 12,
                 ),
@@ -398,13 +478,283 @@ class _StoryViewerState extends State<StoryViewer>
             ],
           ),
         ),
+        // 3-dot menu instead of close icon
         IconButton(
           icon: const Icon(
-            Icons.close,
+            Icons.more_vert,
             color: AppColors.pureWhite,
           ),
-          onPressed: _closeViewer,
+          onPressed: _showStoryOptions,
         ),
+      ],
+    );
+  }
+
+  Widget _buildBottomActions() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.45),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: AppColors.white40),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      style: const TextStyle(color: AppColors.pureWhite),
+                      decoration: const InputDecoration(
+                        hintText: 'Send message',
+                        hintStyle: TextStyle(color: AppColors.white60),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 10),
+                      ),
+                      onSubmitted: (text) {
+                        if (text.trim().isEmpty) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Message sent: $text'),
+                            backgroundColor: const Color(0xFFD4FC79),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Like button (toggles local state)
+          GestureDetector(
+            onTap: () => setState(() => _isLiked = !_isLiked),
+            child: Icon(
+              _isLiked ? Icons.favorite : Icons.favorite_border,
+              color: _isLiked ? Colors.red : AppColors.pureWhite,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Share icon
+          GestureDetector(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Share clicked'),
+                backgroundColor: Color(0xFFD4FC79),
+              ));
+            },
+            child: const Icon(Icons.send, color: AppColors.pureWhite, size: 24),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReelItem(DiscoverStory story) {
+    return GestureDetector(
+      onDoubleTap: () => _handleDoubleTap(story.id, story.isLiked),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background Image
+          Image.network(
+            story.imageUrl,
+            fit: BoxFit.cover,
+          ),
+
+          // Gradient overlays
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 300,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.8),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Top gradient
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.6),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Like animation
+          if (_showLikeAnimation)
+            Center(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 400),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Opacity(
+                      opacity: 1.0 - value,
+                      child: const Icon(
+                        Icons.favorite,
+                        color: Colors.white,
+                        size: 120,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+          // Full-width black bar with centered content (above bottom actions)
+          if (story.content.isNotEmpty) Positioned(
+            left: 0,
+            right: 0,
+            // place it above bottom actions (bottom actions use bottom: 24)
+            // tweak this value if you want the bar higher/lower
+            bottom: 110,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                height: 64,
+                color: Colors.black.withOpacity(0.9), // full black bar
+                alignment: Alignment.center,
+                child: Text(
+                  story.content,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.pureWhite,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ),
+
+          // Right side actions
+          Positioned(
+            right: 12,
+            bottom: 100,
+            child: _buildRightActions(story),
+          ),
+
+          // Bottom info
+          Positioned(
+            left: 16,
+            right: 80,
+            bottom: 100,
+            child: _buildBottomInfo(story),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleDoubleTap(String storyId, bool isLiked) {
+    // Toggle local like state and show the heart animation
+    setState(() {
+      _isLiked = !isLiked;
+      _showLikeAnimation = true;
+    });
+
+    // Hide animation after it finishes
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      setState(() {
+        _showLikeAnimation = false;
+      });
+    });
+
+    // TODO: Optionally notify repository or send like event for storyId.
+  }
+
+  Widget _buildRightActions(DiscoverStory story) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: () {
+            setState(() => _isLiked = !_isLiked);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(_isLiked ? 'Liked' : 'Unliked'),
+                backgroundColor: const Color(0xFFD4FC79),
+              ),
+            );
+          },
+          child: Icon(
+            (_isLiked || story.isLiked) ? Icons.favorite : Icons.favorite_border,
+            color: (_isLiked || story.isLiked) ? Colors.red : AppColors.pureWhite,
+            size: 32,
+          ),
+        ),
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Comment clicked'),
+              backgroundColor: Color(0xFFD4FC79),
+            ));
+          },
+          child: const Icon(Icons.comment, color: AppColors.pureWhite, size: 30),
+        ),
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Share clicked'),
+              backgroundColor: Color(0xFFD4FC79),
+            ));
+          },
+          child: const Icon(Icons.send, color: AppColors.pureWhite, size: 28),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomInfo(DiscoverStory story) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (story.content.isNotEmpty)
+          Text(
+            story.content,
+            style: const TextStyle(
+              color: AppColors.pureWhite,
+              fontSize: 14,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
       ],
     );
   }

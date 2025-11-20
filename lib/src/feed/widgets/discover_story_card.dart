@@ -54,8 +54,8 @@ class DiscoverStoryCard extends StatelessWidget {
                   story.username,
                   style: const TextStyle(
                     color: AppColors.pureWhite,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 15, // increased size
+                    fontWeight: FontWeight.w700, // explicit bold
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
