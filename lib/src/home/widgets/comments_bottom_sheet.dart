@@ -73,7 +73,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: EdgeInsets.only(bottom: keyboardHeight),
       decoration: const BoxDecoration(
         color: AppColors.black100,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

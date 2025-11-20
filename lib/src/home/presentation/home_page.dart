@@ -135,6 +135,9 @@ class _HomePageState extends State<HomePage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      enableDrag: true,
+      isDismissible: true,
+      useSafeArea: true,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
           // Check if comments are already cached
@@ -150,6 +153,7 @@ class _HomePageState extends State<HomePage> {
             initialChildSize: 0.7,
             minChildSize: 0.5,
             maxChildSize: 0.95,
+            expand: false,
             builder: (context, scrollController) => CommentsBottomSheet(
               comments: comments,
               isLoading: isLoading,
