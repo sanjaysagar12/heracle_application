@@ -22,9 +22,26 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
   final pages = [
     const HomePage(),
     CameraPage(),
-    FeedPage(),
+    const FeedPage(),
     const WorkoutPage(),
   ];
+
+  // Method to change tab programmatically
+  void _changeTab(int index) {
+    setState(() {
+      _index = index;
+    });
+  }
+
+  Widget _buildPage(int index) {
+    if (index == 2) {
+      // Feed page with callback to navigate to camera
+      return FeedPage(
+        onNavigateToCamera: () => _changeTab(1),
+      );
+    }
+    return pages[index];
+  }
 
   @override
   void initState() {
@@ -103,7 +120,7 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
         index: _index,
         children: pages.asMap().entries.map((entry) {
           int pageIndex = entry.key;
-          Widget page = entry.value;
+          Widget page = pageIndex == 2 ? _buildPage(pageIndex) : entry.value;
           
           // Wrap scrollable pages with ScrollController
           if (pageIndex == 0 || pageIndex == 3) { // HomePage and WorkoutPage
