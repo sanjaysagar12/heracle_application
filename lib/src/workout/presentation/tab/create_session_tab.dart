@@ -6,9 +6,15 @@ import '../../storage/workout_session_storage.dart';
 import 'select_workouts_tab.dart';
 
 class CreateSessionTab extends StatefulWidget {
-  final List<Map<String, String>> exercises;
+  final List<Map<String, String>>? exercises;
+  final Session? sessionToEdit; // Optional session to edit
 
-  const CreateSessionTab({super.key, required this.exercises});
+  const CreateSessionTab({
+    super.key,
+    this.exercises,
+    this.sessionToEdit,
+  }) : assert(exercises != null || sessionToEdit != null,
+            'Either exercises or sessionToEdit must be provided');
 
   @override
   State<CreateSessionTab> createState() => _CreateSessionTabState();
@@ -42,20 +48,48 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
   final TextEditingController _categoryController = TextEditingController();
   List<String> _existingCategories = [];
   bool _showCategorySuggestions = false;
+  bool get _isEditMode => widget.sessionToEdit != null;
 
   @override
   void initState() {
     super.initState();
     _loadExistingCategories();
-    _exerciseLogs = widget.exercises.map((e) {
-      return _ExerciseLog(
-        id: e['id'] ?? '',
-        name: e['name'] ?? '',
-        desc: e['desc'] ?? '',
-        image: e['image'] ?? '',
-        sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')), // start with 3 sets
-      );
-    }).toList();
+
+    if (_isEditMode) {
+      // Initialize with existing session data
+      final session = widget.sessionToEdit!;
+      _sessionNameController.text = session.title;
+      _categoryController.text = session.category;
+
+      _exerciseLogs = session.exercises.map((e) {
+        final existingSets = e['sets'] as List<dynamic>? ?? [];
+        final sets = existingSets.isNotEmpty
+            ? existingSets.map((s) => _SetLog(
+                kg: s['kg']?.toString() ?? '',
+                reps: s['reps']?.toString() ?? '',
+              )).toList()
+            : List.generate(3, (_) => _SetLog(kg: '', reps: ''));
+
+        return _ExerciseLog(
+          id: e['id']?.toString() ?? '',
+          name: e['name']?.toString() ?? '',
+          desc: e['desc']?.toString() ?? '',
+          image: e['image']?.toString() ?? '',
+          sets: sets,
+        );
+      }).toList();
+    } else {
+      // Initialize with new exercises
+      _exerciseLogs = (widget.exercises ?? []).map((e) {
+        return _ExerciseLog(
+          id: e['id'] ?? '',
+          name: e['name'] ?? '',
+          desc: e['desc'] ?? '',
+          image: e['image'] ?? '',
+          sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')), // start with 3 sets
+        );
+      }).toList();
+    }
   }
 
   Future<void> _loadExistingCategories() async {
@@ -123,7 +157,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
     }
   }
 
-  Future<void> _createSession() async {
+  Future<void> _saveSession() async {
     final sessionName = _sessionNameController.text.trim();
     final category = _categoryController.text.trim();
 
@@ -138,7 +172,6 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
     }
 
     // build Session from _exerciseLogs
-    final sessionId = DateTime.now().millisecondsSinceEpoch.toString();
     final exercises = _exerciseLogs.map((ex) {
       return {
         'id': ex.id,
@@ -150,22 +183,98 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
     }).toList();
 
     final session = Session(
-      id: sessionId,
+      id: _isEditMode ? widget.sessionToEdit!.id : DateTime.now().millisecondsSinceEpoch.toString(),
       title: sessionName,
-      content: 'Created from in-app workout',
+      content: _isEditMode ? widget.sessionToEdit!.content : 'Created from in-app workout',
       category: category,
       exercisesCount: exercises.length,
       exercises: exercises,
     );
 
     try {
-      await _sessionRepository.saveSessionToDb(session);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session created')));
-      // Pop both CreateSessionTab and SelectWorkoutsTab to return to WorkoutPage
-      Navigator.pop(context, true); // pop CreateSessionTab
-      Navigator.pop(context, true); // pop SelectWorkoutsTab
+      if (_isEditMode) {
+        await _sessionRepository.updateSession(session);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session updated successfully')));
+        Navigator.pop(context, true); // Return to previous screen with success indicator
+      } else {
+        await _sessionRepository.saveSessionToDb(session);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session created')));
+        // Pop both CreateSessionTab and SelectWorkoutsTab to return to WorkoutPage
+        Navigator.pop(context, true); // pop CreateSessionTab
+        Navigator.pop(context, true); // pop SelectWorkoutsTab
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_isEditMode ? 'Update' : 'Save'} failed: $e')));
+    }
+  }
+
+  Future<void> _handleDeleteExercise(_ExerciseLog exercise) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.black100,
+        title: const Text(
+          'Delete Exercise',
+          style: TextStyle(color: AppColors.pureWhite),
+        ),
+        content: Text(
+          'Are you sure you want to remove "${exercise.name}" from this session?',
+          style: const TextStyle(color: AppColors.white60),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.white60),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _exerciseLogs.removeWhere((ex) => ex.id == exercise.id);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Removed "${exercise.name}" from session')),
+      );
+    }
+  }
+
+  Future<void> _handleReplaceExercise(_ExerciseLog exercise) async {
+    final result = await Navigator.push<List<Map<String, String>>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SelectWorkoutsTab(mode: 'add'),
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      final selectedExercise = result.first;
+      setState(() {
+        final index = _exerciseLogs.indexWhere((ex) => ex.id == exercise.id);
+        if (index != -1) {
+          _exerciseLogs[index] = _ExerciseLog(
+            id: selectedExercise['id'] ?? '',
+            name: selectedExercise['name'] ?? '',
+            desc: selectedExercise['desc'] ?? '',
+            image: selectedExercise['image'] ?? '',
+            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')),
+          );
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Replaced with "${selectedExercise['name']}"')),
+      );
     }
   }
 
@@ -184,7 +293,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Create Session', style: TextStyle(color: AppColors.pureWhite)),
+        title: Text(_isEditMode ? 'Edit Session' : 'Create Session', style: const TextStyle(color: AppColors.pureWhite)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -304,22 +413,22 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
               );
             }).toList(),
             const SizedBox(height: 12),
-            // Create Session button
+            // Save Session button
             SizedBox(
               width: double.infinity,
+              height: 56,
               child: ElevatedButton(
-                onPressed: _createSession,
+                onPressed: _saveSession,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.save, color: Colors.black, size: 20),
-                    SizedBox(width: 8),
-                    Text('Create Session', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+                  children: [
+                    const Icon(Icons.save, color: Colors.black, size: 20),
+                    const SizedBox(width: 8),
+                    Text(_isEditMode ? 'Save Session' : 'Create Session', style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
                   ],
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: const StadiumBorder(),
                 ),
               ),
@@ -328,13 +437,13 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
             // Add Workout button
             SizedBox(
               width: double.infinity,
+              height: 56,
               child: ElevatedButton.icon(
                 onPressed: _addWorkout,
                 icon: const Icon(Icons.add, color: AppColors.primary),
                 label: const Text('Add Workout', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.black100,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: const StadiumBorder(),
                   elevation: 0,
                 ),
@@ -344,12 +453,12 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
             // Discard Workout button
             SizedBox(
               width: double.infinity,
+              height: 56,
               child: ElevatedButton(
                 onPressed: _discardWorkout,
-                child: const Text('Discard Workout', style: TextStyle(color: Colors.red)),
+                child: const Text('Discard Workout', style: TextStyle(color: Colors.red, fontSize: 16)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.black100,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: const StadiumBorder(),
                   elevation: 0,
                 ),
@@ -383,7 +492,53 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                   Text(ex.desc, style: const TextStyle(color: AppColors.white60, fontSize: 12)),
                 ]),
               ),
-              IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz, color: AppColors.white60)),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'replace':
+                      _handleReplaceExercise(ex);
+                      break;
+                    case 'delete':
+                      _handleDeleteExercise(ex);
+                      break;
+                  }
+                },
+                color: AppColors.black100,
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppColors.greyDark),
+                ),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'replace',
+                    child: Row(
+                      children: [
+                        Icon(Icons.swap_horiz, color: AppColors.white60, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Replace Exercise',
+                          style: TextStyle(color: AppColors.pureWhite),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Delete Exercise',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                icon: const Icon(Icons.more_horiz, color: AppColors.white60),
+              ),
             ],
           ),
           const SizedBox(height: 12),

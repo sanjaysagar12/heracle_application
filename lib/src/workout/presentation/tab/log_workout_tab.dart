@@ -207,6 +207,76 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
     }
   }
 
+  Future<void> _handleDeleteExercise(_ExerciseLog exercise) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.black100,
+        title: const Text(
+          'Delete Exercise',
+          style: TextStyle(color: AppColors.pureWhite),
+        ),
+        content: Text(
+          'Are you sure you want to remove "${exercise.name}" from this workout?',
+          style: const TextStyle(color: AppColors.white60),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.white60),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _exerciseLogs.removeWhere((ex) => ex.id == exercise.id);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Removed "${exercise.name}" from workout')),
+      );
+    }
+  }
+
+  Future<void> _handleReplaceExercise(_ExerciseLog exercise) async {
+    final result = await Navigator.push<List<Map<String, String>>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SelectWorkoutsTab(mode: 'add'),
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      final selectedExercise = result.first;
+      setState(() {
+        final index = _exerciseLogs.indexWhere((ex) => ex.id == exercise.id);
+        if (index != -1) {
+          _exerciseLogs[index] = _ExerciseLog(
+            id: selectedExercise['id'] ?? '',
+            name: selectedExercise['name'] ?? '',
+            desc: selectedExercise['desc'] ?? '',
+            image: selectedExercise['image'] ?? '',
+            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')),
+          );
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Replaced with "${selectedExercise['name']}"')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -253,6 +323,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
             // Finish Session button
             SizedBox(
               width: double.infinity,
+              height: 56,
               child: ElevatedButton(
                 onPressed: _finishSession,
                 child: Row(
@@ -269,7 +340,6 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: const StadiumBorder(),
                 ),
               ),
@@ -278,13 +348,13 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
             // Add Workout button
             SizedBox(
               width: double.infinity,
+              height: 56,
               child: ElevatedButton.icon(
                 onPressed: _addWorkout,
                 icon: const Icon(Icons.add, color: AppColors.primary),
                 label: const Text('Add Workout', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.black100,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: const StadiumBorder(),
                   elevation: 0,
                 ),
@@ -294,12 +364,12 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
             // Discard Workout button
             SizedBox(
               width: double.infinity,
+              height: 56,
               child: ElevatedButton(
                 onPressed: _discardWorkout,
-                child: const Text('Discard Workout', style: TextStyle(color: Colors.red)),
+                child: const Text('Discard Workout', style: TextStyle(color: Colors.red, fontSize: 16)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.black100,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: const StadiumBorder(),
                   elevation: 0,
                 ),
@@ -350,7 +420,53 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                   Text(ex.desc, style: const TextStyle(color: AppColors.white60, fontSize: 12)),
                 ]),
               ),
-              IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz, color: AppColors.white60)),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'replace':
+                      _handleReplaceExercise(ex);
+                      break;
+                    case 'delete':
+                      _handleDeleteExercise(ex);
+                      break;
+                  }
+                },
+                color: AppColors.black100,
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppColors.greyDark),
+                ),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'replace',
+                    child: Row(
+                      children: [
+                        Icon(Icons.swap_horiz, color: AppColors.white60, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Replace Exercise',
+                          style: TextStyle(color: AppColors.pureWhite),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Delete Exercise',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                icon: const Icon(Icons.more_horiz, color: AppColors.white60),
+              ),
             ],
           ),
           const SizedBox(height: 12),

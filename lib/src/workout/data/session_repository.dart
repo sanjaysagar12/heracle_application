@@ -77,7 +77,15 @@ class SessionRepository {
     await _logsStorage.deleteWorkoutLog(id);
   }
 
+  Future<void> deleteSession(String id) async {
+    await _sessionStorage.deleteSession(id);
+  }
+
   Future<Map<String, dynamic>> getWorkoutLogStats() async {
     return await _logsStorage.getWorkoutLogStats();
+  }
+
+  Future<void> updateSession(Session session) async {
+    await _sessionStorage.updateSession(session);
   }
 }

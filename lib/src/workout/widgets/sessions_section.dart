@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/session_repository.dart';
 import '../presentation/tab/log_workout_tab.dart';
+import '../presentation/tab/create_session_tab.dart';
 
 class SessionsSection extends StatefulWidget {
   final SessionRepository? repository;
@@ -38,6 +39,78 @@ class _SessionsSectionState extends State<SessionsSection> {
     _loadFuture();
     await _sessionsFuture;
     setState(() {});
+  }
+
+  Future<void> _handleEditSession(Session session) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CreateSessionTab(sessionToEdit: session),
+      ),
+    );
+    
+    if (result == true) {
+      // Refresh the sessions list after successful edit
+      _loadFuture();
+      setState(() {});
+    }
+  }
+
+  Future<void> _handleDeleteSession(Session session) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.black100,
+        title: const Text(
+          'Delete Session',
+          style: TextStyle(color: AppColors.pureWhite),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${session.title}"? This action cannot be undone.',
+          style: const TextStyle(color: AppColors.white60),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.white60),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final repo = widget.repository ?? SessionRepository();
+        await repo.deleteSession(session.id);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Deleted "${session.title}"')),
+          );
+
+          // Refresh the sessions list
+          _loadFuture();
+          setState(() {});
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete session: $e')),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -157,8 +230,51 @@ class _SessionsSectionState extends State<SessionsSection> {
                   ],
                 ),
               ),
-              IconButton(
-                onPressed: () {},
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      _handleEditSession(s);
+                      break;
+                    case 'delete':
+                      _handleDeleteSession(s);
+                      break;
+                  }
+                },
+                color: AppColors.black100,
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppColors.greyDark),
+                ),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, color: AppColors.white60, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Edit Session',
+                          style: TextStyle(color: AppColors.pureWhite),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Delete Session',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 icon: const Icon(Icons.more_horiz, color: AppColors.white60),
               ),
             ],
