@@ -196,9 +196,9 @@ class MutualFeedService {
   }
 
   Future<List<Map<String, dynamic>>> getPostComments(String postId) async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 300));
-
+    // Simulate API delay for testing
+    await Future.delayed(const Duration(seconds: 2));
+    
     // Return mock comments based on post ID
     if (postId == '1') {
       return [
@@ -259,9 +259,9 @@ class MutualFeedService {
   }
 
   Future<Map<String, dynamic>> addComment(String postId, String content) async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 300));
-
+    // Simulate API delay for testing
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
     // Return mock comment
     return {
       'id': 'c${DateTime.now().millisecondsSinceEpoch}',
@@ -280,9 +280,9 @@ class MutualFeedService {
     String commentId,
     String content,
   ) async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 300));
-
+    // Simulate API delay for testing
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
     // Return mock reply
     return {
       'id': 'r${DateTime.now().millisecondsSinceEpoch}',
