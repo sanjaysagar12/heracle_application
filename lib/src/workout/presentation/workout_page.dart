@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../widgets/app_bar.dart';
 import '../../home/data/profile_repository.dart';
 import '../../../core/theme/app_colors.dart';
-import '../widgets/bar_chart_card.dart';
+import '../widgets/bar_chart_widget.dart';
 import '../data/progress_repository.dart'; // new import
 import './tab/select_workouts_tab.dart'; // navigation target
 import '../widgets/sessions_section.dart'; // added
@@ -18,15 +18,15 @@ class WorkoutPage extends StatefulWidget {
 
 class _WorkoutPageState extends State<WorkoutPage> {
   final ProfileRepository _profileRepository = ProfileRepository();
-  final ProgressRepository _progressRepository = ProgressRepository(); // new repo
+  final ProgressRepository _progressRepository = ProgressRepository();
   Profile? _profile;
   bool _isLoading = true;
-  List<BarData> _weeklyBarData = []; // will be filled from repository
+  List<ChartData> _chartData = [];
 
   @override
   void initState() {
     super.initState();
-    _loadData(); // fetch profile + weekly data
+    _loadData();
   }
 
   Future<void> _loadData() async {
@@ -34,21 +34,44 @@ class _WorkoutPageState extends State<WorkoutPage> {
       final results = await Future.wait([
         _profileRepository.getProfile(),
         _progressRepository.getWeeklyActivity(),
+        _progressRepository.getTodayNutrition(),
+        _progressRepository.getMonthlyProgress(),
       ]);
 
       final profile = results[0] as Profile;
       final weeklyValues = results[1] as List<double>;
+      final nutritionValues = results[2] as Map<String, double>;
+      final monthlyValues = results[3] as List<double>;
 
-      // Map weekly values to BarData with labels Mon..Sun
-      const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      final barData = List<BarData>.generate(
-        weeklyValues.length,
-        (i) => BarData(label: labels.length > i ? labels[i] : 'Day${i+1}', value: weeklyValues[i]),
+      const weeklyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const monthlyLabels = ['W1', 'W2', 'W3', 'W4'];
+
+      final weeklyData = ChartData(
+        title: 'Weekly Activity',
+        data: List.generate(weeklyValues.length, (i) => BarData(label: weeklyLabels[i], value: weeklyValues[i])),
+        type: ChartType.bar,
+      );
+
+      final nutritionData = ChartData(
+        title: "Today's Nutrition",
+        data: [
+          BarData(label: 'Calories', value: nutritionValues['calories']!),
+          BarData(label: 'Protein', value: nutritionValues['protein']!),
+          BarData(label: 'Carbs', value: nutritionValues['carbs']!),
+          BarData(label: 'Fats', value: nutritionValues['fats']!),
+        ],
+        type: ChartType.pie,
+      );
+
+      final monthlyData = ChartData(
+        title: 'Monthly Progress',
+        data: List.generate(monthlyValues.length, (i) => BarData(label: monthlyLabels[i], value: monthlyValues[i])),
+        type: ChartType.area,
       );
 
       setState(() {
         _profile = profile;
-        _weeklyBarData = barData;
+        _chartData = [weeklyData, nutritionData, monthlyData];
         _isLoading = false;
       });
     } catch (_) {
@@ -71,11 +94,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       age: _profile!.age,
                       profileImageUrl: _profile!.profileImageUrl,
                     ),
-                  // bar chart card showing weekly data (uses fetched data)
-                  BarChartCard(
-                    title: 'Weekly Activity',
-                    data: _weeklyBarData,
-                  ),
+                  // bar chart carousel showing multiple progress charts
+                  BarChartCard(charts: _chartData),
                   const SizedBox(height: 16),
                   // Action buttons
                   Padding(
@@ -83,33 +103,33 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     child: Column(
                       children: [
                         // View Workout Logs button
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const WorkoutLogsTab()),
-                              );
-                            },
-                            icon: const Icon(Icons.history, color: AppColors.primary, size: 20),
-                            label: const Text(
-                              'View Workout History',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.primary, width: 1.6),
-                              minimumSize: const Size.fromHeight(48),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: const StadiumBorder(),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
+                        // SizedBox(
+                        //   width: double.infinity,
+                        //   child: OutlinedButton.icon(
+                        //     onPressed: () {
+                        //       Navigator.push(
+                        //         context,
+                        //         MaterialPageRoute(builder: (_) => const WorkoutLogsTab()),
+                        //       );
+                        //     },
+                        //     icon: const Icon(Icons.history, color: AppColors.primary, size: 20),
+                        //     label: const Text(
+                        //       'View Workout History',
+                        //       style: TextStyle(
+                        //         color: AppColors.primary,
+                        //         fontSize: 16,
+                        //         fontWeight: FontWeight.w600,
+                        //       ),
+                        //     ),
+                        //     style: OutlinedButton.styleFrom(
+                        //       side: const BorderSide(color: AppColors.primary, width: 1.6),
+                        //       minimumSize: const Size.fromHeight(48),
+                        //       padding: const EdgeInsets.symmetric(vertical: 12),
+                        //       shape: const StadiumBorder(),
+                        //     ),
+                        //   ),
+                        // ),
+                        // const SizedBox(height: 10),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
