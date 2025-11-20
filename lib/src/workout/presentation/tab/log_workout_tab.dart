@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
 import 'select_workouts_tab.dart';
@@ -213,7 +214,11 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
         backgroundColor: AppColors.black,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.pureWhite),
+          icon: SvgPicture.asset(
+            'assets/icons/back.svg',
+            width: 24,
+            height: 24,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(widget.sessionName ?? 'Log Workout', style: const TextStyle(color: AppColors.pureWhite)),

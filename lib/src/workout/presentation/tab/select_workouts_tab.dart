@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'log_workout_tab.dart';
 import 'create_session_tab.dart';
@@ -82,7 +83,11 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
         backgroundColor: AppColors.black,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.pureWhite),
+          icon: SvgPicture.asset(
+            'assets/icons/back.svg',
+            width: 24,
+            height: 24,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Select Workouts', style: TextStyle(color: AppColors.pureWhite)),
@@ -102,7 +107,7 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
                     hintStyle: const TextStyle(color: AppColors.white60),
                     filled: true,
                     fillColor: AppColors.black100,
-                    prefixIcon: const Icon(Icons.search, color: AppColors.white60),
+                    suffixIcon: const Icon(Icons.search, color: AppColors.white60),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
                     contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                   ),

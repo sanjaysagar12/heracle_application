@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
 import '../../storage/workout_session_storage.dart';
@@ -175,7 +176,11 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
         backgroundColor: AppColors.black,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.pureWhite),
+          icon: SvgPicture.asset(
+            'assets/icons/back.svg',
+            width: 24,
+            height: 24,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Create Session', style: TextStyle(color: AppColors.pureWhite)),
