@@ -74,19 +74,18 @@ class _HomePageState extends State<HomePage> {
       final newComment = await _mutualFeedRepository.addComment(postId, content);
       
       setState(() {
-        // Add comment to cache
-        _commentsCache[postId] = [...(_commentsCache[postId] ?? []), newComment];
-        
-        // Increment comment count in post
-        _posts = _posts.map((post) {
-          if (post.id == postId) {
-            return post.copyWith(commentCount: post.commentCount + 1);
-          }
-          return post;
-        }).toList();
+        // Replace temporary comment with real comment from API
+        _commentsCache[postId] = _replaceTemporaryComment(
+          _commentsCache[postId] ?? [],
+          newComment,
+        );
       });
     } catch (e) {
-      print('Error adding comment: $e');
+      // Remove temporary comment on error
+      setState(() {
+        _commentsCache[postId] = _removeTemporaryComments(_commentsCache[postId] ?? []);
+      });
+      rethrow; // Re-throw to let CommentsBottomSheet handle the error
     }
   }
 
@@ -95,16 +94,111 @@ class _HomePageState extends State<HomePage> {
       final newReply = await _mutualFeedRepository.addReply(postId, commentId, content);
       
       setState(() {
-        // Add reply to the comment in cache
-        _commentsCache[postId] = _addReplyToComment(
+        // Replace temporary reply with real reply from API
+        _commentsCache[postId] = _replaceTemporaryReply(
           _commentsCache[postId] ?? [],
-          commentId,
           newReply,
         );
       });
     } catch (e) {
-      print('Error adding reply: $e');
+      // Remove temporary reply on error
+      setState(() {
+        _commentsCache[postId] = _removeTemporaryReplies(_commentsCache[postId] ?? []);
+      });
+      rethrow; // Re-throw to let CommentsBottomSheet handle the error
     }
+  }
+
+  List<Comment> _replaceTemporaryComment(List<Comment> comments, Comment newComment) {
+    // Find and replace the last temporary comment with the real one
+    for (int i = comments.length - 1; i >= 0; i--) {
+      if (comments[i].id.startsWith('temp_')) {
+        comments[i] = newComment;
+        break;
+      }
+    }
+    return comments;
+  }
+
+  List<Comment> _replaceTemporaryReply(List<Comment> comments, Comment newReply) {
+    return comments.map((comment) {
+      // Check if this comment has temporary replies
+      if (comment.replies.any((reply) => reply.id.startsWith('temp_'))) {
+        final updatedReplies = [...comment.replies];
+        for (int i = updatedReplies.length - 1; i >= 0; i--) {
+          if (updatedReplies[i].id.startsWith('temp_')) {
+            updatedReplies[i] = newReply;
+            break;
+          }
+        }
+        return Comment(
+          id: comment.id,
+          username: comment.username,
+          handle: comment.handle,
+          profileImage: comment.profileImage,
+          timeAgo: comment.timeAgo,
+          content: comment.content,
+          replies: updatedReplies,
+        );
+      }
+      
+      // Recursively check nested replies
+      if (comment.replies.isNotEmpty) {
+        return Comment(
+          id: comment.id,
+          username: comment.username,
+          handle: comment.handle,
+          profileImage: comment.profileImage,
+          timeAgo: comment.timeAgo,
+          content: comment.content,
+          replies: _replaceTemporaryReply(comment.replies, newReply),
+        );
+      }
+      
+      return comment;
+    }).toList();
+  }
+
+  List<Comment> _removeTemporaryComments(List<Comment> comments) {
+    return comments.where((comment) => !comment.id.startsWith('temp_')).toList();
+  }
+
+  List<Comment> _removeTemporaryReplies(List<Comment> comments) {
+    return comments.map((comment) => Comment(
+      id: comment.id,
+      username: comment.username,
+      handle: comment.handle,
+      profileImage: comment.profileImage,
+      timeAgo: comment.timeAgo,
+      content: comment.content,
+      replies: comment.replies.where((reply) => !reply.id.startsWith('temp_')).toList(),
+    )).toList();
+  }
+
+  void _handleOptimisticCommentAdd(String postId, Comment comment) {
+    setState(() {
+      // Add comment to cache optimistically
+      _commentsCache[postId] = [...(_commentsCache[postId] ?? []), comment];
+      
+      // Increment comment count in post optimistically
+      _posts = _posts.map((post) {
+        if (post.id == postId) {
+          return post.copyWith(commentCount: post.commentCount + 1);
+        }
+        return post;
+      }).toList();
+    });
+  }
+
+  void _handleOptimisticReplyAdd(String postId, String commentId, Comment reply) {
+    setState(() {
+      // Add reply to the comment in cache optimistically
+      _commentsCache[postId] = _addReplyToComment(
+        _commentsCache[postId] ?? [],
+        commentId,
+        reply,
+      );
+    });
   }
 
   List<Comment> _addReplyToComment(List<Comment> comments, String commentId, Comment newReply) {
@@ -163,6 +257,14 @@ class _HomePageState extends State<HomePage> {
               },
               onAddReply: (commentId, content) async {
                 await _handleAddReply(postId, commentId, content);
+                setModalState(() {}); // Update modal state
+              },
+              onOptimisticCommentAdd: (comment) {
+                _handleOptimisticCommentAdd(postId, comment);
+                setModalState(() {}); // Update modal state
+              },
+              onOptimisticReplyAdd: (commentId, reply) {
+                _handleOptimisticReplyAdd(postId, commentId, reply);
                 setModalState(() {}); // Update modal state
               },
             ),

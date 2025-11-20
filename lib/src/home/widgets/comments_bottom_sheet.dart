@@ -3,10 +3,12 @@ import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
 
 class CommentsBottomSheet extends StatefulWidget {
-  final List<Comment>? comments; // Make nullable
+  final List<Comment>? comments;
   final Future<void> Function(String) onAddComment;
   final Future<void> Function(String, String) onAddReply;
   final bool isLoading;
+  final Function(Comment)? onOptimisticCommentAdd; // Add this
+  final Function(String, Comment)? onOptimisticReplyAdd; // Add this
 
   const CommentsBottomSheet({
     super.key,
@@ -14,6 +16,8 @@ class CommentsBottomSheet extends StatefulWidget {
     required this.onAddComment,
     required this.onAddReply,
     this.isLoading = false,
+    this.onOptimisticCommentAdd, // Add this
+    this.onOptimisticReplyAdd, // Add this
   });
 
   @override
@@ -25,6 +29,21 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   String? _replyingToId;
   String? _replyingToUsername;
   bool _isAddingComment = false;
+  List<Comment> _localComments = []; // Add this for local state
+
+  @override
+  void initState() {
+    super.initState();
+    _localComments = List.from(widget.comments ?? []);
+  }
+
+  @override
+  void didUpdateWidget(CommentsBottomSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.comments != oldWidget.comments && widget.comments != null) {
+      _localComments = List.from(widget.comments!);
+    }
+  }
 
   @override
   void dispose() {
@@ -42,12 +61,71 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
     try {
       if (_replyingToId != null) {
+        // Create optimistic reply
+        final optimisticReply = Comment(
+          id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+          username: 'Eren Yeager',
+          handle: '@eren_yeager',
+          profileImage: 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
+          timeAgo: 'Just now',
+          content: content,
+          replies: [],
+        );
+
+        // Update UI optimistically
+        setState(() {
+          _localComments = _addReplyToCommentLocal(_localComments, _replyingToId!, optimisticReply);
+        });
+
+        // Call parent callback for optimistic update
+        if (widget.onOptimisticReplyAdd != null) {
+          widget.onOptimisticReplyAdd!(_replyingToId!, optimisticReply);
+        }
+
+        // Make API call
         await widget.onAddReply(_replyingToId!, content);
         _cancelReply();
       } else {
+        // Create optimistic comment
+        final optimisticComment = Comment(
+          id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+          username: 'Eren Yeager',
+          handle: '@eren_yeager',
+          profileImage: 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
+          timeAgo: 'Just now',
+          content: content,
+          replies: [],
+        );
+
+        // Update UI optimistically
+        setState(() {
+          _localComments = [..._localComments, optimisticComment];
+        });
+
+        // Call parent callback for optimistic update
+        if (widget.onOptimisticCommentAdd != null) {
+          widget.onOptimisticCommentAdd!(optimisticComment);
+        }
+
+        // Make API call
         await widget.onAddComment(content);
       }
       _commentController.clear();
+    } catch (e) {
+      // Revert optimistic update on error
+      setState(() {
+        _localComments = List.from(widget.comments ?? []);
+      });
+      
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to post comment: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -55,6 +133,26 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         });
       }
     }
+  }
+
+  List<Comment> _addReplyToCommentLocal(List<Comment> comments, String commentId, Comment newReply) {
+    return comments.map((comment) {
+      if (comment.id == commentId) {
+        return comment.copyWithReply(newReply);
+      }
+      if (comment.replies.isNotEmpty) {
+        return Comment(
+          id: comment.id,
+          username: comment.username,
+          handle: comment.handle,
+          profileImage: comment.profileImage,
+          timeAgo: comment.timeAgo,
+          content: comment.content,
+          replies: _addReplyToCommentLocal(comment.replies, commentId, newReply),
+        );
+      }
+      return comment;
+    }).toList();
   }
 
   void _startReply(String commentId, String username) {
@@ -88,7 +186,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           Expanded(
             child: widget.isLoading
                 ? _buildSkeletonLoading()
-                : (widget.comments?.isEmpty ?? true)
+                : (_localComments.isEmpty)
                     ? const Center(
                         child: Text(
                           'No comments yet\nBe the first to comment!',
@@ -101,9 +199,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        itemCount: widget.comments?.length ?? 0,
+                        itemCount: _localComments.length,
                         itemBuilder: (context, index) {
-                          return _buildCommentItem(widget.comments![index], 0);
+                          return _buildCommentItem(_localComments[index], 0);
                         },
                       ),
           ),
