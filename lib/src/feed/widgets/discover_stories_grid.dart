@@ -21,7 +21,7 @@ class DiscoverStoriesGrid extends StatelessWidget {
           crossAxisCount: 2,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          childAspectRatio: 0.75,
+          childAspectRatio: 0.6, // reverted back to previous taller ratio
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {

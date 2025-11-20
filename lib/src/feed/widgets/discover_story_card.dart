@@ -42,12 +42,19 @@ class DiscoverStoryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // Username
+                // Profile avatar
+                CircleAvatar(
+                  radius: 16,
+                  backgroundImage: NetworkImage(story.profileImage),
+                ),
+                const SizedBox(height: 8),
+                
+                // Username (bold, directly under profile)
                 Text(
                   story.username,
                   style: const TextStyle(
                     color: AppColors.pureWhite,
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
                   maxLines: 1,
@@ -55,36 +62,31 @@ class DiscoverStoryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 
-                // Description
-                Text(
-                  story.content,
-                  style: TextStyle(
-                    color: AppColors.pureWhite.withOpacity(0.9),
-                    fontSize: 12,
-                  ),
-                  maxLines: 2,
+                // Description with hashtag inline
+                RichText(
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                ),
-                
-                // Hashtags
-                if (story.hashtags.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: story.hashtags
-                        .take(3) // Limit to 3 hashtags
-                        .map((tag) => Text(
-                              '#$tag',
-                              style: TextStyle(
-                                color: AppColors.pureWhite.withOpacity(0.8),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ))
-                        .toList(),
+                  text: TextSpan(
+                    style: TextStyle(
+                      color: AppColors.pureWhite.withOpacity(0.9),
+                      fontSize: 11,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: story.content.length > 25 
+                            ? '${story.content.substring(0, 25)}... '
+                            : '${story.content} ',
+                      ),
+                      if (story.hashtags.isNotEmpty)
+                        TextSpan(
+                          text: '#${story.hashtags.first}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
