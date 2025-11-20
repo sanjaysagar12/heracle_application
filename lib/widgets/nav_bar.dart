@@ -15,7 +15,7 @@ class FloatingNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
       child: Align(
         alignment: Alignment.bottomCenter,
         child: Container(
@@ -23,6 +23,13 @@ class FloatingNavBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.black,
             borderRadius: BorderRadius.circular(40),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

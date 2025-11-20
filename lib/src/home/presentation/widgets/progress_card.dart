@@ -55,11 +55,11 @@ class TodayProgressCard extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               SizedBox(
-                width: 60,
-                height: 60,
+                width: 50,
+                height: 50,
                 child: CircularProgressIndicator(
                   value: 0.7,
-                  strokeWidth: 4,
+                  strokeWidth: 3,
                   backgroundColor: AppColors.greyDark,
                   valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
@@ -67,7 +67,7 @@ class TodayProgressCard extends StatelessWidget {
               const Icon(
                 Icons.fitness_center,
                 color: AppColors.primary,
-                size: 28,
+                size: 24,
               ),
             ],
           ),
@@ -80,7 +80,7 @@ class TodayProgressCard extends StatelessWidget {
                   'Workout Progress',
                   style: TextStyle(
                     color: AppColors.pureWhite,
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -88,7 +88,7 @@ class TodayProgressCard extends StatelessWidget {
                   '$workoutsLeft Workouts left',
                   style: const TextStyle(
                     color: AppColors.white60,
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -99,12 +99,13 @@ class TodayProgressCard extends StatelessWidget {
               // Navigate to Biceps workout
             },
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
                   'Biceps',
                   style: TextStyle(
                     color: AppColors.primary,
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -114,7 +115,7 @@ class TodayProgressCard extends StatelessWidget {
                   child: const Icon(
                     Icons.arrow_forward,
                     color: AppColors.primary,
-                    size: 20,
+                    size: 18,
                   ),
                 ),
               ],
@@ -129,41 +130,46 @@ class TodayProgressCard extends StatelessWidget {
     final displayValue = unit.isNotEmpty ? '$value$unit' : value.toString();
     
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.black100,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             displayValue,
             style: const TextStyle(
               color: AppColors.pureWhite,
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             label,
             style: const TextStyle(
               color: AppColors.white60,
-              fontSize: 11,
+              fontSize: 10,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Center(
             child: Stack(
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: 48,
-                  height: 48,
+                  width: 40,
+                  height: 40,
                   child: CircularProgressIndicator(
                     value: isHighlighted ? 0.65 : 0,
-                    strokeWidth: 3,
+                    strokeWidth: 2.5,
                     backgroundColor: AppColors.greyLight,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       isHighlighted ? AppColors.primary : AppColors.greyLight,
@@ -173,7 +179,7 @@ class TodayProgressCard extends StatelessWidget {
                 Icon(
                   icon,
                   color: isHighlighted ? AppColors.primary : AppColors.white40,
-                  size: 24,
+                  size: 20,
                 ),
               ],
             ),
