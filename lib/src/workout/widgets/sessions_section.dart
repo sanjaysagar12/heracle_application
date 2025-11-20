@@ -166,14 +166,42 @@ class _SessionsSectionState extends State<SessionsSection> {
           const SizedBox(height: 12),
           Row(
             children: [
-              ...images.take(3).map((a) => Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: CircleAvatar(radius: 12, backgroundImage: NetworkImage(a)),
-              )),
+              if (images.isNotEmpty)
+                SizedBox(
+                  width: 70,
+                  height: 28,
+                  child: Stack(
+                    children: images.take(3).toList().asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final imageUrl = entry.value;
+                      return Positioned(
+                        left: index * 20.0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.black100, width: 2),
+                          ),
+                          child: CircleAvatar(
+                            radius: 14,
+                            backgroundImage: NetworkImage(imageUrl),
+                            backgroundColor: AppColors.greyDark,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
               if (images.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(right: 6),
-                  child: CircleAvatar(radius: 12, backgroundColor: AppColors.greyDark, child: Icon(Icons.fitness_center, color: AppColors.white60, size: 14)),
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.black100, width: 2),
+                  ),
+                  child: const CircleAvatar(
+                    radius: 14,
+                    backgroundColor: AppColors.greyDark,
+                    child: Icon(Icons.fitness_center, color: AppColors.white60, size: 14),
+                  ),
                 ),
               const SizedBox(width: 8),
               Text('${s.exercisesCount} exercises', style: const TextStyle(color: AppColors.white60)),
@@ -209,7 +237,7 @@ class _SessionsSectionState extends State<SessionsSection> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: const StadiumBorder(),
               ),
               child: const Text(
                 'Start Session',
