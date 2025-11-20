@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/stories_repository.dart';
+import '../../data/stories_repository.dart';
 import 'discover_story_card.dart';
 
 class DiscoverStoriesGrid extends StatelessWidget {

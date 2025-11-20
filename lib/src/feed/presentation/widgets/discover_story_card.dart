@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
-import '../data/stories_repository.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../data/stories_repository.dart';
 
 class DiscoverStoryCard extends StatelessWidget {
   final DiscoverStory story;

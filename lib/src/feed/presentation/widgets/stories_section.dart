@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/stories_repository.dart';
+import '../../data/stories_repository.dart';
 import 'story_avatar.dart';
 
 class StoriesSection extends StatelessWidget {

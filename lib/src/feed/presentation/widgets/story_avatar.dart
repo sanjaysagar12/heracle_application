@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class StoryAvatar extends StatelessWidget {
   final String imageUrl;
@@ -37,8 +37,8 @@ class StoryAvatar extends StatelessWidget {
                     gradient: hasStory && !isViewed
                         ? const LinearGradient(
                             colors: [
-                              Color(0xFFD4FC79),
-                              Color(0xFF96E6A1),
+                              Color(0xFFBAE014),
+                              Color(0xFFBAE014),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -78,7 +78,7 @@ class StoryAvatar extends StatelessWidget {
                       height: 24,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Color(0xFFD4FC79),
+                        color: Color(0xFFBAE014),
                       ),
                       child: const Icon(
                         Icons.add,
