@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../home/widgets/comments_bottom_sheet.dart';
 import '../../data/stories_repository.dart';
-// import Home comments widget and mutual feed types/repo
-import '../../../home/presentation/widgets/comments_bottom_sheet.dart';
 import '../../../home/data/mutual_feed_repository.dart';
 
 class ReelsTab extends StatefulWidget {
