@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/stories_repository.dart';
+// import Home comments widget and mutual feed types/repo
+import '../../../home/presentation/widgets/comments_bottom_sheet.dart';
+import '../../../home/data/mutual_feed_repository.dart';
 
 class ReelsTab extends StatefulWidget {
   final List<DiscoverStory> stories;
@@ -23,6 +26,10 @@ class _ReelsTabState extends State<ReelsTab> {
   int _currentIndex = 0;
   bool _showLikeAnimation = false;
   late List<DiscoverStory> _stories;
+
+  // Added: mutual feed repo and comments cache to reuse Home comments UI
+  final MutualFeedRepository _mutualFeedRepository = MutualFeedRepository();
+  final Map<String, List<Comment>> _commentsCache = {};
 
   @override
   void initState() {
@@ -71,35 +78,102 @@ class _ReelsTabState extends State<ReelsTab> {
     });
   }
 
-  void _showComments(DiscoverStory story) {
+  void _showMoreOptions(DiscoverStory story) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => _buildCommentsSheet(story),
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.black100,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: _buildMoreOptionsSheet(story),
+      ),
     );
   }
 
   void _showShareOptions(DiscoverStory story) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.black100,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.black100,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: _buildShareSheet(story),
       ),
-      builder: (context) => _buildShareSheet(story),
     );
   }
 
-  void _showMoreOptions(DiscoverStory story) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.black100,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _buildMoreOptionsSheet(story),
-    );
+  Future<void> _showComments(DiscoverStory story) async {
+    try {
+      // Fetch comments once and cache them
+      if (!_commentsCache.containsKey(story.id)) {
+        final comments = await _mutualFeedRepository.getPostComments(story.id);
+        _commentsCache[story.id] = comments;
+      }
+      
+      if (!mounted) return;
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setModalState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.7,
+              minChildSize: 0.5,
+              maxChildSize: 0.95,
+              builder: (context, scrollController) => CommentsBottomSheet(
+                comments: _commentsCache[story.id] ?? [],
+                onAddComment: (content) async {
+                  // Add comment via repo and update cache + UI
+                  final newComment = await _mutualFeedRepository.addComment(story.id, content);
+                  setState(() {
+                    _commentsCache[story.id] = [...(_commentsCache[story.id] ?? []), newComment];
+                  });
+                  setModalState(() {}); // refresh modal content
+                },
+                onAddReply: (commentId, content) async {
+                  final newReply = await _mutualFeedRepository.addReply(story.id, commentId, content);
+                  setState(() {
+                    final current = _commentsCache[story.id] ?? [];
+                    _commentsCache[story.id] = _addReplyToComment(current, commentId, newReply);
+                  });
+                  setModalState(() {}); // refresh modal content
+                },
+              ),
+            );
+          },
+        ),
+      );
+    } catch (e) {
+      print('Error loading comments: $e');
+      // optionally show a snackbar
+    }
+  }
+
+  // Helper to add reply into nested comment list (returns new list)
+  List<Comment> _addReplyToComment(List<Comment> comments, String commentId, Comment newReply) {
+    return comments.map((comment) {
+      if (comment.id == commentId) {
+        return comment.copyWithReply(newReply);
+      }
+      if (comment.replies.isNotEmpty) {
+        return Comment(
+          id: comment.id,
+          username: comment.username,
+          handle: comment.handle,
+          profileImage: comment.profileImage,
+          timeAgo: comment.timeAgo,
+          content: comment.content,
+          replies: _addReplyToComment(comment.replies, commentId, newReply),
+        );
+      }
+      return comment;
+    }).toList();
   }
 
   @override
