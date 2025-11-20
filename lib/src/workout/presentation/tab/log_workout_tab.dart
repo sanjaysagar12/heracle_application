@@ -176,6 +176,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
         return {
           'id': ex.id,
           'name': ex.name,
+          'desc': ex.desc,
           'image': ex.image,
           'sets': ex.sets.map((s) => {'kg': int.tryParse(s.kg) ?? 0, 'reps': int.tryParse(s.reps) ?? 0}).toList(),
         };

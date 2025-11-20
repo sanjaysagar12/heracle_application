@@ -1,4 +1,5 @@
 import '../storage/workout_session_storage.dart';
+import '../storage/workout_logs_storage.dart';
 
 class Session {
   final String id;
@@ -43,22 +44,40 @@ class WorkoutLog {
 }
 
 class SessionRepository {
-  SessionRepository();
+  final WorkoutSessionStorage _sessionStorage;
+  final WorkoutLogsStorage _logsStorage;
+  
+  SessionRepository({
+    WorkoutSessionStorage? sessionStorage,
+    WorkoutLogsStorage? logsStorage,
+  }) : _sessionStorage = sessionStorage ?? WorkoutSessionStorage.instance,
+       _logsStorage = logsStorage ?? WorkoutLogsStorage.instance;
   
   Future<List<Session>> getSessionsFromDb() async {
-    // fetch persisted sessions from storage
-    return await WorkoutSessionStorage.instance.getAllSessions();
+    return await _sessionStorage.getAllSessions();
   }
 
   Future<void> saveSessionToDb(Session session) async {
-    await WorkoutSessionStorage.instance.insertSession(session);
+    await _sessionStorage.insertSession(session);
   }
 
   Future<void> saveWorkoutLogToDb(WorkoutLog log) async {
-    await WorkoutSessionStorage.instance.insertWorkoutLog(log);
+    await _logsStorage.insertWorkoutLog(log);
   }
 
-  Future<List<WorkoutLog>> getWorkoutLogsFromDb() async {
-    return await WorkoutSessionStorage.instance.getAllWorkoutLogs();
+  Future<List<WorkoutLog>> getWorkoutLogsFromDb({int? limit, int? offset}) async {
+    return await _logsStorage.getAllWorkoutLogs(limit: limit, offset: offset);
+  }
+
+  Future<WorkoutLog?> getWorkoutLogById(String id) async {
+    return await _logsStorage.getWorkoutLogById(id);
+  }
+
+  Future<void> deleteWorkoutLog(String id) async {
+    await _logsStorage.deleteWorkoutLog(id);
+  }
+
+  Future<Map<String, dynamic>> getWorkoutLogStats() async {
+    return await _logsStorage.getWorkoutLogStats();
   }
 }
