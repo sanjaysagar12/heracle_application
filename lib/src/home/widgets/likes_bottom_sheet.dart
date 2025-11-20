@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../data/mutual_feed_repository.dart';
+import '../../../core/theme/app_colors.dart';
+import '../data/mutual_feed_repository.dart';
 
 class LikesBottomSheet extends StatefulWidget {
   final List<LikedByUser> likedByUsers;

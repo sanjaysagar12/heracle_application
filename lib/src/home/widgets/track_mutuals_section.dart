@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../data/mutual_feed_repository.dart';
+import '../../../core/theme/app_colors.dart';
+import '../data/mutual_feed_repository.dart';
 import 'workout_post_card.dart';
 import 'nutrition_post_card.dart';
 

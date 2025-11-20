@@ -3,12 +3,12 @@ import '../../../widgets/app_bar.dart';
 import '../data/profile_repository.dart';
 import '../data/progress_repository.dart';
 import '../data/mutual_feed_repository.dart';
-import 'widgets/progress_card.dart';
-import 'widgets/track_mutuals_section.dart';
+import '../widgets/progress_card.dart';
+import '../widgets/track_mutuals_section.dart';
 import '../../../core/theme/app_colors.dart';
-import 'widgets/comments_bottom_sheet.dart';
-import 'widgets/skeleton_loading.dart';
-import 'widgets/likes_bottom_sheet.dart';
+import '../widgets/comments_bottom_sheet.dart';
+import '../widgets/skeleton_loading.dart';
+import '../widgets/likes_bottom_sheet.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

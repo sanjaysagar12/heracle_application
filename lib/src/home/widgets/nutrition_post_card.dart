@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../data/mutual_feed_repository.dart';
+import '../../../core/theme/app_colors.dart';
+import '../data/mutual_feed_repository.dart';
 
 class NutritionPostCard extends StatefulWidget {
   final String username;
