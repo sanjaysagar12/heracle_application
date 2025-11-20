@@ -3,15 +3,17 @@ import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
 
 class CommentsBottomSheet extends StatefulWidget {
-  final List<Comment> comments;
+  final List<Comment>? comments; // Make nullable
   final Future<void> Function(String) onAddComment;
   final Future<void> Function(String, String) onAddReply;
+  final bool isLoading;
 
   const CommentsBottomSheet({
     super.key,
-    required this.comments,
+    this.comments,
     required this.onAddComment,
     required this.onAddReply,
+    this.isLoading = false,
   });
 
   @override
@@ -22,6 +24,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   final TextEditingController _commentController = TextEditingController();
   String? _replyingToId;
   String? _replyingToUsername;
+  bool _isAddingComment = false;
 
   @override
   void dispose() {
@@ -33,14 +36,25 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     final content = _commentController.text.trim();
     if (content.isEmpty) return;
 
-    if (_replyingToId != null) {
-      await widget.onAddReply(_replyingToId!, content);
-      _cancelReply();
-    } else {
-      await widget.onAddComment(content);
-    }
+    setState(() {
+      _isAddingComment = true;
+    });
 
-    _commentController.clear();
+    try {
+      if (_replyingToId != null) {
+        await widget.onAddReply(_replyingToId!, content);
+        _cancelReply();
+      } else {
+        await widget.onAddComment(content);
+      }
+      _commentController.clear();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAddingComment = false;
+        });
+      }
+    }
   }
 
   void _startReply(String commentId, String username) {
@@ -68,27 +82,112 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         children: [
           _buildHeader(context),
           Expanded(
-            child: widget.comments.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No comments yet\nBe the first to comment!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.white60,
-                        fontSize: 16,
+            child: widget.isLoading
+                ? _buildSkeletonLoading()
+                : (widget.comments?.isEmpty ?? true)
+                    ? const Center(
+                        child: Text(
+                          'No comments yet\nBe the first to comment!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.white60,
+                            fontSize: 16,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: widget.comments?.length ?? 0,
+                        itemBuilder: (context, index) {
+                          return _buildCommentItem(widget.comments![index], 0);
+                        },
                       ),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: widget.comments.length,
-                    itemBuilder: (context, index) {
-                      return _buildCommentItem(widget.comments[index], 0);
-                    },
-                  ),
           ),
           if (_replyingToUsername != null) _buildReplyingToBar(),
           _buildCommentInput(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkeletonLoading() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: 5,
+      itemBuilder: (context, index) => _buildSkeletonCommentItem(),
+    );
+  }
+
+  Widget _buildSkeletonCommentItem() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: const BoxDecoration(
+              color: AppColors.greyDark,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: AppColors.greyDark,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 40,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: AppColors.greyDark,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: AppColors.greyDark,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  width: 200,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: AppColors.greyDark,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 50,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: AppColors.greyDark,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -245,6 +344,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           Expanded(
             child: TextField(
               controller: _commentController,
+              enabled: !_isAddingComment,
               style: const TextStyle(color: AppColors.pureWhite),
               decoration: InputDecoration(
                 hintText: _replyingToUsername != null
@@ -265,10 +365,19 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             ),
           ),
           const SizedBox(width: 12),
-          IconButton(
-            onPressed: _handleAddComment,
-            icon: const Icon(Icons.send, color: AppColors.primary),
-          ),
+          _isAddingComment
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+                )
+              : IconButton(
+                  onPressed: _handleAddComment,
+                  icon: const Icon(Icons.send, color: AppColors.primary),
+                ),
         ],
       ),
     );

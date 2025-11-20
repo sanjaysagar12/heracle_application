@@ -128,44 +128,61 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _handleCommentClick(String postId) async {
+    if (!mounted) return;
+    
+    // Show modal immediately with skeleton loading
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          // Check if comments are already cached
+          final bool isLoading = !_commentsCache.containsKey(postId);
+          final List<Comment>? comments = _commentsCache[postId];
+          
+          // Load comments if not cached
+          if (isLoading) {
+            _loadCommentsForModal(postId, setModalState);
+          }
+          
+          return DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder: (context, scrollController) => CommentsBottomSheet(
+              comments: comments,
+              isLoading: isLoading,
+              onAddComment: (content) async {
+                await _handleAddComment(postId, content);
+                setModalState(() {}); // Update modal state
+              },
+              onAddReply: (commentId, content) async {
+                await _handleAddReply(postId, commentId, content);
+                setModalState(() {}); // Update modal state
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _loadCommentsForModal(String postId, StateSetter setModalState) async {
     try {
-      // Load comments if not cached
-      if (!_commentsCache.containsKey(postId)) {
-        final comments = await _mutualFeedRepository.getPostComments(postId);
-        setState(() {
-          _commentsCache[postId] = comments;
-        });
-      }
-      
-      if (!mounted) return;
-      
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => StatefulBuilder(
-          builder: (context, setModalState) {
-            return DraggableScrollableSheet(
-              initialChildSize: 0.7,
-              minChildSize: 0.5,
-              maxChildSize: 0.95,
-              builder: (context, scrollController) => CommentsBottomSheet(
-                comments: _commentsCache[postId] ?? [],
-                onAddComment: (content) async {
-                  await _handleAddComment(postId, content);
-                  setModalState(() {}); // Update modal state
-                },
-                onAddReply: (commentId, content) async {
-                  await _handleAddReply(postId, commentId, content);
-                  setModalState(() {}); // Update modal state
-                },
-              ),
-            );
-          },
-        ),
-      );
+      final comments = await _mutualFeedRepository.getPostComments(postId);
+      setState(() {
+        _commentsCache[postId] = comments;
+      });
+      // Update modal state to show loaded comments
+      setModalState(() {});
     } catch (e) {
       print('Error loading comments: $e');
+      // Show empty state on error
+      setState(() {
+        _commentsCache[postId] = [];
+      });
+      setModalState(() {});
     }
   }
 

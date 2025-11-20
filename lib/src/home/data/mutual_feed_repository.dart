@@ -281,14 +281,14 @@ class Comment {
 }
 
 class MutualFeedRepository {
-  final MutualFeedService _mutualFeedService;
+  final MutualFeedService _service;
 
-  MutualFeedRepository({MutualFeedService? mutualFeedService})
-      : _mutualFeedService = mutualFeedService ?? MutualFeedService();
+  MutualFeedRepository({MutualFeedService? service})
+      : _service = service ?? MutualFeedService();
 
   Future<List<FeedPost>> getMutualFeed() async {
     try {
-      final data = await _mutualFeedService.getMutualFeed();
+      final data = await _service.getMutualFeed();
       return data.map((json) {
         final type = json['type'] as String;
         if (type == 'workout') {
@@ -304,8 +304,10 @@ class MutualFeedRepository {
   }
 
   Future<List<Comment>> getPostComments(String postId) async {
+    // Add delay for testing skeleton loading
+    await Future.delayed(const Duration(seconds: 2));
     try {
-      final data = await _mutualFeedService.getPostComments(postId);
+      final data = await _service.getPostComments(postId);
       return data.map((json) => Comment.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to load comments: $e');
@@ -313,8 +315,10 @@ class MutualFeedRepository {
   }
 
   Future<Comment> addComment(String postId, String content) async {
+    // Add delay for testing skeleton loading
+    await Future.delayed(const Duration(milliseconds: 1500));
     try {
-      final data = await _mutualFeedService.addComment(postId, content);
+      final data = await _service.addComment(postId, content);
       return Comment.fromJson(data);
     } catch (e) {
       throw Exception('Failed to add comment: $e');
@@ -322,8 +326,10 @@ class MutualFeedRepository {
   }
 
   Future<Comment> addReply(String postId, String commentId, String content) async {
+    // Add delay for testing skeleton loading
+    await Future.delayed(const Duration(milliseconds: 1500));
     try {
-      final data = await _mutualFeedService.addReply(postId, commentId, content);
+      final data = await _service.addReply(postId, commentId, content);
       return Comment.fromJson(data);
     } catch (e) {
       throw Exception('Failed to add reply: $e');
