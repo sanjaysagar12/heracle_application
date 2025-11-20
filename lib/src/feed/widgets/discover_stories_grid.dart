@@ -5,13 +5,11 @@ import 'discover_story_card.dart';
 class DiscoverStoriesGrid extends StatelessWidget {
   final List<DiscoverStory> stories;
   final Function(DiscoverStory story)? onStoryTap;
-  final Function(String storyId)? onLike;
 
   const DiscoverStoriesGrid({
     super.key,
     required this.stories,
     this.onStoryTap,
-    this.onLike,
   });
 
   @override
@@ -31,7 +29,6 @@ class DiscoverStoriesGrid extends StatelessWidget {
             return DiscoverStoryCard(
               story: story,
               onTap: () => onStoryTap?.call(story),
-              onLike: () => onLike?.call(story.id),
             );
           },
           childCount: stories.length,

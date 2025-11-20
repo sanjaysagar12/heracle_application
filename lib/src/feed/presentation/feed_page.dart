@@ -89,12 +89,6 @@ class _FeedPageState extends State<FeedPage> {
     });
   }
 
-  void _handleLike(String storyId) {
-    setState(() {
-      _discoverStories = _storiesRepository.toggleLike(_discoverStories, storyId);
-    });
-  }
-
   void _handleAddStory() {
     // Navigate to camera page
     if (widget.onNavigateToCamera != null) {
@@ -185,7 +179,6 @@ class _FeedPageState extends State<FeedPage> {
             DiscoverStoriesGrid(
               stories: _discoverStories,
               onStoryTap: _handleDiscoverStoryTap,
-              onLike: _handleLike,
             ),
 
             // Bottom padding
