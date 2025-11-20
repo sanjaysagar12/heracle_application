@@ -335,12 +335,15 @@ class WorkoutPostCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              '$commentCount',
-              style: const TextStyle(
-                color: AppColors.pureWhite,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            GestureDetector(
+              onTap: onComment,
+              child: Text(
+                '$commentCount',
+                style: const TextStyle(
+                  color: AppColors.pureWhite,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const SizedBox(width: 24),

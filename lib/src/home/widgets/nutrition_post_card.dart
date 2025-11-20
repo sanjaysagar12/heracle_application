@@ -388,12 +388,15 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              '${widget.commentCount}',
-              style: const TextStyle(
-                color: AppColors.pureWhite,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            GestureDetector(
+              onTap: widget.onComment,
+              child: Text(
+                '${widget.commentCount}',
+                style: const TextStyle(
+                  color: AppColors.pureWhite,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const SizedBox(width: 24),
