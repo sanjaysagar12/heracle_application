@@ -143,6 +143,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       return {
         'id': ex.id,
         'name': ex.name,
+        'desc': ex.desc,
         'image': ex.image,
         'sets': ex.sets.map((s) => {'kg': int.tryParse(s.kg) ?? 0, 'reps': int.tryParse(s.reps) ?? 0}).toList(),
       };
@@ -187,7 +188,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+        child: ListView(
           children: [
             // Session Name Input
             TextField(
@@ -201,7 +202,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                 filled: true,
                 fillColor: AppColors.black100,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -239,7 +240,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                           )
                         : null,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(30),
                       borderSide: BorderSide.none,
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -250,7 +251,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                     margin: const EdgeInsets.only(top: 4),
                     decoration: BoxDecoration(
                       color: AppColors.black100,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: AppColors.greyDark),
                     ),
                     constraints: const BoxConstraints(maxHeight: 150),
@@ -296,28 +297,30 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
             ),
             const SizedBox(height: 12),
             // Exercise list
-            Expanded(
-              child: ListView.separated(
-                itemCount: _exerciseLogs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, exIndex) {
-                  final ex = _exerciseLogs[exIndex];
-                  return _buildExerciseCard(ex);
-                },
-              ),
-            ),
+            ..._exerciseLogs.asMap().entries.map((entry) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildExerciseCard(entry.value),
+              );
+            }).toList(),
             const SizedBox(height: 12),
             // Create Session button
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: ElevatedButton(
                 onPressed: _createSession,
-                icon: const Icon(Icons.save, color: Colors.black),
-                label: const Text('Create Session', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.save, color: Colors.black, size: 20),
+                    SizedBox(width: 8),
+                    Text('Create Session', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+                  ],
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: const StadiumBorder(),
                 ),
               ),
             ),
@@ -325,29 +328,34 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
             // Add Workout button
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
+              child: ElevatedButton.icon(
                 onPressed: _addWorkout,
-                icon: const Icon(Icons.add, color: AppColors.pureWhite),
-                label: const Text('Add Workout', style: TextStyle(color: AppColors.pureWhite)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.white40),
+                icon: const Icon(Icons.add, color: AppColors.primary),
+                label: const Text('Add Workout', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.black100,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: const StadiumBorder(),
+                  elevation: 0,
                 ),
               ),
             ),
             const SizedBox(height: 8),
-            // Discard button
+            // Discard Workout button
             SizedBox(
               width: double.infinity,
-              child: TextButton(
+              child: ElevatedButton(
                 onPressed: _discardWorkout,
-                child: const Text('Discard', style: TextStyle(color: Colors.red)),
-                style: TextButton.styleFrom(
+                child: const Text('Discard Workout', style: TextStyle(color: Colors.red)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.black100,
                   padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: const StadiumBorder(),
+                  elevation: 0,
                 ),
               ),
             ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -459,13 +467,14 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
           // add set
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton(
+            child: OutlinedButton.icon(
               onPressed: () => _addSet(ex),
-              child: const Text('+ Add Set', style: TextStyle(color: AppColors.pureWhite)),
+              icon: const Icon(Icons.add, color: AppColors.pureWhite, size: 20),
+              label: const Text('Add Set', style: TextStyle(color: AppColors.pureWhite)),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.white40),
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: const StadiumBorder(),
               ),
             ),
           ),

@@ -225,47 +225,51 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+        child: ListView(
           children: [
-            // Top summary chips
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _summaryChip(_durationStr, 'Duration'),
-                  const SizedBox(width: 8),
-                  _summaryChip('$_totalVolume kg', 'Volume'),
-                  const SizedBox(width: 8),
-                  _summaryChip('$_totalSetCount', 'Set Count'),
-                  const SizedBox(width: 8),
-                  _summaryChip('$_workoutCount', 'Workouts'),
-                ],
-              ),
+            // Summary chips
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: _summaryChip(_durationStr, 'Duration')),
+                const SizedBox(width: 8),
+                Expanded(child: _summaryChip('$_totalVolume kg', 'Volume')),
+                const SizedBox(width: 8),
+                Expanded(child: _summaryChip('$_totalSetCount', 'Set Count')),
+                const SizedBox(width: 8),
+                Expanded(child: _summaryChip('$_workoutCount', 'Workouts')),
+              ],
             ),
             const SizedBox(height: 12),
-            // Exercise list
-            Expanded(
-              child: ListView.separated(
-                itemCount: _exerciseLogs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, exIndex) {
-                  final ex = _exerciseLogs[exIndex];
-                  return _buildExerciseCard(ex);
-                },
-              ),
-            ),
+            // Exercise cards
+            ..._exerciseLogs.asMap().entries.map((entry) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildExerciseCard(entry.value),
+              );
+            }).toList(),
             const SizedBox(height: 12),
             // Finish Session button
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: ElevatedButton(
                 onPressed: _finishSession,
-                icon: const Icon(Icons.flag, color: Colors.black),
-                label: const Text('Finish Session', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icons/finish.svg',
+                      width: 20,
+                      height: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('Finish Session', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+                  ],
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: const StadiumBorder(),
                 ),
               ),
             ),
@@ -273,29 +277,34 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
             // Add Workout button
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
+              child: ElevatedButton.icon(
                 onPressed: _addWorkout,
-                icon: const Icon(Icons.add, color: AppColors.pureWhite),
-                label: const Text('Add Workout', style: TextStyle(color: AppColors.pureWhite)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppColors.white40),
+                icon: const Icon(Icons.add, color: AppColors.primary),
+                label: const Text('Add Workout', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.black100,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: const StadiumBorder(),
+                  elevation: 0,
                 ),
               ),
             ),
             const SizedBox(height: 8),
-            // Discard Workout (danger)
+            // Discard Workout button
             SizedBox(
               width: double.infinity,
-              child: TextButton(
+              child: ElevatedButton(
                 onPressed: _discardWorkout,
                 child: const Text('Discard Workout', style: TextStyle(color: Colors.red)),
-                style: TextButton.styleFrom(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.black100,
                   padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: const StadiumBorder(),
+                  elevation: 0,
                 ),
               ),
             ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -348,6 +357,17 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           Column(
             children: List.generate(ex.sets.length, (si) {
               final set = ex.sets[si];
+              final hasValues = set.kg.isNotEmpty && set.reps.isNotEmpty;
+              
+              // Auto-complete when both values are entered
+              if (hasValues && !set.completed) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  setState(() {
+                    set.completed = true;
+                  });
+                });
+              }
+              
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
@@ -410,8 +430,12 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      onPressed: () => _removeSet(ex, si),
-                      icon: const Icon(Icons.close, color: Colors.redAccent, size: 20),
+                      onPressed: hasValues ? () => _toggleComplete(set) : () => _removeSet(ex, si),
+                      icon: Icon(
+                        hasValues ? Icons.check_circle : Icons.close,
+                        color: hasValues ? AppColors.primary : Colors.redAccent,
+                        size: 20,
+                      ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -424,13 +448,14 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           // add set
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton(
+            child: OutlinedButton.icon(
               onPressed: () => _addSet(ex),
-              child: const Text('+ Add Set', style: TextStyle(color: AppColors.pureWhite)),
+              icon: const Icon(Icons.add, color: AppColors.pureWhite, size: 20),
+              label: const Text('Add Set', style: TextStyle(color: AppColors.pureWhite)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: AppColors.white40),
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: const StadiumBorder(),
               ),
             ),
           ),

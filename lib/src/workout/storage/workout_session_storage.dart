@@ -62,6 +62,7 @@ class WorkoutSessionStorage {
             logId TEXT NOT NULL,
             exerciseId TEXT,
             name TEXT,
+            desc TEXT,
             image TEXT,
             sets TEXT,
             position INTEGER DEFAULT 0,
@@ -93,6 +94,7 @@ class WorkoutSessionStorage {
       sessionId TEXT NOT NULL,
       exerciseId TEXT,
       name TEXT,
+      desc TEXT,
       image TEXT,
       sets TEXT,
       position INTEGER DEFAULT 0,
@@ -121,6 +123,7 @@ class WorkoutSessionStorage {
       logId TEXT NOT NULL,
       exerciseId TEXT,
       name TEXT,
+      desc TEXT,
       image TEXT,
       sets TEXT,
       position INTEGER DEFAULT 0,
@@ -313,80 +316,6 @@ class WorkoutSessionStorage {
     }
   }
 
-  Future close() async {
-    try {
-      final db = await instance.database;
-      await db.close();
-      _database = null;
-    } catch (e) {
-      // ignore missing plugin on close for in-memory fallback
-      print('WorkoutSessionStorage: close ignored: $e');
-      _database = null;
-    }
-  }
-
-  /// Debug method: delete database and recreate
-  Future<void> resetDatabase() async {
-    try {
-      final dbPath = await getDatabasesPath();
-      final path = join(dbPath, 'sessions.db');
-      await deleteDatabase(path);
-      _database = null;
-      print('WorkoutSessionStorage: database deleted');
-      // next call to database getter will recreate it
-    } catch (e) {
-      print('WorkoutSessionStorage: reset failed: $e');
-    }
-  }
-
-  // Helpers to convert between Session and Map (sessions table)
-  Map<String, Object?> _sessionToMap(Session s) {
-    return {
-      'id': s.id,
-      'title': s.title,
-      'content': s.content,
-      'category': s.category,
-      'exercisesCount': s.exercisesCount,
-      'createdAt': DateTime.now().millisecondsSinceEpoch,
-    };
-  }
-
-  Session _mapToSession(Map<String, Object?> row) {
-    return Session(
-      id: row['id'] as String,
-      title: row['title'] as String,
-      content: row['content'] as String? ?? '',
-      category: row['category'] as String? ?? '',
-      exercisesCount: (row['exercisesCount'] as int?) ?? 0,
-      exercises: [], // will be populated after reading session_exercises
-    );
-  }
-
-  // Helpers for session_exercises table
-  Map<String, Object?> _exerciseToMap(String sessionId, Map<String, dynamic> ex, int position) {
-    return {
-      'sessionId': sessionId,
-      'exerciseId': ex['id']?.toString(),
-      'name': ex['name']?.toString(),
-      'image': ex['image']?.toString(),
-      'sets': jsonEncode(ex['sets'] ?? []),
-      'position': position,
-    };
-  }
-
-  Map<String, dynamic> _mapToExercise(Map<String, Object?> row) {
-    final setsJson = row['sets'] as String?;
-    final sets = setsJson == null
-        ? <Map<String, dynamic>>[]
-        : (jsonDecode(setsJson) as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
-    return {
-      'id': row['exerciseId'] as String? ?? '',
-      'name': row['name'] as String? ?? '',
-      'image': row['image'] as String? ?? '',
-      'sets': sets,
-    };
-  }
-
   // Workout logs methods
   Future<void> insertWorkoutLog(WorkoutLog log) async {
     try {
@@ -497,6 +426,82 @@ class WorkoutSessionStorage {
     }
   }
 
+  Future close() async {
+    try {
+      final db = await instance.database;
+      await db.close();
+      _database = null;
+    } catch (e) {
+      // ignore missing plugin on close for in-memory fallback
+      print('WorkoutSessionStorage: close ignored: $e');
+      _database = null;
+    }
+  }
+
+  /// Debug method: delete database and recreate
+  Future<void> resetDatabase() async {
+    try {
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, 'sessions.db');
+      await deleteDatabase(path);
+      _database = null;
+      print('WorkoutSessionStorage: database deleted');
+      // next call to database getter will recreate it
+    } catch (e) {
+      print('WorkoutSessionStorage: reset failed: $e');
+    }
+  }
+
+  // Helpers to convert between Session and Map (sessions table)
+  Map<String, Object?> _sessionToMap(Session s) {
+    return {
+      'id': s.id,
+      'title': s.title,
+      'content': s.content,
+      'category': s.category,
+      'exercisesCount': s.exercisesCount,
+      'createdAt': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
+  Session _mapToSession(Map<String, Object?> row) {
+    return Session(
+      id: row['id'] as String,
+      title: row['title'] as String,
+      content: row['content'] as String? ?? '',
+      category: row['category'] as String? ?? '',
+      exercisesCount: (row['exercisesCount'] as int?) ?? 0,
+      exercises: [], // will be populated after reading session_exercises
+    );
+  }
+
+  // Helpers for session_exercises table
+  Map<String, Object?> _exerciseToMap(String sessionId, Map<String, dynamic> ex, int position) {
+    return {
+      'sessionId': sessionId,
+      'exerciseId': ex['id']?.toString(),
+      'name': ex['name']?.toString(),
+      'desc': ex['desc']?.toString(),
+      'image': ex['image']?.toString(),
+      'sets': jsonEncode(ex['sets'] ?? []),
+      'position': position,
+    };
+  }
+
+  Map<String, dynamic> _mapToExercise(Map<String, Object?> row) {
+    final setsJson = row['sets'] as String?;
+    final sets = setsJson == null
+        ? <Map<String, dynamic>>[]
+        : (jsonDecode(setsJson) as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return {
+      'id': row['exerciseId'] as String? ?? '',
+      'name': row['name'] as String? ?? '',
+      'desc': row['desc'] as String? ?? '',
+      'image': row['image'] as String? ?? '',
+      'sets': sets,
+    };
+  }
+
   // Helpers for workout_logs table
   Map<String, Object?> _workoutLogToMap(WorkoutLog log) {
     return {
@@ -530,6 +535,7 @@ class WorkoutSessionStorage {
       'logId': logId,
       'exerciseId': ex['id']?.toString(),
       'name': ex['name']?.toString(),
+      'desc': ex['desc']?.toString(),
       'image': ex['image']?.toString(),
       'sets': jsonEncode(ex['sets'] ?? []),
       'position': position,

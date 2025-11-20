@@ -216,7 +216,7 @@ class _SessionsSectionState extends State<SessionsSection> {
                   return <String, dynamic>{
                     'id': e['id']?.toString() ?? '',
                     'name': e['name']?.toString() ?? '',
-                    'desc': '',
+                    'desc': e['desc']?.toString() ?? '',
                     'image': e['image']?.toString() ?? '',
                     'sets': e['sets'],
                   };
