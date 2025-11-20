@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/stories_repository.dart';
 // import Home comments widget and mutual feed types/repo
@@ -176,6 +177,79 @@ class _ReelsTabState extends State<ReelsTab> {
     }).toList();
   }
 
+  // helper to render overlapping avatars safely
+  Widget _buildOverlappingAvatars(List<String> urls, {double size = 20, double overlap = 6, int max = 3}) {
+    final display = urls.take(max).toList();
+    final count = display.length;
+    final width = count > 0 ? size + (count - 1) * (size - overlap) : 0.0;
+    return SizedBox(
+      width: width,
+      height: size,
+      child: Stack(
+        children: List.generate(display.length, (i) {
+          return Positioned(
+            left: i * (size - overlap),
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.black100, width: 1),
+                image: DecorationImage(image: NetworkImage(display[i]), fit: BoxFit.cover),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildPlainAction({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          // for comment/share use SVG assets used in Home; otherwise fallback to Icon
+          if (icon == Icons.comment)
+            SvgPicture.asset(
+              'assets/icons/comment.svg',
+              width: 30,
+              height: 30,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            )
+          else if (icon == Icons.send)
+            SvgPicture.asset(
+              'assets/icons/share.svg',
+              width: 30,
+              height: 30,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            )
+          else
+            Icon(
+              icon,
+              color: color,
+              size: 30,
+              shadows: const [Shadow(color: Colors.black26, blurRadius: 4)],
+            ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.pureWhite,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -310,50 +384,74 @@ class _ReelsTabState extends State<ReelsTab> {
 
   Widget _buildRightActions(DiscoverStory story) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Like button
-        _buildActionButton(
-          icon: story.isLiked ? Icons.favorite : Icons.favorite_border,
-          label: _formatCount(story.likesCount),
-          color: story.isLiked ? Colors.red : AppColors.pureWhite,
+        // Like (same favorite icon as Home)
+        GestureDetector(
           onTap: () => _handleLike(story.id),
+          child: Column(
+            children: [
+              Icon(
+                story.isLiked ? Icons.favorite : Icons.favorite_border,
+                color: story.isLiked ? Colors.red : AppColors.pureWhite,
+                size: 30,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _formatCount(story.likesCount),
+                style: const TextStyle(color: AppColors.pureWhite, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
 
-        // Comment button
-        _buildActionButton(
-          icon: Icons.comment,
-          label: '${_getRandomCommentCount()}',
-          color: AppColors.pureWhite,
+        // Comment (use Home SVG)
+        GestureDetector(
           onTap: () => _showComments(story),
+          child: Column(
+            children: [
+              SvgPicture.asset(
+                'assets/icons/comment.svg',
+                width: 28,
+                height: 28,
+                colorFilter: const ColorFilter.mode(AppColors.pureWhite, BlendMode.srcIn),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${_getRandomCommentCount()}',
+                style: const TextStyle(color: AppColors.pureWhite, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
 
-        // Share button
-        _buildActionButton(
-          icon: Icons.send,
-          label: 'Share',
-          color: AppColors.pureWhite,
+        // Share (use Home SVG)
+        GestureDetector(
           onTap: () => _showShareOptions(story),
+          child: Column(
+            children: [
+              SvgPicture.asset(
+                'assets/icons/share.svg',
+                width: 26,
+                height: 26,
+                colorFilter: const ColorFilter.mode(AppColors.pureWhite, BlendMode.srcIn),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Share',
+                style: TextStyle(color: AppColors.pureWhite, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
 
-        // More options
+        // More options (plain icon)
         GestureDetector(
           onTap: () => _showMoreOptions(story),
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.more_vert,
-              color: AppColors.pureWhite,
-              size: 24,
-            ),
-          ),
+          child: const Icon(Icons.more_vert, color: AppColors.pureWhite, size: 28),
         ),
       ],
     );
@@ -471,6 +569,27 @@ class _ReelsTabState extends State<ReelsTab> {
               )
               .toList(),
         ),
+        const SizedBox(height: 8),
+
+        // Liked by preview (overlapping avatars + ellipsis text)
+        if (story.likesCount > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Row(
+              children: [
+                _buildOverlappingAvatars([story.profileImage], size: 20, overlap: 6, max: 3),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Liked by ${_getSampleLikedByText(story)}',
+                    style: const TextStyle(color: AppColors.white60, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
         const SizedBox(height: 8),
 
         // Platform badge
@@ -789,5 +908,23 @@ class _ReelsTabState extends State<ReelsTab> {
 
   int _getRandomCommentCount() {
     return 15 + (_currentIndex * 7) % 50;
+  }
+
+  String _getSampleLikedByText(DiscoverStory story) {
+    // Sample logic to generate "Liked by" text
+    if (story.likesCount <= 0) return '';
+
+    final names = ['Alice', 'Bob', 'Charlie', 'David', 'Eva'];
+    final buffer = StringBuffer();
+    for (int i = 0; i < names.length && i < 3; i++) {
+      buffer.write(names[i]);
+      if (i == 2 && story.likesCount > 3) {
+        buffer.write(' and ${story.likesCount - 3} others');
+        break;
+      } else if (i < 2) {
+        buffer.write(', ');
+      }
+    }
+    return buffer.toString();
   }
 }

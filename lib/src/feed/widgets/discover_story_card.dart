@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/stories_repository.dart';
 
@@ -87,6 +88,9 @@ class DiscoverStoryCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                
+                // ...actions removed from card to keep Discover cards clean.
+                // If you want a compact likes count on the card, add a single Text line here instead.
               ],
             ),
           ),

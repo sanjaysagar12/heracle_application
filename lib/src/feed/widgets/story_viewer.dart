@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/stories_repository.dart';
 
@@ -490,6 +491,32 @@ class _StoryViewerState extends State<StoryViewer>
     );
   }
 
+  Widget _buildOverlappingAvatars(List<String> urls, {double size = 18, double overlap = 6, int max = 3}) {
+    final display = urls.take(max).toList();
+    final count = display.length;
+    final width = count > 0 ? size + (count - 1) * (size - overlap) : 0.0;
+    return SizedBox(
+      width: width,
+      height: size,
+      child: Stack(
+        children: List.generate(display.length, (i) {
+          return Positioned(
+            left: i * (size - overlap),
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.black100, width: 1),
+                image: DecorationImage(image: NetworkImage(display[i]), fit: BoxFit.cover),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
   Widget _buildBottomActions() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -541,7 +568,7 @@ class _StoryViewerState extends State<StoryViewer>
             ),
           ),
           const SizedBox(width: 12),
-          // Share icon
+          // Share icon (use SVG from Home)
           GestureDetector(
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -549,7 +576,12 @@ class _StoryViewerState extends State<StoryViewer>
                 backgroundColor: Color(0xFFD4FC79),
               ));
             },
-            child: const Icon(Icons.send, color: AppColors.pureWhite, size: 24),
+            child: SvgPicture.asset(
+              'assets/icons/share.svg',
+              width: 24,
+              height: 24,
+              colorFilter: const ColorFilter.mode(AppColors.pureWhite, BlendMode.srcIn),
+            ),
           ),
         ],
       ),
@@ -696,6 +728,96 @@ class _StoryViewerState extends State<StoryViewer>
     // TODO: Optionally notify repository or send like event for storyId.
   }
 
+  void _showComments(DiscoverStory story) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.black100,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: 4,
+              width: 40,
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: AppColors.white40,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Text(
+              'Comments',
+              style: TextStyle(
+                color: AppColors.pureWhite,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 220,
+              child: ListView(
+                children: const [
+                  ListTile(
+                    leading: CircleAvatar(radius: 16, backgroundColor: Colors.grey),
+                    title: Text('User1', style: TextStyle(color: AppColors.pureWhite)),
+                    subtitle: Text('Nice!', style: TextStyle(color: AppColors.white70)),
+                  ),
+                  ListTile(
+                    leading: CircleAvatar(radius: 16, backgroundColor: Colors.grey),
+                    title: Text('User2', style: TextStyle(color: AppColors.pureWhite)),
+                    subtitle: Text('Great shot', style: TextStyle(color: AppColors.white70)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    style: const TextStyle(color: AppColors.pureWhite),
+                    decoration: const InputDecoration(
+                      hintText: 'Add a comment',
+                      hintStyle: TextStyle(color: AppColors.white60),
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                    onSubmitted: (text) {
+                      if (text.trim().isEmpty) return;
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Comment sent: $text'),
+                          backgroundColor: const Color(0xFFD4FC79),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send, color: AppColors.pureWhite),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Comment sent'),
+                      backgroundColor: Color(0xFFD4FC79),
+                    ));
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildRightActions(DiscoverStory story) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -719,22 +841,26 @@ class _StoryViewerState extends State<StoryViewer>
         const SizedBox(height: 16),
         GestureDetector(
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Comment clicked'),
-              backgroundColor: Color(0xFFD4FC79),
-            ));
+            _showComments(story);
           },
-          child: const Icon(Icons.comment, color: AppColors.pureWhite, size: 30),
+          child: SvgPicture.asset(
+            'assets/icons/comment.svg',
+            width: 28,
+            height: 28,
+            colorFilter: const ColorFilter.mode(AppColors.pureWhite, BlendMode.srcIn),
+          ),
         ),
         const SizedBox(height: 16),
         GestureDetector(
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Share clicked'),
-              backgroundColor: Color(0xFFD4FC79),
-            ));
+            _showShareOptions(story);
           },
-          child: const Icon(Icons.send, color: AppColors.pureWhite, size: 28),
+          child: SvgPicture.asset(
+            'assets/icons/share.svg',
+            width: 26,
+            height: 26,
+            colorFilter: const ColorFilter.mode(AppColors.pureWhite, BlendMode.srcIn),
+          ),
         ),
       ],
     );
@@ -756,6 +882,53 @@ class _StoryViewerState extends State<StoryViewer>
             overflow: TextOverflow.ellipsis,
           ),
       ],
+    );
+  }
+
+  void _showShareOptions(DiscoverStory story) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.black100,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.share, color: AppColors.pureWhite),
+              title: const Text('Share to...', style: TextStyle(color: AppColors.pureWhite)),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Share to...'),
+                  backgroundColor: Color(0xFFD4FC79),
+                ));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.link, color: AppColors.pureWhite),
+              title: const Text('Copy link', style: TextStyle(color: AppColors.pureWhite)),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Link copied'),
+                  backgroundColor: Color(0xFFD4FC79),
+                ));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.cancel, color: AppColors.pureWhite),
+              title: const Text('Cancel', style: TextStyle(color: AppColors.pureWhite)),
+              onTap: () => Navigator.pop(context),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
   }
 }
