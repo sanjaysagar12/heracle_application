@@ -43,6 +43,8 @@ dependencies:
   jwt_decoder: ^2.0.1
   flutter_svg: ^2.2.2
   sqflite: ^2.4.2
+  image_picker: ^1.2.1
+  camerawesome: ^2.5.0
 
 dev_dependencies:
   flutter_test:

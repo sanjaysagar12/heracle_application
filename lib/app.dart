@@ -21,7 +21,7 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
 
   final pages = [
     const HomePage(),
-    CameraPage(),
+    Container(),
     const FeedPage(),
     const WorkoutPage(),
   ];
@@ -134,9 +134,27 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
         child: FloatingNavBar(
           currentIndex: _index,
           onTap: (i) {
-            setState(() => _index = i);
-            _lastScrollPosition = 0; // Reset scroll position when changing tabs
-          },
+  if (i == 1) {
+    // CAMERA TAB PRESSED → OPEN CAMERA PAGE
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CameraPage()),
+    ).then((_) {
+      // SHOW NAV BAR AGAIN WHEN CAMERA PAGE CLOSES
+      setState(() => _isNavBarVisible = true);
+      _navBarAnimationController.reverse();
+    });
+
+    // HIDE NAV BAR WHEN CAMERA OPENED
+    setState(() => _isNavBarVisible = false);
+    _navBarAnimationController.forward();
+
+    return; // DON'T SWITCH INDEX
+  }
+
+  setState(() => _index = i);
+  _lastScrollPosition = 0;
+}
         ),
       ),
     );
