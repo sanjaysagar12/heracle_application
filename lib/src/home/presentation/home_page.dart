@@ -60,6 +60,11 @@ class _HomePageState extends State<HomePage> {
               calsBurnedProgress: _progress!.calsBurnedProgress,
               calsTakenProgress: _progress!.calsTakenProgress,
               proteinTakenProgress: _progress!.proteinTakenProgress,
+              actualSteps: steps,
+              actualCalsBurned: _progress!.actualCalsBurned,
+              actualCalsTaken: _progress!.actualCalsTaken,
+              actualProteinTaken: _progress!.actualProteinTaken,
+              targets: targets,
             );
           });
         }
@@ -344,6 +349,24 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _handleTargetUpdate(String targetType, int newTarget) async {
+    try {
+      final success = await _progressRepository.updateTarget(targetType, newTarget);
+      if (success && mounted) {
+        // Reload progress data to reflect new targets
+        final updatedProgress = await _progressRepository.getTodayProgress();
+        setState(() {
+          _progress = updatedProgress;
+        });
+      } else {
+        throw Exception('Failed to update target');
+      }
+    } catch (e) {
+      print('Error updating target: $e');
+      rethrow;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -370,6 +393,12 @@ class _HomePageState extends State<HomePage> {
                       calsBurnedProgress: _progress!.calsBurnedProgress,
                       calsTakenProgress: _progress!.calsTakenProgress,
                       proteinTakenProgress: _progress!.proteinTakenProgress,
+                      onTargetUpdate: _handleTargetUpdate,
+                      actualSteps: _progress!.actualSteps,
+                      actualCalsBurned: _progress!.actualCalsBurned,
+                      actualCalsTaken: _progress!.actualCalsTaken,
+                      actualProteinTaken: _progress!.actualProteinTaken,
+                      targets: _progress!.targets,
                     ),
                   TrackMutualsSection(
                     posts: _posts,

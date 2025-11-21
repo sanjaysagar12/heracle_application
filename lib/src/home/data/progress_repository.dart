@@ -12,6 +12,12 @@ class ProgressCard {
   final double calsBurnedProgress;
   final double calsTakenProgress;
   final double proteinTakenProgress;
+  // Add actual numeric values
+  final int actualSteps;
+  final int actualCalsBurned;
+  final int actualCalsTaken;
+  final int actualProteinTaken;
+  final Map<String, int> targets;
 
   ProgressCard({
     required this.workoutsLeft,
@@ -23,6 +29,11 @@ class ProgressCard {
     required this.calsBurnedProgress,
     required this.calsTakenProgress,
     required this.proteinTakenProgress,
+    required this.actualSteps,
+    required this.actualCalsBurned,
+    required this.actualCalsTaken,
+    required this.actualProteinTaken,
+    required this.targets,
   });
 
   factory ProgressCard.fromJson(Map<String, dynamic> json, Map<String, int> targets) {
@@ -41,6 +52,11 @@ class ProgressCard {
       calsBurnedProgress: _calculateProgress(calsBurnedValue, targets['cals_burned'] ?? 500),
       calsTakenProgress: _calculateProgress(calsTakenValue, targets['cals_taken'] ?? 2000),
       proteinTakenProgress: _calculateProgress(proteinTakenValue, targets['protein_taken'] ?? 150),
+      actualSteps: stepsValue,
+      actualCalsBurned: calsBurnedValue,
+      actualCalsTaken: calsTakenValue,
+      actualProteinTaken: proteinTakenValue,
+      targets: targets,
     );
   }
 
