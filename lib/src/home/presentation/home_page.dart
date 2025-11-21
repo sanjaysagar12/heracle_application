@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+
 import '../../../widgets/app_bar.dart';
 import '../data/profile_repository.dart';
 import '../data/progress_repository.dart';
@@ -26,20 +28,78 @@ class _HomePageState extends State<HomePage> {
   List<FeedPost> _posts = [];
   bool _isLoading = true;
   Map<String, List<Comment>> _commentsCache = {};
+  StreamSubscription<int>? _stepsSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _initializeStepTracking();
+  }
+
+  Future<void> _initializeStepTracking() async {
+    try {
+      // Start step tracking
+      await _progressRepository.startStepTracking();
+      
+      // Listen to step updates
+      _stepsSubscription = _progressRepository.stepsStream.listen((steps) async {
+        if (mounted && _progress != null) {
+          // Get current targets to recalculate progress
+          final targets = await _progressRepository.getTargets();
+          final stepsProgress = (steps / (targets['steps'] ?? 10000)).clamp(0.0, 1.0);
+          
+          // Calculate calories burned based on steps
+          final calsBurned = _calculateCaloriesBurned(steps);
+          final calsBurnedProgress = (calsBurned / (targets['cals_burned'] ?? 500)).clamp(0.0, 1.0);
+          
+          setState(() {
+            _progress = ProgressCard(
+              workoutsLeft: _progress!.workoutsLeft,
+              steps: ProgressCard.formatNumber(steps),
+              calsBurned: ProgressCard.formatNumber(calsBurned),
+              calsTaken: _progress!.calsTaken,
+              proteinTaken: _progress!.proteinTaken,
+              stepsProgress: stepsProgress,
+              calsBurnedProgress: calsBurnedProgress,
+              calsTakenProgress: _progress!.calsTakenProgress,
+              proteinTakenProgress: _progress!.proteinTakenProgress,
+              actualSteps: steps,
+              actualCalsBurned: calsBurned,
+              actualCalsTaken: _progress!.actualCalsTaken,
+              actualProteinTaken: _progress!.actualProteinTaken,
+              targets: targets,
+            );
+          });
+        }
+      });
+    } catch (e) {
+      print('Error initializing step tracking: $e');
+    }
+  }
+
+  /// Calculate calories burned based on steps
+  /// Using the same formula as in ProgressRepository
+  int _calculateCaloriesBurned(int steps) {
+    if (steps <= 0) return 0;
+    const double caloriesPerStep = 0.04;
+    return (steps * caloriesPerStep).round();
   }
 
   Future<void> _loadData() async {
     try {
+      print('HomePage: Starting to load data...');
+      
       final results = await Future.wait([
         _profileRepository.getProfile(),
         _progressRepository.getTodayProgress(),
         _mutualFeedRepository.getMutualFeed(),
       ]);
+
+      print('HomePage: Data loaded successfully');
+      print('Profile: ${results[0]}');
+      print('Progress: ${results[1]}');
+      print('Posts count: ${(results[2] as List).length}');
 
       setState(() {
         _profile = results[0] as Profile;
@@ -47,12 +107,23 @@ class _HomePageState extends State<HomePage> {
         _posts = results[2] as List<FeedPost>;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('HomePage: Error loading data: $e');
+      print('StackTrace: $stackTrace');
       setState(() {
         _isLoading = false;
       });
-      // Handle error
-      print('Error loading data: $e');
+      
+      // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load data: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 
@@ -308,6 +379,24 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _handleTargetUpdate(String targetType, int newTarget) async {
+    try {
+      final success = await _progressRepository.updateTarget(targetType, newTarget);
+      if (success && mounted) {
+        // Reload progress data to reflect new targets
+        final updatedProgress = await _progressRepository.getTodayProgress();
+        setState(() {
+          _progress = updatedProgress;
+        });
+      } else {
+        throw Exception('Failed to update target');
+      }
+    } catch (e) {
+      print('Error updating target: $e');
+      rethrow;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -330,6 +419,16 @@ class _HomePageState extends State<HomePage> {
                       calsBurned: _progress!.calsBurned,
                       calsTaken: _progress!.calsTaken,
                       proteinTaken: _progress!.proteinTaken,
+                      stepsProgress: _progress!.stepsProgress,
+                      calsBurnedProgress: _progress!.calsBurnedProgress,
+                      calsTakenProgress: _progress!.calsTakenProgress,
+                      proteinTakenProgress: _progress!.proteinTakenProgress,
+                      onTargetUpdate: _handleTargetUpdate,
+                      actualSteps: _progress!.actualSteps,
+                      actualCalsBurned: _progress!.actualCalsBurned,
+                      actualCalsTaken: _progress!.actualCalsTaken,
+                      actualProteinTaken: _progress!.actualProteinTaken,
+                      targets: _progress!.targets,
                     ),
                   TrackMutualsSection(
                     posts: _posts,
@@ -341,5 +440,11 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
     );
+  }
+
+  @override
+  void dispose() {
+    _stepsSubscription?.cancel();
+    super.dispose();
   }
 }
