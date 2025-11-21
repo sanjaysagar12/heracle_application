@@ -166,7 +166,8 @@ class DatabaseHelper {
       ''');
 
       // Insert default targets if table is empty
-      final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM targets')) ?? 0;
+      final result = await db.rawQuery('SELECT COUNT(*) as count FROM targets');
+      final count = result.first['count'] as int? ?? 0;
       if (count == 0) {
         final now = DateTime.now().millisecondsSinceEpoch;
         await db.execute('''

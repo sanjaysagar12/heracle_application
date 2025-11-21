@@ -6,6 +6,7 @@ class ProgressService {
     // Return mock data
     return {
       'workoutsLeft': 10,
+      'steps': 0, // Add this missing field
       'calsBurned': 0,
       'calsTaken': 1200,
       'proteinTaken': 76,

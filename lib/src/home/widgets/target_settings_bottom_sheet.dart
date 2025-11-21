@@ -154,9 +154,9 @@ class _TargetSettingsBottomSheetState extends State<TargetSettingsBottomSheet> {
           const SizedBox(height: 32),
           
           // Target input
-          Text(
+          const Text(
             'Daily Target',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.pureWhite,
               fontSize: 16,
               fontWeight: FontWeight.w600,

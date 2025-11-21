@@ -76,11 +76,18 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadData() async {
     try {
+      print('HomePage: Starting to load data...');
+      
       final results = await Future.wait([
         _profileRepository.getProfile(),
         _progressRepository.getTodayProgress(),
         _mutualFeedRepository.getMutualFeed(),
       ]);
+
+      print('HomePage: Data loaded successfully');
+      print('Profile: ${results[0]}');
+      print('Progress: ${results[1]}');
+      print('Posts count: ${(results[2] as List).length}');
 
       setState(() {
         _profile = results[0] as Profile;
@@ -88,12 +95,23 @@ class _HomePageState extends State<HomePage> {
         _posts = results[2] as List<FeedPost>;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('HomePage: Error loading data: $e');
+      print('StackTrace: $stackTrace');
       setState(() {
         _isLoading = false;
       });
-      // Handle error
-      print('Error loading data: $e');
+      
+      // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load data: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 

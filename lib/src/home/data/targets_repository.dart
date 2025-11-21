@@ -43,12 +43,28 @@ class TargetsRepository {
   Future<Map<String, int>> getAllTargets() async {
     try {
       final db = await _dbHelper.database;
+      print('TargetsRepository: Getting all targets from database');
+      
       final List<Map<String, dynamic>> maps = await db.query('targets');
+      print('TargetsRepository: Found ${maps.length} targets');
       
       final Map<String, int> targets = {};
       for (final map in maps) {
         final target = FitnessTarget.fromMap(map);
         targets[target.targetType] = target.targetValue;
+        print('TargetsRepository: ${target.targetType} = ${target.targetValue}');
+      }
+      
+      // If no targets found, return defaults and try to create them
+      if (targets.isEmpty) {
+        print('TargetsRepository: No targets found, creating defaults');
+        await _createDefaultTargets();
+        return {
+          'steps': 10000,
+          'cals_burned': 500,
+          'cals_taken': 2000,
+          'protein_taken': 150,
+        };
       }
       
       return targets;
@@ -61,6 +77,45 @@ class TargetsRepository {
         'cals_taken': 2000,
         'protein_taken': 150,
       };
+    }
+  }
+
+  Future<void> _createDefaultTargets() async {
+    try {
+      final db = await _dbHelper.database;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      
+      await db.insert('targets', {
+        'target_type': 'steps',
+        'target_value': 10000,
+        'created_at': now,
+        'updated_at': now,
+      });
+      
+      await db.insert('targets', {
+        'target_type': 'cals_burned',
+        'target_value': 500,
+        'created_at': now,
+        'updated_at': now,
+      });
+      
+      await db.insert('targets', {
+        'target_type': 'cals_taken',
+        'target_value': 2000,
+        'created_at': now,
+        'updated_at': now,
+      });
+      
+      await db.insert('targets', {
+        'target_type': 'protein_taken',
+        'target_value': 150,
+        'created_at': now,
+        'updated_at': now,
+      });
+      
+      print('TargetsRepository: Default targets created');
+    } catch (e) {
+      print('TargetsRepository: Error creating default targets: $e');
     }
   }
 
