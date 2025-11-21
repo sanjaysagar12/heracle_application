@@ -4,6 +4,7 @@ import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:video_player/video_player.dart';
 
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
@@ -12,8 +13,12 @@ class CameraPage extends StatefulWidget {
   State<CameraPage> createState() => _CameraPageState();
 }
 
-class _CameraPageState extends State<CameraPage> {
+class _CameraPageState extends State<CameraPage>
+    with SingleTickerProviderStateMixin {
   File? _previewFile;
+  bool _isVideo = false;
+  VideoPlayerController? _videoController;
+  late AnimationController _fadeController;
   bool get isPreviewMode => _previewFile != null;
   CaptureMode _captureMode = CaptureMode.photo;
 
@@ -39,6 +44,42 @@ class _CameraPageState extends State<CameraPage> {
     if (img != null) {
       setState(() => _previewFile = File(img.path));
     }
+  }
+
+  Future<void> _initializeVideoPlayer() async {
+    if (_videoController == null || !_videoController!.value.isInitialized) {
+      _videoController = VideoPlayerController.file(_previewFile!)
+        ..initialize().then((_) {
+          setState(() {});
+          _videoController!.play();
+          _startFadeOut();
+        });
+    }
+  }
+
+  void _startFadeOut() {
+    _fadeController.forward();
+    Future.delayed(const Duration(seconds: 3), () {
+      if (_fadeController.isCompleted && mounted) {
+        _fadeController.reverse();
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _videoController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -87,7 +128,10 @@ class _CameraPageState extends State<CameraPage> {
                           AwesomeCaptureButton(
                             state: state,
                             onMediaCapture: (filePath) {
-                              setState(() => _previewFile = File(filePath));
+                              setState(() {
+                                _previewFile = File(filePath);
+                                _isVideo = filePath.endsWith('.mp4');
+                              });
                             },
                             getCurrentVideoPath: () => _currentVideoPath,
                             onModeChange: (mode) {
@@ -119,9 +163,106 @@ class _CameraPageState extends State<CameraPage> {
 
           /// IMAGE / VIDEO PREVIEW
           if (isPreviewMode)
-            Positioned.fill(
-              child: Image.file(_previewFile!, fit: BoxFit.cover),
-            ),
+            _isVideo
+                ? Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 100,
+                    child: FutureBuilder<void>(
+                      future: _initializeVideoPlayer(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.done) {
+                          return _videoController != null &&
+                                  _videoController!.value.isInitialized
+                              ? GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _videoController!.value.isPlaying
+                                          ? _videoController!.pause()
+                                          : _videoController!.play();
+                                    });
+                                    _fadeController.forward();
+                                    Future.delayed(
+                                      const Duration(seconds: 3),
+                                      () {
+                                        if (_fadeController.isCompleted &&
+                                            mounted) {
+                                          _fadeController.reverse();
+                                        }
+                                      },
+                                    );
+                                  },
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Container(
+                                        color: Colors.black,
+                                        child: Center(
+                                          child: AspectRatio(
+                                            aspectRatio: _videoController!
+                                                .value
+                                                .aspectRatio,
+                                            child: AbsorbPointer(
+                                              child: VideoPlayer(
+                                                _videoController!,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      FadeTransition(
+                                        opacity: Tween<double>(
+                                          begin: 1.0,
+                                          end: 0.0,
+                                        ).animate(_fadeController),
+                                        child: Center(
+                                          child: Container(
+                                            width: 70,
+                                            height: 70,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.black54,
+                                            ),
+                                            child: Icon(
+                                              _videoController!.value.isPlaying
+                                                  ? Icons.pause
+                                                  : Icons.play_arrow,
+                                              color: Colors.white,
+                                              size: 40,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : Container(
+                                  color: Colors.black,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                        }
+                        return Container(
+                          color: Colors.black,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                : Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 100,
+                    child: Container(
+                      color: Colors.black,
+                      child: Image.file(_previewFile!, fit: BoxFit.contain),
+                    ),
+                  ),
 
           /// PREVIEW MODE CAPTION BAR (unchanged)
           if (isPreviewMode)
@@ -132,9 +273,7 @@ class _CameraPageState extends State<CameraPage> {
               child: Container(
                 height: 100,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.black,
-                ),
+                decoration: BoxDecoration(color: AppColors.black),
                 child: Row(
                   children: [
                     Expanded(
@@ -163,7 +302,10 @@ class _CameraPageState extends State<CameraPage> {
                         // Add your share logic here
                       },
                       icon: const Icon(Icons.telegram_sharp),
-                      label: const Text("Share",style: TextStyle(fontSize: 17)),
+                      label: const Text(
+                        "Share",
+                        style: TextStyle(fontSize: 17),
+                      ),
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.black,
                         backgroundColor: AppColors.primary,
@@ -240,8 +382,10 @@ class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton> {
       onLongPress: () async {
         await widget.state.when(
           onPhotoMode: (photoState) async {
-            // Switch to video mode
-            widget.onModeChange(CaptureMode.video);
+            // Switch to video mode first
+            photoState.setState(CaptureMode.video);
+            // Wait for state transition
+            await Future.delayed(const Duration(milliseconds: 200));
           },
           onVideoMode: (videoState) async {
             await videoState.startRecording();
