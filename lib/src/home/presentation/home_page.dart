@@ -49,19 +49,23 @@ class _HomePageState extends State<HomePage> {
           final targets = await _progressRepository.getTargets();
           final stepsProgress = (steps / (targets['steps'] ?? 10000)).clamp(0.0, 1.0);
           
+          // Calculate calories burned based on steps
+          final calsBurned = _calculateCaloriesBurned(steps);
+          final calsBurnedProgress = (calsBurned / (targets['cals_burned'] ?? 500)).clamp(0.0, 1.0);
+          
           setState(() {
             _progress = ProgressCard(
               workoutsLeft: _progress!.workoutsLeft,
               steps: ProgressCard.formatNumber(steps),
-              calsBurned: _progress!.calsBurned,
+              calsBurned: ProgressCard.formatNumber(calsBurned),
               calsTaken: _progress!.calsTaken,
               proteinTaken: _progress!.proteinTaken,
               stepsProgress: stepsProgress,
-              calsBurnedProgress: _progress!.calsBurnedProgress,
+              calsBurnedProgress: calsBurnedProgress,
               calsTakenProgress: _progress!.calsTakenProgress,
               proteinTakenProgress: _progress!.proteinTakenProgress,
               actualSteps: steps,
-              actualCalsBurned: _progress!.actualCalsBurned,
+              actualCalsBurned: calsBurned,
               actualCalsTaken: _progress!.actualCalsTaken,
               actualProteinTaken: _progress!.actualProteinTaken,
               targets: targets,
@@ -72,6 +76,14 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       print('Error initializing step tracking: $e');
     }
+  }
+
+  /// Calculate calories burned based on steps
+  /// Using the same formula as in ProgressRepository
+  int _calculateCaloriesBurned(int steps) {
+    if (steps <= 0) return 0;
+    const double caloriesPerStep = 0.04;
+    return (steps * caloriesPerStep).round();
   }
 
   Future<void> _loadData() async {

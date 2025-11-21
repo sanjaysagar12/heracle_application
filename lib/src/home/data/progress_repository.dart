@@ -100,16 +100,30 @@ class ProgressRepository {
       // Get real-time steps from step counter
       final realTimeSteps = _stepsCounter.currentSteps;
 
-      // Override steps with real-time data if available
+      // Calculate calories burned based on steps (approximately 0.04 calories per step)
+      final calsBurned = _calculateCaloriesBurned(realTimeSteps);
+
+      // Create progress data with calculated values
       final progressData = Map<String, dynamic>.from(data);
-      if (realTimeSteps > 0) {
-        progressData['steps'] = realTimeSteps;
-      }
+      progressData['steps'] = realTimeSteps;
+      progressData['calsBurned'] = calsBurned;
 
       return ProgressCard.fromJson(progressData, targets);
     } catch (e) {
       throw Exception('Failed to load progress: $e');
     }
+  }
+
+  /// Calculate calories burned based on steps
+  /// Average person burns approximately 0.04 calories per step
+  /// This can vary based on weight, pace, and terrain
+  int _calculateCaloriesBurned(int steps) {
+    if (steps <= 0) return 0;
+
+    // Using a standard calculation: 0.04 calories per step
+    // This is an average for a person weighing around 70kg (154 lbs)
+    const double caloriesPerStep = 0.04;
+    return (steps * caloriesPerStep).round();
   }
 
   Future<Map<String, int>> getTargets() async {
