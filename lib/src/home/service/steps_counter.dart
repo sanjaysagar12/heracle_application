@@ -9,21 +9,16 @@ class StepsCounter {
   StepsCounter._internal();
 
   StreamSubscription<StepCount>? _stepCountSubscription;
-  StreamSubscription<PedestrianStatus>? _pedestrianStatusSubscription;
   final StepsStorage _storage = StepsStorage();
   
   int _currentSteps = 0;
   bool _isListening = false;
-  PedestrianStatus? _status; // Changed to nullable to avoid initialization issue
 
   // Stream controllers for broadcasting step updates
   final StreamController<int> _stepsController = StreamController<int>.broadcast();
-  final StreamController<PedestrianStatus> _statusController = StreamController<PedestrianStatus>.broadcast();
 
   Stream<int> get stepsStream => _stepsController.stream;
-  Stream<PedestrianStatus> get statusStream => _statusController.stream;
   int get currentSteps => _currentSteps;
-  PedestrianStatus? get currentStatus => _status; // Updated getter to be nullable
   bool get isListening => _isListening;
 
   Future<bool> requestPermissions() async {
@@ -72,13 +67,6 @@ class StepsCounter {
         cancelOnError: false,
       );
 
-      // Start listening to pedestrian status
-      _pedestrianStatusSubscription = Pedometer.pedestrianStatusStream.listen(
-        _onPedestrianStatusChanged,
-        onError: _onPedestrianStatusError,
-        cancelOnError: false,
-      );
-
       _isListening = true;
       print('StepsCounter: Started listening to step count');
     } catch (e) {
@@ -88,9 +76,7 @@ class StepsCounter {
 
   Future<void> stopListening() async {
     await _stepCountSubscription?.cancel();
-    await _pedestrianStatusSubscription?.cancel();
     _stepCountSubscription = null;
-    _pedestrianStatusSubscription = null;
     _isListening = false;
     print('StepsCounter: Stopped listening to step count');
   }
@@ -114,16 +100,6 @@ class StepsCounter {
 
   void _onStepCountError(error) {
     print('StepsCounter: Step count error: $error');
-  }
-
-  void _onPedestrianStatusChanged(PedestrianStatus event) {
-    _status = event;
-    _statusController.add(event);
-    print('StepsCounter: Pedestrian status: ${event.status}');
-  }
-
-  void _onPedestrianStatusError(error) {
-    print('StepsCounter: Pedestrian status error: $error');
   }
 
   Future<void> _loadTodaySteps() async {
@@ -169,6 +145,5 @@ class StepsCounter {
   void dispose() {
     stopListening();
     _stepsController.close();
-    _statusController.close();
   }
 }

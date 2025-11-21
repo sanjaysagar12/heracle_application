@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 class TodayProgressCard extends StatelessWidget {
-  final String workoutsLeft; // Changed from int to String
+  final String workoutsLeft;
   final String steps;
   final String calsBurned;
   final String calsTaken;
   final String proteinTaken;
+  final double stepsProgress;
+  final double calsBurnedProgress;
+  final double calsTakenProgress;
+  final double proteinTakenProgress;
 
   const TodayProgressCard({
     super.key,
@@ -15,6 +19,10 @@ class TodayProgressCard extends StatelessWidget {
     this.calsBurned = '0',
     this.calsTaken = '0',
     this.proteinTaken = '0',
+    this.stepsProgress = 0.0,
+    this.calsBurnedProgress = 0.0,
+    this.calsTakenProgress = 0.0,
+    this.proteinTakenProgress = 0.0,
   });
 
   @override
@@ -27,13 +35,13 @@ class TodayProgressCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              Expanded(child: _buildStatCard('Steps', steps, Icons.directions_walk, false)),
+              Expanded(child: _buildStatCard('Steps', steps, Icons.directions_walk, steps != '0', stepsProgress)),
               const SizedBox(width: 12),
-              Expanded(child: _buildStatCard('Cals Burned', calsBurned, Icons.local_fire_department, false)),
+              Expanded(child: _buildStatCard('Cals Burned', calsBurned, Icons.local_fire_department, calsBurned != '0', calsBurnedProgress)),
               const SizedBox(width: 12),
-              Expanded(child: _buildStatCard('Cals Taken', calsTaken, Icons.restaurant, true)),
+              Expanded(child: _buildStatCard('Cals Taken', calsTaken, Icons.restaurant, calsTaken != '0', calsTakenProgress)),
               const SizedBox(width: 12),
-              Expanded(child: _buildStatCard('Protein Taken', proteinTaken, Icons.egg, true, unit: 'g')),
+              Expanded(child: _buildStatCard('Protein Taken', proteinTaken, Icons.egg, proteinTaken != '0', proteinTakenProgress, unit: 'g')),
             ],
           ),
         ),
@@ -126,7 +134,7 @@ class TodayProgressCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, bool isHighlighted, {String unit = ''}) {
+  Widget _buildStatCard(String label, String value, IconData icon, bool isHighlighted, double progress, {String unit = ''}) {
     final displayValue = unit.isNotEmpty ? '$value$unit' : value;
     
     return Container(
@@ -143,7 +151,7 @@ class TodayProgressCard extends StatelessWidget {
             displayValue,
             style: const TextStyle(
               color: AppColors.pureWhite,
-              fontSize: 16, // Reduced from 20 to 16
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
             maxLines: 1,
@@ -168,11 +176,11 @@ class TodayProgressCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   child: CircularProgressIndicator(
-                    value: isHighlighted ? 0.65 : 0,
+                    value: progress,
                     strokeWidth: 2.5,
                     backgroundColor: AppColors.greyLight,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      isHighlighted ? AppColors.primary : AppColors.greyLight,
+                      isHighlighted ? AppColors.primary : AppColors.white40,
                     ),
                   ),
                 ),

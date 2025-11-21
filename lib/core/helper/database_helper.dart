@@ -24,7 +24,7 @@ class DatabaseHelper {
       
       return await openDatabase(
         path,
-        version: 1,
+        version: 2, // Updated version to trigger migration
         onCreate: _createTables,
         onUpgrade: _onUpgrade,
         onConfigure: _onConfigure,
@@ -114,6 +114,27 @@ class DatabaseHelper {
       )
     ''');
 
+    // Create targets table for fitness goals
+    batch.execute('''
+      CREATE TABLE targets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        target_type TEXT NOT NULL UNIQUE,
+        target_value INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
+
+    // Insert default targets
+    final now = DateTime.now().millisecondsSinceEpoch;
+    batch.execute('''
+      INSERT INTO targets (target_type, target_value, created_at, updated_at) VALUES
+      ('steps', 10000, $now, $now),
+      ('cals_burned', 500, $now, $now),
+      ('cals_taken', 2000, $now, $now),
+      ('protein_taken', 150, $now, $now)
+    ''');
+
     // Create indexes for better performance
     batch.execute('CREATE INDEX idx_exercises_category ON exercises (category)');
     batch.execute('CREATE INDEX idx_sessions_created_at ON sessions (created_at DESC)');
@@ -122,6 +143,7 @@ class DatabaseHelper {
     batch.execute('CREATE INDEX idx_workout_logs_completed_at ON workout_logs (completed_at DESC)');
     batch.execute('CREATE INDEX idx_workout_log_exercises_log_id ON workout_log_exercises (workout_log_id)');
     batch.execute('CREATE INDEX idx_workout_log_exercises_exercise_id ON workout_log_exercises (exercise_id)');
+    batch.execute('CREATE INDEX idx_targets_type ON targets (target_type)');
 
     await batch.commit();
     print('DatabaseHelper: All tables created successfully');
@@ -130,22 +152,33 @@ class DatabaseHelper {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     print('DatabaseHelper: Upgrading database from version $oldVersion to $newVersion');
     
-    // Handle future database migrations here
+    // Handle database migrations
     if (oldVersion < 2) {
-      // Add exercises table and update existing tables
+      // Add targets table
       await db.execute('''
-        CREATE TABLE IF NOT EXISTS exercises (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          description TEXT,
-          image_url TEXT,
-          category TEXT,
-          created_at INTEGER NOT NULL
+        CREATE TABLE IF NOT EXISTS targets (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          target_type TEXT NOT NULL UNIQUE,
+          target_value INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
         )
       ''');
-      
-      // Note: In a real migration, you'd need to migrate existing data
-      // and update the table structure carefully
+
+      // Insert default targets if table is empty
+      final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM targets')) ?? 0;
+      if (count == 0) {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        await db.execute('''
+          INSERT INTO targets (target_type, target_value, created_at, updated_at) VALUES
+          ('steps', 10000, $now, $now),
+          ('cals_burned', 500, $now, $now),
+          ('cals_taken', 2000, $now, $now),
+          ('protein_taken', 150, $now, $now)
+        ''');
+      }
+
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_targets_type ON targets (target_type)');
     }
   }
 

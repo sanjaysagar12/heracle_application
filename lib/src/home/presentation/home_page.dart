@@ -43,15 +43,23 @@ class _HomePageState extends State<HomePage> {
       await _progressRepository.startStepTracking();
       
       // Listen to step updates
-      _stepsSubscription = _progressRepository.stepsStream.listen((steps) {
+      _stepsSubscription = _progressRepository.stepsStream.listen((steps) async {
         if (mounted && _progress != null) {
+          // Get current targets to recalculate progress
+          final targets = await _progressRepository.getTargets();
+          final stepsProgress = (steps / (targets['steps'] ?? 10000)).clamp(0.0, 1.0);
+          
           setState(() {
             _progress = ProgressCard(
               workoutsLeft: _progress!.workoutsLeft,
-              steps: ProgressCard.formatNumber(steps), // Changed from _formatNumber to formatNumber
+              steps: ProgressCard.formatNumber(steps),
               calsBurned: _progress!.calsBurned,
               calsTaken: _progress!.calsTaken,
               proteinTaken: _progress!.proteinTaken,
+              stepsProgress: stepsProgress,
+              calsBurnedProgress: _progress!.calsBurnedProgress,
+              calsTakenProgress: _progress!.calsTakenProgress,
+              proteinTakenProgress: _progress!.proteinTakenProgress,
             );
           });
         }
@@ -358,6 +366,10 @@ class _HomePageState extends State<HomePage> {
                       calsBurned: _progress!.calsBurned,
                       calsTaken: _progress!.calsTaken,
                       proteinTaken: _progress!.proteinTaken,
+                      stepsProgress: _progress!.stepsProgress,
+                      calsBurnedProgress: _progress!.calsBurnedProgress,
+                      calsTakenProgress: _progress!.calsTakenProgress,
+                      proteinTakenProgress: _progress!.proteinTakenProgress,
                     ),
                   TrackMutualsSection(
                     posts: _posts,

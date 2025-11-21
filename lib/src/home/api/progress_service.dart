@@ -6,7 +6,6 @@ class ProgressService {
     // Return mock data
     return {
       'workoutsLeft': 10,
-      'steps': 10000,
       'calsBurned': 0,
       'calsTaken': 1200,
       'proteinTaken': 76,

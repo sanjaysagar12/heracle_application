@@ -1,5 +1,6 @@
 import '../api/progress_service.dart';
 import '../service/steps_counter.dart';
+import 'targets_repository.dart';
 
 class ProgressCard {
   final String workoutsLeft;
@@ -7,6 +8,10 @@ class ProgressCard {
   final String calsBurned;
   final String calsTaken;
   final String proteinTaken;
+  final double stepsProgress;
+  final double calsBurnedProgress;
+  final double calsTakenProgress;
+  final double proteinTakenProgress;
 
   ProgressCard({
     required this.workoutsLeft,
@@ -14,16 +19,34 @@ class ProgressCard {
     required this.calsBurned,
     required this.calsTaken,
     required this.proteinTaken,
+    required this.stepsProgress,
+    required this.calsBurnedProgress,
+    required this.calsTakenProgress,
+    required this.proteinTakenProgress,
   });
 
-  factory ProgressCard.fromJson(Map<String, dynamic> json) {
+  factory ProgressCard.fromJson(Map<String, dynamic> json, Map<String, int> targets) {
+    final stepsValue = json['steps'] as int;
+    final calsBurnedValue = json['calsBurned'] as int;
+    final calsTakenValue = json['calsTaken'] as int;
+    final proteinTakenValue = json['proteinTaken'] as int;
+
     return ProgressCard(
       workoutsLeft: formatNumber(json['workoutsLeft'] as int),
-      steps: formatNumber(json['steps'] as int),
-      calsBurned: formatNumber(json['calsBurned'] as int),
-      calsTaken: formatNumber(json['calsTaken'] as int),
-      proteinTaken: formatNumber(json['proteinTaken'] as int),
+      steps: formatNumber(stepsValue),
+      calsBurned: formatNumber(calsBurnedValue),
+      calsTaken: formatNumber(calsTakenValue),
+      proteinTaken: formatNumber(proteinTakenValue),
+      stepsProgress: _calculateProgress(stepsValue, targets['steps'] ?? 10000),
+      calsBurnedProgress: _calculateProgress(calsBurnedValue, targets['cals_burned'] ?? 500),
+      calsTakenProgress: _calculateProgress(calsTakenValue, targets['cals_taken'] ?? 2000),
+      proteinTakenProgress: _calculateProgress(proteinTakenValue, targets['protein_taken'] ?? 150),
     );
+  }
+
+  static double _calculateProgress(int current, int target) {
+    if (target <= 0) return 0.0;
+    return (current / target).clamp(0.0, 1.0);
   }
 
   // Changed from private to public static method
@@ -43,13 +66,20 @@ class ProgressCard {
 class ProgressRepository {
   final ProgressService _progressService;
   final StepsCounter _stepsCounter = StepsCounter();
+  final TargetsRepository _targetsRepository = TargetsRepository();
 
   ProgressRepository({ProgressService? progressService})
       : _progressService = progressService ?? ProgressService();
 
   Future<ProgressCard> getTodayProgress() async {
     try {
-      final data = await _progressService.getTodayProgress();
+      final results = await Future.wait([
+        _progressService.getTodayProgress(),
+        _targetsRepository.getAllTargets(),
+      ]);
+
+      final data = results[0] as Map<String, dynamic>;
+      final targets = results[1] as Map<String, int>;
 
       // Get real-time steps from step counter
       final realTimeSteps = _stepsCounter.currentSteps;
@@ -60,10 +90,18 @@ class ProgressRepository {
         progressData['steps'] = realTimeSteps;
       }
 
-      return ProgressCard.fromJson(progressData);
+      return ProgressCard.fromJson(progressData, targets);
     } catch (e) {
       throw Exception('Failed to load progress: $e');
     }
+  }
+
+  Future<Map<String, int>> getTargets() async {
+    return await _targetsRepository.getAllTargets();
+  }
+
+  Future<bool> updateTarget(String targetType, int targetValue) async {
+    return await _targetsRepository.updateTarget(targetType, targetValue);
   }
 
   // Listen to real-time step updates
