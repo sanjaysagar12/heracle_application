@@ -57,7 +57,7 @@ class StepsCounter {
         return;
       }
 
-      // Load stored steps for today
+      // Load stored steps for today (this will auto-reset if new day)
       await _loadTodaySteps();
 
       // Start listening to step count

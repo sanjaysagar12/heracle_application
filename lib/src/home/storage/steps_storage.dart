@@ -10,7 +10,10 @@ class StepsStorage {
       final prefs = await SharedPreferences.getInstance();
       final today = DateTime.now().toIso8601String().split('T')[0];
       
-      await prefs.setInt('${_todayStepsKey}_$today', steps);
+      // Check if it's a new day and reset if needed
+      await _checkAndResetForNewDay(prefs, today);
+      
+      await prefs.setInt(_todayStepsKey, steps);
       await prefs.setString(_lastDateKey, today);
     } catch (e) {
       print('StepsStorage: Error saving today steps: $e');
@@ -22,7 +25,10 @@ class StepsStorage {
       final prefs = await SharedPreferences.getInstance();
       final today = DateTime.now().toIso8601String().split('T')[0];
       
-      return prefs.getInt('${_todayStepsKey}_$today') ?? 0;
+      // Check if it's a new day and reset if needed
+      await _checkAndResetForNewDay(prefs, today);
+      
+      return prefs.getInt(_todayStepsKey) ?? 0;
     } catch (e) {
       print('StepsStorage: Error getting today steps: $e');
       return 0;
@@ -34,7 +40,11 @@ class StepsStorage {
       final prefs = await SharedPreferences.getInstance();
       final today = DateTime.now().toIso8601String().split('T')[0];
       
-      await prefs.setInt('${_baseStepsKey}_$today', baseSteps);
+      // Check if it's a new day and reset if needed
+      await _checkAndResetForNewDay(prefs, today);
+      
+      await prefs.setInt(_baseStepsKey, baseSteps);
+      await prefs.setString(_lastDateKey, today);
     } catch (e) {
       print('StepsStorage: Error setting base steps: $e');
     }
@@ -45,7 +55,10 @@ class StepsStorage {
       final prefs = await SharedPreferences.getInstance();
       final today = DateTime.now().toIso8601String().split('T')[0];
       
-      return prefs.getInt('${_baseStepsKey}_$today') ?? -1;
+      // Check if it's a new day and reset if needed
+      await _checkAndResetForNewDay(prefs, today);
+      
+      return prefs.getInt(_baseStepsKey) ?? -1;
     } catch (e) {
       print('StepsStorage: Error getting base steps: $e');
       return -1;
@@ -57,37 +70,29 @@ class StepsStorage {
       final prefs = await SharedPreferences.getInstance();
       final today = DateTime.now().toIso8601String().split('T')[0];
       
-      await prefs.remove('${_todayStepsKey}_$today');
-      await prefs.remove('${_baseStepsKey}_$today');
+      await prefs.remove(_todayStepsKey);
+      await prefs.remove(_baseStepsKey);
+      await prefs.setString(_lastDateKey, today);
+      
+      print('StepsStorage: Daily steps reset for $today');
     } catch (e) {
       print('StepsStorage: Error resetting daily steps: $e');
     }
   }
 
-  Future<void> cleanOldData() async {
+  // Check if it's a new day and automatically reset data
+  Future<void> _checkAndResetForNewDay(SharedPreferences prefs, String today) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final keys = prefs.getKeys();
-      final today = DateTime.now().toIso8601String().split('T')[0];
+      final lastDate = prefs.getString(_lastDateKey);
       
-      // Remove data older than 7 days
-      final cutoffDate = DateTime.now().subtract(const Duration(days: 7));
-      
-      for (final key in keys) {
-        if (key.contains(_todayStepsKey) || key.contains(_baseStepsKey)) {
-          final dateStr = key.split('_').last;
-          try {
-            final date = DateTime.parse(dateStr);
-            if (date.isBefore(cutoffDate)) {
-              await prefs.remove(key);
-            }
-          } catch (e) {
-            // Invalid date format, skip
-          }
-        }
+      if (lastDate != null && lastDate != today) {
+        // It's a new day, reset all step data
+        await prefs.remove(_todayStepsKey);
+        await prefs.remove(_baseStepsKey);
+        print('StepsStorage: New day detected ($lastDate -> $today), resetting step data');
       }
     } catch (e) {
-      print('StepsStorage: Error cleaning old data: $e');
+      print('StepsStorage: Error checking for new day: $e');
     }
   }
 }
