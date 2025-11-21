@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 class TodayProgressCard extends StatelessWidget {
-  final int workoutsLeft;
-  final int steps;
-  final int calsBurned;
-  final int calsTaken;
-  final int proteinTaken;
+  final String workoutsLeft; // Changed from int to String
+  final String steps;
+  final String calsBurned;
+  final String calsTaken;
+  final String proteinTaken;
 
   const TodayProgressCard({
     super.key,
     required this.workoutsLeft,
-    this.steps = 0,
-    this.calsBurned = 0,
-    this.calsTaken = 0,
-    this.proteinTaken = 0,
+    this.steps = '0',
+    this.calsBurned = '0',
+    this.calsTaken = '0',
+    this.proteinTaken = '0',
   });
 
   @override
@@ -126,8 +126,8 @@ class TodayProgressCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String label, int value, IconData icon, bool isHighlighted, {String unit = ''}) {
-    final displayValue = unit.isNotEmpty ? '$value$unit' : value.toString();
+  Widget _buildStatCard(String label, String value, IconData icon, bool isHighlighted, {String unit = ''}) {
+    final displayValue = unit.isNotEmpty ? '$value$unit' : value;
     
     return Container(
       padding: const EdgeInsets.all(12),
@@ -143,7 +143,7 @@ class TodayProgressCard extends StatelessWidget {
             displayValue,
             style: const TextStyle(
               color: AppColors.pureWhite,
-              fontSize: 20,
+              fontSize: 16, // Reduced from 20 to 16
               fontWeight: FontWeight.bold,
             ),
             maxLines: 1,

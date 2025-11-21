@@ -1,11 +1,11 @@
 import '../api/progress_service.dart';
 
 class ProgressCard {
-  final int workoutsLeft;
-  final int steps;
-  final int calsBurned;
-  final int calsTaken;
-  final int proteinTaken;
+  final String workoutsLeft; // Changed to String to handle formatted values
+  final String steps;
+  final String calsBurned;
+  final String calsTaken;
+  final String proteinTaken;
 
   ProgressCard({
     required this.workoutsLeft,
@@ -17,12 +17,24 @@ class ProgressCard {
 
   factory ProgressCard.fromJson(Map<String, dynamic> json) {
     return ProgressCard(
-      workoutsLeft: json['workoutsLeft'] as int,
-      steps: json['steps'] as int,
-      calsBurned: json['calsBurned'] as int,
-      calsTaken: json['calsTaken'] as int,
-      proteinTaken: json['proteinTaken'] as int,
+      workoutsLeft: _formatNumber(json['workoutsLeft'] as int),
+      steps: _formatNumber(json['steps'] as int),
+      calsBurned: _formatNumber(json['calsBurned'] as int),
+      calsTaken: _formatNumber(json['calsTaken'] as int),
+      proteinTaken: _formatNumber(json['proteinTaken'] as int),
     );
+  }
+
+  static String _formatNumber(int number) {
+    if (number >= 1000) {
+      double thousands = number / 1000.0;
+      if (thousands == thousands.roundToDouble()) {
+        return '${thousands.round()}k';
+      } else {
+        return '${thousands.toStringAsFixed(1)}k';
+      }
+    }
+    return number.toString();
   }
 }
 

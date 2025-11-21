@@ -43,7 +43,7 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
           ),
         ),
         SizedBox(
-          height: 40,
+          height: 32, // Reduced from 40 to 32
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             scrollDirection: Axis.horizontal,
@@ -70,10 +70,10 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6), // Reduced from horizontal: 20, vertical: 8
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16), // Reduced from 20 to 16
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.white40,
             width: 1.5,
@@ -84,7 +84,7 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
             label,
             style: TextStyle(
               color: isSelected ? AppColors.black : AppColors.white60,
-              fontSize: 14,
+              fontSize: 12, // Reduced from 14 to 12
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
