@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+
 import '../../../widgets/app_bar.dart';
 import '../data/profile_repository.dart';
 import '../data/progress_repository.dart';
@@ -26,11 +28,37 @@ class _HomePageState extends State<HomePage> {
   List<FeedPost> _posts = [];
   bool _isLoading = true;
   Map<String, List<Comment>> _commentsCache = {};
+  StreamSubscription<int>? _stepsSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _initializeStepTracking();
+  }
+
+  Future<void> _initializeStepTracking() async {
+    try {
+      // Start step tracking
+      await _progressRepository.startStepTracking();
+      
+      // Listen to step updates
+      _stepsSubscription = _progressRepository.stepsStream.listen((steps) {
+        if (mounted && _progress != null) {
+          setState(() {
+            _progress = ProgressCard(
+              workoutsLeft: _progress!.workoutsLeft,
+              steps: ProgressCard.formatNumber(steps), // Changed from _formatNumber to formatNumber
+              calsBurned: _progress!.calsBurned,
+              calsTaken: _progress!.calsTaken,
+              proteinTaken: _progress!.proteinTaken,
+            );
+          });
+        }
+      });
+    } catch (e) {
+      print('Error initializing step tracking: $e');
+    }
   }
 
   Future<void> _loadData() async {
@@ -341,5 +369,11 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
     );
+  }
+
+  @override
+  void dispose() {
+    _stepsSubscription?.cancel();
+    super.dispose();
   }
 }
