@@ -1,4 +1,5 @@
 import '../api/stories_service.dart';
+import '../../home/data/mutual_feed_repository.dart';
 
 class StoryContent {
   final String id;
@@ -94,6 +95,7 @@ class DiscoverStory {
   final String timeAgo;
   final bool isLiked;
   final int likesCount;
+  final List<LikedByUser> likedBy;
 
   DiscoverStory({
     required this.id,
@@ -108,6 +110,7 @@ class DiscoverStory {
     required this.timeAgo,
     this.isLiked = false,
     this.likesCount = 0,
+    this.likedBy = const [],
   });
 
   factory DiscoverStory.fromJson(Map<String, dynamic> json) {
@@ -127,6 +130,10 @@ class DiscoverStory {
       timeAgo: json['timeAgo'] as String,
       isLiked: json['isLiked'] as bool? ?? false,
       likesCount: json['likesCount'] as int? ?? 0,
+      likedBy: (json['likedBy'] as List<dynamic>?)
+              ?.map((e) => LikedByUser.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
@@ -143,6 +150,7 @@ class DiscoverStory {
     String? timeAgo,
     bool? isLiked,
     int? likesCount,
+    List<LikedByUser>? likedBy,
   }) {
     return DiscoverStory(
       id: id ?? this.id,
@@ -157,6 +165,7 @@ class DiscoverStory {
       timeAgo: timeAgo ?? this.timeAgo,
       isLiked: isLiked ?? this.isLiked,
       likesCount: likesCount ?? this.likesCount,
+      likedBy: likedBy ?? this.likedBy,
     );
   }
 }

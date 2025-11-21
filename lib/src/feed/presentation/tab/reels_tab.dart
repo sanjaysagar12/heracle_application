@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../home/widgets/comments_bottom_sheet.dart';
+import '../../../home/widgets/likes_bottom_sheet.dart';
 import '../../data/stories_repository.dart';
 import '../../../home/data/mutual_feed_repository.dart';
 
@@ -106,53 +107,84 @@ class _ReelsTabState extends State<ReelsTab> {
     );
   }
 
-  Future<void> _showComments(DiscoverStory story) async {
-    try {
-      // Fetch comments once and cache them
-      if (!_commentsCache.containsKey(story.id)) {
-        final comments = await _mutualFeedRepository.getPostComments(story.id);
-        _commentsCache[story.id] = comments;
-      }
-      
-      if (!mounted) return;
-
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => StatefulBuilder(
-          builder: (context, setModalState) {
-            return DraggableScrollableSheet(
-              initialChildSize: 0.7,
-              minChildSize: 0.5,
-              maxChildSize: 0.95,
-              builder: (context, scrollController) => CommentsBottomSheet(
-                comments: _commentsCache[story.id] ?? [],
-                onAddComment: (content) async {
-                  // Add comment via repo and update cache + UI
-                  final newComment = await _mutualFeedRepository.addComment(story.id, content);
-                  setState(() {
-                    _commentsCache[story.id] = [...(_commentsCache[story.id] ?? []), newComment];
-                  });
-                  setModalState(() {}); // refresh modal content
-                },
-                onAddReply: (commentId, content) async {
-                  final newReply = await _mutualFeedRepository.addReply(story.id, commentId, content);
-                  setState(() {
-                    final current = _commentsCache[story.id] ?? [];
-                    _commentsCache[story.id] = _addReplyToComment(current, commentId, newReply);
-                  });
-                  setModalState(() {}); // refresh modal content
-                },
-              ),
-            );
-          },
+  void _showLikes(DiscoverStory story) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => LikesBottomSheet(
+          likedByUsers: story.likedBy,
         ),
-      );
-    } catch (e) {
-      print('Error loading comments: $e');
-      // optionally show a snackbar
-    }
+      ),
+    );
+  }
+
+  Future<void> _showComments(DiscoverStory story) async {
+    // Show bottom sheet immediately with loading state
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          bool isLoadingComments = !_commentsCache.containsKey(story.id);
+          List<Comment> currentComments = _commentsCache[story.id] ?? [];
+
+          // Fetch comments in background if not cached
+          if (isLoadingComments) {
+            _mutualFeedRepository.getPostComments(story.id).then((comments) {
+              if (mounted) {
+                setState(() {
+                  _commentsCache[story.id] = comments;
+                });
+                setModalState(() {}); // Update modal to show comments
+              }
+            }).catchError((e) {
+              print('Error loading comments: $e');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Failed to load comments'),
+                    backgroundColor: Colors.red,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            });
+          }
+
+          return DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder: (context, scrollController) => CommentsBottomSheet(
+              comments: currentComments,
+              isLoading: isLoadingComments,
+              onAddComment: (content) async {
+                // Add comment via repo and update cache + UI
+                final newComment = await _mutualFeedRepository.addComment(story.id, content);
+                setState(() {
+                  _commentsCache[story.id] = [...(_commentsCache[story.id] ?? []), newComment];
+                });
+                setModalState(() {}); // refresh modal content
+              },
+              onAddReply: (commentId, content) async {
+                final newReply = await _mutualFeedRepository.addReply(story.id, commentId, content);
+                setState(() {
+                  final current = _commentsCache[story.id] ?? [];
+                  _commentsCache[story.id] = _addReplyToComment(current, commentId, newReply);
+                });
+                setModalState(() {}); // refresh modal content
+              },
+            ),
+          );
+        },
+      ),
+    );
   }
 
   // Helper to add reply into nested comment list (returns new list)
@@ -386,22 +418,25 @@ class _ReelsTabState extends State<ReelsTab> {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Like (same favorite icon as Home)
-        GestureDetector(
-          onTap: () => _handleLike(story.id),
-          child: Column(
-            children: [
-              Icon(
+        Column(
+          children: [
+            GestureDetector(
+              onTap: () => _handleLike(story.id),
+              child: Icon(
                 story.isLiked ? Icons.favorite : Icons.favorite_border,
                 color: story.isLiked ? Colors.red : AppColors.pureWhite,
                 size: 30,
               ),
-              const SizedBox(height: 6),
-              Text(
+            ),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: () => _showLikes(story),
+              child: Text(
                 _formatCount(story.likesCount),
                 style: const TextStyle(color: AppColors.pureWhite, fontSize: 12, fontWeight: FontWeight.w600),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         const SizedBox(height: 18),
 
@@ -572,21 +607,29 @@ class _ReelsTabState extends State<ReelsTab> {
 
         // Liked by preview (overlapping avatars + ellipsis text)
         if (story.likesCount > 0)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Row(
-              children: [
-                _buildOverlappingAvatars([story.profileImage], size: 20, overlap: 6, max: 3),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Liked by ${_getSampleLikedByText(story)}',
-                    style: const TextStyle(color: AppColors.white60, fontSize: 12),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+          GestureDetector(
+            onTap: () => _showLikes(story),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Row(
+                children: [
+                  _buildOverlappingAvatars(
+                    story.likedBy.take(3).map((user) => user.profileImage).toList(),
+                    size: 20,
+                    overlap: 6,
+                    max: 3,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Liked by ${_getLikedByText(story)}',
+                      style: const TextStyle(color: AppColors.white60, fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         const SizedBox(height: 8),
@@ -909,18 +952,17 @@ class _ReelsTabState extends State<ReelsTab> {
     return 15 + (_currentIndex * 7) % 50;
   }
 
-  String _getSampleLikedByText(DiscoverStory story) {
-    // Sample logic to generate "Liked by" text
-    if (story.likesCount <= 0) return '';
+  String _getLikedByText(DiscoverStory story) {
+    if (story.likesCount <= 0 || story.likedBy.isEmpty) return '';
 
-    final names = ['Alice', 'Bob', 'Charlie', 'David', 'Eva'];
     final buffer = StringBuffer();
-    for (int i = 0; i < names.length && i < 3; i++) {
-      buffer.write(names[i]);
-      if (i == 2 && story.likesCount > 3) {
-        buffer.write(' and ${story.likesCount - 3} others');
-        break;
-      } else if (i < 2) {
+    final displayCount = story.likedBy.length < 3 ? story.likedBy.length : 3;
+    
+    for (int i = 0; i < displayCount; i++) {
+      buffer.write(story.likedBy[i].name);
+      if (i == displayCount - 1 && story.likesCount > displayCount) {
+        buffer.write(' and ${story.likesCount - displayCount} others');
+      } else if (i < displayCount - 1) {
         buffer.write(', ');
       }
     }
