@@ -88,14 +88,15 @@ class DiscoverStory {
   final String profileImage;
   final String content;
   final List<String> hashtags;
-  final String imageUrl;
-  final String platform;
-  final String platformHandle;
+  final String? imageUrl;
+  final String? platform;
+  final String? platformHandle;
   final String? label;
-  final String timeAgo;
+  final String? timeAgo;
   final bool isLiked;
   final int likesCount;
   final List<LikedByUser> likedBy;
+  final bool isViewed;
 
   DiscoverStory({
     required this.id,
@@ -111,6 +112,7 @@ class DiscoverStory {
     this.isLiked = false,
     this.likesCount = 0,
     this.likedBy = const [],
+    this.isViewed = false,
   });
 
   factory DiscoverStory.fromJson(Map<String, dynamic> json) {
@@ -151,6 +153,7 @@ class DiscoverStory {
     bool? isLiked,
     int? likesCount,
     List<LikedByUser>? likedBy,
+    bool? isViewed,
   }) {
     return DiscoverStory(
       id: id ?? this.id,
@@ -166,6 +169,7 @@ class DiscoverStory {
       isLiked: isLiked ?? this.isLiked,
       likesCount: likesCount ?? this.likesCount,
       likedBy: likedBy ?? this.likedBy,
+      isViewed: isViewed ?? this.isViewed,
     );
   }
 }
@@ -235,6 +239,16 @@ class StoriesRepository {
           isLiked: newIsLiked,
           likesCount: newLikesCount,
         );
+      }
+      return story;
+    }).toList();
+  }
+
+  // Mark discover story as viewed
+  List<DiscoverStory> markDiscoverStoryAsViewed(List<DiscoverStory> stories, String storyId) {
+    return stories.map((story) {
+      if (story.id == storyId) {
+        return story.copyWith(isViewed: true);
       }
       return story;
     }).toList();

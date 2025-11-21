@@ -153,27 +153,36 @@ class WorkoutPostCard extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                images[0],
-                fit: BoxFit.cover,
+            child: Container(
+              color: Colors.black,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Center(
+                  child: Image.network(
+                    images[0],
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    images[1],
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
+            child: Container(
+              color: Colors.black,
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Center(
+                      child: Image.network(
+                        images[1],
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
                   ),
-                ),
                 if (images.length > 2)
                   Positioned.fill(
                     child: Container(
@@ -193,7 +202,8 @@ class WorkoutPostCard extends StatelessWidget {
                       ),
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -249,11 +259,12 @@ class WorkoutPostCard extends StatelessWidget {
                 height: 40,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
+                  color: Colors.black,
                 ),
                 child: ClipOval(
                   child: Image.network(
                     exercise.imageUrl,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         color: AppColors.greyDark,

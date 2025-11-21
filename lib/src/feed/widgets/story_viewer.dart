@@ -80,18 +80,20 @@ class _StoryViewerState extends State<StoryViewer>
       _startProgress();
     } else if (_currentUserIndex > 0) {
       // Go to previous user's last story
-      _userPageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+      _userPageController.animateToPage(
+        _currentUserIndex - 1,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
       );
     }
   }
 
   void _nextUser() {
     if (_currentUserIndex < widget.stories.length - 1) {
-      _userPageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+      _userPageController.animateToPage(
+        _currentUserIndex + 1,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
       );
     } else {
       _closeViewer();
@@ -212,14 +214,14 @@ class _StoryViewerState extends State<StoryViewer>
                       final offset = (pageValue - userIndex);
                       final clamped = offset.clamp(-1.0, 1.0);
 
-                      // horizontal translation (parallax) - adjust multiplier for stronger/weaker effect
-                      final dx = clamped * MediaQuery.of(context).size.width * 0.6;
+                      // horizontal translation (parallax) - Instagram-like smooth slide
+                      final dx = clamped * MediaQuery.of(context).size.width * 0.8;
 
-                      // slight scale when moving between pages
-                      final scale = (1 - clamped.abs() * 0.06).clamp(0.94, 1.0);
+                      // smooth scale when moving between pages (Instagram effect)
+                      final scale = (1 - clamped.abs() * 0.08).clamp(0.92, 1.0);
 
-                      // subtle fade at edges
-                      final opacity = (1 - clamped.abs() * 0.4).clamp(0.0, 1.0);
+                      // smooth fade at edges
+                      final opacity = (1 - clamped.abs() * 0.5).clamp(0.5, 1.0);
 
                       // select story content for this user (current user's active story, otherwise first)
                       final StoryContent? storyContent = user.stories.isEmpty
@@ -245,22 +247,28 @@ class _StoryViewerState extends State<StoryViewer>
               ),
             ),
 
-            // Top gradient overlay
+            // Solid black bar at top (Instagram style)
             Positioned(
               top: 0,
               left: 0,
               right: 0,
-              child: Container(
-                height: 150,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.6),
-                      Colors.transparent,
-                    ],
-                  ),
+              child: IgnorePointer(
+                child: Container(
+                  height: 40,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+
+            // Solid black bar at bottom (Instagram style)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                child: Container(
+                  height: 100,
+                  color: Colors.black,
                 ),
               ),
             ),
@@ -342,10 +350,11 @@ class _StoryViewerState extends State<StoryViewer>
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: NetworkImage(story.imageUrl!),
-          fit: BoxFit.cover,
+      color: Colors.black,
+      child: Center(
+        child: Image.network(
+          story.imageUrl!,
+          fit: BoxFit.contain,
         ),
       ),
     );
@@ -508,7 +517,13 @@ class _StoryViewerState extends State<StoryViewer>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.black100, width: 1),
-                image: DecorationImage(image: NetworkImage(display[i]), fit: BoxFit.cover),
+                color: Colors.black,
+              ),
+              child: ClipOval(
+                child: Image.network(
+                  display[i],
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           );
@@ -594,48 +609,15 @@ class _StoryViewerState extends State<StoryViewer>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Image
-          Image.network(
-            story.imageUrl,
-            fit: BoxFit.cover,
-          ),
-
-          // Gradient overlays
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 300,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.8),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Top gradient
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 100,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.6),
-                    Colors.transparent,
-                  ],
-                ),
+          // Background Image with black letterboxing
+          Container(
+            color: Colors.black,
+            child: Center(
+              child: Image.network(
+                story.imageUrl ?? '',
+                fit: BoxFit.contain,
+                width: double.infinity,
+                height: double.infinity,
               ),
             ),
           ),

@@ -27,6 +27,7 @@ class DiscoverStoriesGrid extends StatelessWidget {
           (context, index) {
             final story = stories[index];
             return DiscoverStoryCard(
+              key: ValueKey('${story.id}_${story.isViewed}'),
               story: story,
               onTap: () => onStoryTap?.call(story),
             );

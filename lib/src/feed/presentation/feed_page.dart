@@ -53,11 +53,30 @@ class _FeedPageState extends State<FeedPage> {
         _storiesRepository.getDiscoverStories(),
       ]);
 
+      // Preserve viewed AND liked state for discover stories
+      final newDiscoverStories = results[1] as List<DiscoverStory>;
+      final mergedDiscoverStories = newDiscoverStories.map((newStory) {
+        // Check if this story was already viewed or liked
+        final existingStory = _discoverStories.firstWhere(
+          (s) => s.id == newStory.id,
+          orElse: () => newStory,
+        );
+        // Preserve BOTH viewed status AND like status
+        if (existingStory.id == newStory.id && _discoverStories.isNotEmpty) {
+          return newStory.copyWith(
+            isViewed: existingStory.isViewed,
+            isLiked: existingStory.isLiked,
+            likesCount: existingStory.likesCount,
+          );
+        }
+        return newStory;
+      }).toList();
+
       setState(() {
         _stories = _storiesRepository.sortStories(
           results[0] as List<StoryUser>,
         );
-        _discoverStories = results[1] as List<DiscoverStory>;
+        _discoverStories = mergedDiscoverStories;
         _isLoading = false;
       });
     } catch (e) {
@@ -121,6 +140,11 @@ class _FeedPageState extends State<FeedPage> {
             });
             // Return the updated story list
             return _discoverStories;
+          },
+          onStoryViewed: (storyId) {
+            setState(() {
+              _discoverStories = _storiesRepository.markDiscoverStoryAsViewed(_discoverStories, storyId);
+            });
           },
         ),
       ),
