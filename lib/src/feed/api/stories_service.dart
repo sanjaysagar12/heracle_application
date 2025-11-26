@@ -17,6 +17,11 @@ class StoriesService {
             'imageUrl': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
             'text': 'Leg day completed! 💪',
             'duration': 5,
+            'isLiked': false,
+            'likedBy': [
+              {'name': 'Sarah Miller', 'profileImage': 'https://i.pravatar.cc/150?img=47', 'isFollowing': false},
+              {'name': 'Johnny Bhai', 'profileImage': 'https://i.pravatar.cc/150?img=12', 'isFollowing': true},
+            ],
           },
           {
             'id': '1_2',

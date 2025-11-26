@@ -8,6 +8,8 @@ class StoryContent {
   final String? text;
   final String? backgroundColor;
   final Duration duration;
+  final bool isLiked;
+  final List<LikedByUser> likedBy;
 
   StoryContent({
     required this.id,
@@ -16,6 +18,8 @@ class StoryContent {
     this.text,
     this.backgroundColor,
     this.duration = const Duration(seconds: 5),
+    this.isLiked = false,
+    this.likedBy = const [],
   });
 
   factory StoryContent.fromJson(Map<String, dynamic> json) {
@@ -28,6 +32,11 @@ class StoryContent {
       duration: Duration(
         seconds: json['duration'] as int? ?? 5,
       ),
+      isLiked: json['isLiked'] as bool? ?? false,
+      likedBy: (json['likedBy'] as List<dynamic>?)
+          ?.map((e) => LikedByUser.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+          [],
     );
   }
 }
