@@ -172,17 +172,21 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
     if (images.length == 1) {
       return SizedBox(
         height: 180,
-        child: Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                images[0],
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
+        child: Container(
+          color: Colors.black,
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Center(
+                  child: Image.network(
+                    images[0],
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
               ),
-            ),
             Positioned(
               top: 12,
               left: 0,
@@ -205,8 +209,9 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                   ),
                 ),
               ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -219,29 +224,38 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
           Row(
             children: [
               Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    images[0],
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
+                child: Container(
+                  color: Colors.black,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Center(
+                      child: Image.network(
+                        images[0],
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        images[1],
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
+                child: Container(
+                  color: Colors.black,
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Center(
+                          child: Image.network(
+                            images[1],
+                            fit: BoxFit.contain,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
+                        ),
                       ),
-                    ),
                     if (images.length > 2)
                       Positioned.fill(
                         child: Container(
@@ -261,7 +275,8 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                           ),
                         ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
