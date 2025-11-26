@@ -436,7 +436,7 @@ class _StoryViewerState extends State<StoryViewer>
         (index) => Expanded(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 2),
-            height: 3,
+            height: 2,
             child: AnimatedBuilder(
               animation: _progressController,
               builder: (context, child) {
@@ -448,11 +448,15 @@ class _StoryViewerState extends State<StoryViewer>
                 } else {
                   value = 0.0;
                 }
-                return LinearProgressIndicator(
-                  value: value,
-                  backgroundColor: AppColors.white40,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppColors.pureWhite,
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(1),
+                  child: LinearProgressIndicator(
+                    value: value,
+                    backgroundColor: AppColors.white40,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.pureWhite,
+                    ),
+                    minHeight: 2,
                   ),
                 );
               },
