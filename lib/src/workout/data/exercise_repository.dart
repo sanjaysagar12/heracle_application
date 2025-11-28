@@ -8,7 +8,7 @@ class ExerciseRepository {
       final data = await _service.fetchExercises();
       
       return data.map((e) => {
-        'id': e['_id']?.toString() ?? '',
+        'id': (e['_id'] ?? e['id'])?.toString() ?? '',
         'name': e['name']?.toString() ?? '',
         'desc': e['description']?.toString() ?? '',
         'image': e['gifUrl']?.toString() ?? '',
