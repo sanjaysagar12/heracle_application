@@ -148,6 +148,23 @@ class WorkoutPostCard extends StatelessWidget {
   }
 
   Widget _buildImages() {
+    if (images.isEmpty) return const SizedBox.shrink();
+
+    if (images.length == 1) {
+      return SizedBox(
+        height: 200,
+        width: double.infinity,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            images[0],
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       height: 200,
       child: Row(
@@ -160,7 +177,9 @@ class WorkoutPostCard extends StatelessWidget {
                 child: Center(
                   child: Image.network(
                     images[0],
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
+                    height: double.infinity,
+                    errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
                   ),
                 ),
               ),
@@ -177,9 +196,10 @@ class WorkoutPostCard extends StatelessWidget {
                     child: Center(
                       child: Image.network(
                         images[1],
-                        fit: BoxFit.contain,
-                        width: double.infinity,
+                        fit: BoxFit.cover,
                         height: double.infinity,
+                        width: double.infinity,
+                        errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
                       ),
                     ),
                   ),
