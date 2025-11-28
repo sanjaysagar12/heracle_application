@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
 import 'select_workouts_tab.dart';
+import 'post_workout_screen.dart';
 
 class LogWorkoutTab extends StatefulWidget {
   final String mode; // 'start' or 'create'
@@ -167,6 +168,28 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
 
   // Simplified: only finish session logic
   Future<void> _finishSession() async {
+    // Show dialog to choose between "Post Workout" and "Save Only"
+    final action = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.black100,
+        title: const Text('Finish Workout', style: TextStyle(color: AppColors.pureWhite)),
+        content: const Text('Do you want to post this workout to your feed?', style: TextStyle(color: AppColors.white60)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'save'),
+            child: const Text('Save Only', style: TextStyle(color: AppColors.white60)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'post'),
+            child: const Text('Post Workout', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+
+    if (action == null) return;
+
     // save completed workout to database
     try {
       final logId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -195,10 +218,23 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
       );
 
       await _sessionRepository.saveWorkoutLogToDb(workoutLog);
-       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout logged successfully')));
-        // Pop back to WorkoutPage (pop all routes until first/home)
-        Navigator.popUntil(context, (route) => route.isFirst);
+
+      if (mounted) {
+        if (action == 'post') {
+           Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PostWorkoutScreen(
+                duration: duration,
+                volume: _totalVolume,
+                exercises: exercises,
+              ),
+            ),
+          );
+        } else {
+           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout logged successfully')));
+           Navigator.popUntil(context, (route) => route.isFirst);
+        }
       }
     } catch (e) {
       if (mounted) {

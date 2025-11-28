@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:heracle/src/auth/data/auth_repository.dart';
 import '../../../route.dart'; // Added import for AppRoutes constants
+import 'package:dio/dio.dart';
+import 'package:heracle/core/storage/local_storage.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -10,14 +12,54 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  @override
-  void initState() {
-    super.initState();
-  }
+  bool _isLoading = false;
 
-  @override
-  void dispose() {
-    super.dispose();
+  Future<void> _handleDevAuth() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final dio = Dio();
+      final response = await dio.post(
+        'https://leno-api-heracle.portos.cloud/api/auth/dev/token',
+        options: Options(
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+        data: {
+          'email': 'sanjaysagar.main@gmail.com',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final token = response.data['token'];
+        if (token != null) {
+          await LocalStorageService().saveAuthToken(token);
+          if (mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+          }
+        } else {
+          throw Exception('Token not found in response');
+        }
+      } else {
+        throw Exception('Failed to get token: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Dev Auth Failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -32,13 +74,13 @@ class _AuthScreenState extends State<AuthScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // New: Dev Auth button — navigates directly to home without signing in
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
-              },
-              child: const Text('Dev Auth'),
-            ),
+            // Dev Auth button
+            _isLoading
+                ? const CircularProgressIndicator()
+                : TextButton(
+                    onPressed: _handleDevAuth,
+                    child: const Text('Dev Auth'),
+                  ),
 
             const SizedBox(height: 12),
 
