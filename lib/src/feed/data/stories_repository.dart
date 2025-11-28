@@ -1,4 +1,5 @@
 import '../api/stories_service.dart';
+import '../../home/data/mutual_feed_repository.dart';
 
 class StoryContent {
   final String id;
@@ -7,6 +8,8 @@ class StoryContent {
   final String? text;
   final String? backgroundColor;
   final Duration duration;
+  final bool isLiked;
+  final List<LikedByUser> likedBy;
 
   StoryContent({
     required this.id,
@@ -15,6 +18,8 @@ class StoryContent {
     this.text,
     this.backgroundColor,
     this.duration = const Duration(seconds: 5),
+    this.isLiked = false,
+    this.likedBy = const [],
   });
 
   factory StoryContent.fromJson(Map<String, dynamic> json) {
@@ -27,6 +32,11 @@ class StoryContent {
       duration: Duration(
         seconds: json['duration'] as int? ?? 5,
       ),
+      isLiked: json['isLiked'] as bool? ?? false,
+      likedBy: (json['likedBy'] as List<dynamic>?)
+          ?.map((e) => LikedByUser.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+          [],
     );
   }
 }
@@ -87,13 +97,15 @@ class DiscoverStory {
   final String profileImage;
   final String content;
   final List<String> hashtags;
-  final String imageUrl;
-  final String platform;
-  final String platformHandle;
+  final String? imageUrl;
+  final String? platform;
+  final String? platformHandle;
   final String? label;
-  final String timeAgo;
+  final String? timeAgo;
   final bool isLiked;
   final int likesCount;
+  final List<LikedByUser> likedBy;
+  final bool isViewed;
 
   DiscoverStory({
     required this.id,
@@ -108,6 +120,8 @@ class DiscoverStory {
     required this.timeAgo,
     this.isLiked = false,
     this.likesCount = 0,
+    this.likedBy = const [],
+    this.isViewed = false,
   });
 
   factory DiscoverStory.fromJson(Map<String, dynamic> json) {
@@ -127,6 +141,10 @@ class DiscoverStory {
       timeAgo: json['timeAgo'] as String,
       isLiked: json['isLiked'] as bool? ?? false,
       likesCount: json['likesCount'] as int? ?? 0,
+      likedBy: (json['likedBy'] as List<dynamic>?)
+              ?.map((e) => LikedByUser.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
@@ -143,6 +161,8 @@ class DiscoverStory {
     String? timeAgo,
     bool? isLiked,
     int? likesCount,
+    List<LikedByUser>? likedBy,
+    bool? isViewed,
   }) {
     return DiscoverStory(
       id: id ?? this.id,
@@ -157,6 +177,8 @@ class DiscoverStory {
       timeAgo: timeAgo ?? this.timeAgo,
       isLiked: isLiked ?? this.isLiked,
       likesCount: likesCount ?? this.likesCount,
+      likedBy: likedBy ?? this.likedBy,
+      isViewed: isViewed ?? this.isViewed,
     );
   }
 }
@@ -226,6 +248,16 @@ class StoriesRepository {
           isLiked: newIsLiked,
           likesCount: newLikesCount,
         );
+      }
+      return story;
+    }).toList();
+  }
+
+  // Mark discover story as viewed
+  List<DiscoverStory> markDiscoverStoryAsViewed(List<DiscoverStory> stories, String storyId) {
+    return stories.map((story) {
+      if (story.id == storyId) {
+        return story.copyWith(isViewed: true);
       }
       return story;
     }).toList();

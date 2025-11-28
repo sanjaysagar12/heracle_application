@@ -17,6 +17,11 @@ class StoriesService {
             'imageUrl': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
             'text': 'Leg day completed! 💪',
             'duration': 5,
+            'isLiked': false,
+            'likedBy': [
+              {'name': 'Sarah Miller', 'profileImage': 'https://i.pravatar.cc/150?img=47', 'isFollowing': false},
+              {'name': 'Johnny Bhai', 'profileImage': 'https://i.pravatar.cc/150?img=12', 'isFollowing': true},
+            ],
           },
           {
             'id': '1_2',
@@ -147,19 +152,31 @@ class StoriesService {
         'timeAgo': '2h ago',
         'isLiked': false,
         'likesCount': 124,
+        'likedBy': [
+          {'name': 'Sarah Miller', 'profileImage': 'https://i.pravatar.cc/150?img=47', 'isFollowing': false},
+          {'name': 'Johnny Bhai', 'profileImage': 'https://i.pravatar.cc/150?img=12', 'isFollowing': true},
+          {'name': 'Joseph Ismati', 'profileImage': 'https://i.pravatar.cc/150?img=33', 'isFollowing': false},
+          {'name': 'Ronnie Herr', 'profileImage': 'https://i.pravatar.cc/150?img=56', 'isFollowing': true},
+          {'name': 'Emma Wilson', 'profileImage': 'https://i.pravatar.cc/150?img=20', 'isFollowing': false},
+        ],
       },
       {
         'id': '2',
         'username': 'Kendra Jane',
         'profileImage': 'https://i.pravatar.cc/150?img=45',
-        'content': 'had a nice workout sessions',
-        'hashtags': ['Gymills'],
+        'content': '''Just finished a 45-minute HIIT session.Sweat, smiles, progress.Pushed through the hardest set.Feeling stronger every week.Recovery stretch time.''',
+        'hashtags': ['Gymills','Gymills','Gymills','Gymills','Gymills''Gymills','Gymills','Gymills','Gymills'],
         'imageUrl': 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400',
         'platform': 'Instagram',
         'platformHandle': '@fitness_queen',
         'timeAgo': '5h ago',
         'isLiked': false,
         'likesCount': 89,
+        'likedBy': [
+          {'name': 'Mike Johnson', 'profileImage': 'https://i.pravatar.cc/150?img=13', 'isFollowing': true},
+          {'name': 'Lisa Anderson', 'profileImage': 'https://i.pravatar.cc/150?img=21', 'isFollowing': false},
+          {'name': 'David Lee', 'profileImage': 'https://i.pravatar.cc/150?img=31', 'isFollowing': true},
+        ],
       },
       {
         'id': '3',
@@ -173,6 +190,14 @@ class StoriesService {
         'timeAgo': '8h ago',
         'isLiked': false,
         'likesCount': 256,
+        'likedBy': [
+          {'name': 'Alex Thompson', 'profileImage': 'https://i.pravatar.cc/150?img=15', 'isFollowing': false},
+          {'name': 'Rachel Green', 'profileImage': 'https://i.pravatar.cc/150?img=25', 'isFollowing': true},
+          {'name': 'Chris Brown', 'profileImage': 'https://i.pravatar.cc/150?img=35', 'isFollowing': false},
+          {'name': 'Monica Geller', 'profileImage': 'https://i.pravatar.cc/150?img=40', 'isFollowing': true},
+          {'name': 'Ross Smith', 'profileImage': 'https://i.pravatar.cc/150?img=50', 'isFollowing': false},
+          {'name': 'Phoebe White', 'profileImage': 'https://i.pravatar.cc/150?img=55', 'isFollowing': false},
+        ],
       },
       {
         'id': '4',
@@ -186,6 +211,12 @@ class StoriesService {
         'timeAgo': '1d ago',
         'isLiked': false,
         'likesCount': 432,
+        'likedBy': [
+          {'name': 'Tom Hanks', 'profileImage': 'https://i.pravatar.cc/150?img=11', 'isFollowing': true},
+          {'name': 'Julia Roberts', 'profileImage': 'https://i.pravatar.cc/150?img=22', 'isFollowing': false},
+          {'name': 'Brad Pitt', 'profileImage': 'https://i.pravatar.cc/150?img=32', 'isFollowing': true},
+          {'name': 'Jennifer Aniston', 'profileImage': 'https://i.pravatar.cc/150?img=42', 'isFollowing': false},
+        ],
       },
     ];
   }
