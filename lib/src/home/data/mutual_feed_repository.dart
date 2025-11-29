@@ -4,17 +4,19 @@ class LikedByUser {
   final String name;
   final String profileImage;
   final bool isFollowing;
+  final bool isViewer;
 
   LikedByUser({
     required this.name,
     required this.profileImage,
     this.isFollowing = false,
+    this.isViewer = false,
   });
 
   factory LikedByUser.fromJson(Map<String, dynamic> json) {
     // API may return either:
-    // 1) { "name": "...", "profileImage": "...", "isFollowing": true }
-    // 2) { "user": { "username":"", "name":"", "avatarUrl": ... }, "isFollowing": true }
+    // 1) { "name": "...", "profileImage": "...", "isFollowing": true, "isViewer": false }
+    // 2) { "user": { "username":"", "name":"", "avatarUrl": ... }, "isFollowing": true, "isViewer": false }
     if (json.containsKey('user')) {
       final user = json['user'] as Map<String, dynamic>;
       final name = (user['name'] as String?) ?? (user['username'] as String?) ?? '';
@@ -23,6 +25,7 @@ class LikedByUser {
         name: name,
         profileImage: profileImage,
         isFollowing: json['isFollowing'] as bool? ?? false,
+        isViewer: json['isViewer'] as bool? ?? false,
       );
     }
 
@@ -30,6 +33,7 @@ class LikedByUser {
       name: json['name'] as String? ?? '',
       profileImage: json['profileImage'] as String? ?? '',
       isFollowing: json['isFollowing'] as bool? ?? false,
+      isViewer: json['isViewer'] as bool? ?? false,
     );
   }
 }

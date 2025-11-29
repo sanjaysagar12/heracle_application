@@ -203,10 +203,14 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () => _toggleFollow(user.name),
-            child: _buildFollowButton(isFollowing),
-          ),
+          // If this entry represents the viewer themselves, hide follow/following button
+          if (!user.isViewer)
+            GestureDetector(
+              onTap: () => _toggleFollow(user.name),
+              child: _buildFollowButton(isFollowing),
+            )
+          else
+            const SizedBox.shrink(),
         ],
       ),
     );
