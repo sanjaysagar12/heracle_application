@@ -4,18 +4,36 @@ class LikedByUser {
   final String name;
   final String profileImage;
   final bool isFollowing;
+  final bool isViewer;
 
   LikedByUser({
     required this.name,
     required this.profileImage,
     this.isFollowing = false,
+    this.isViewer = false,
   });
 
   factory LikedByUser.fromJson(Map<String, dynamic> json) {
+    // API may return either:
+    // 1) { "name": "...", "profileImage": "...", "isFollowing": true, "isViewer": false }
+    // 2) { "user": { "username":"", "name":"", "avatarUrl": ... }, "isFollowing": true, "isViewer": false }
+    if (json.containsKey('user')) {
+      final user = json['user'] as Map<String, dynamic>;
+      final name = (user['name'] as String?) ?? (user['username'] as String?) ?? '';
+      final profileImage = (user['avatarUrl'] as String?) ?? '';
+      return LikedByUser(
+        name: name,
+        profileImage: profileImage,
+        isFollowing: json['isFollowing'] as bool? ?? false,
+        isViewer: json['isViewer'] as bool? ?? false,
+      );
+    }
+
     return LikedByUser(
-      name: json['name'] as String,
-      profileImage: json['profileImage'] as String,
+      name: json['name'] as String? ?? '',
+      profileImage: json['profileImage'] as String? ?? '',
       isFollowing: json['isFollowing'] as bool? ?? false,
+      isViewer: json['isViewer'] as bool? ?? false,
     );
   }
 }
@@ -101,18 +119,16 @@ class WorkoutPost extends FeedPost {
       profileImage: json['profileImage'] as String,
       timeAgo: json['timeAgo'] as String,
       content: json['content'] as String,
-      tags: List<String>.from(json['tags']),
-      images: List<String>.from(json['images']),
-      duration: json['duration'] as String,
-      volume: json['volume'] as String,
-      records: json['records'] as String,
-      exercises: (json['exercises'] as List)
-          .map((e) => Exercise.fromJson(e))
-          .toList(),
-      likes: json['likes'] as int,
-      likedBy: (json['likedBy'] as List)
-          .map((user) => LikedByUser.fromJson(user))
-          .toList(),
+      tags: List<String>.from(json['tags'] ?? const []),
+      images: List<String>.from(json['images'] ?? const []),
+      duration: json['duration'] as String? ?? '',
+      volume: json['volume'] as String? ?? '',
+      records: json['records'] as String? ?? '',
+      exercises: (json['exercises'] as List? ?? []).map((e) => Exercise.fromJson(e)).toList(),
+      likes: (json['likes'] as int?) ?? 0,
+      likedBy: (json['likedBy'] as List? ?? []).map((user) => LikedByUser.fromJson(user)).toList(),
+      // read isLiked from API (default false)
+      isLiked: json['isLiked'] as bool? ?? false,
       commentCount: json['commentCount'] as int? ?? 0,
     );
   }
@@ -191,7 +207,7 @@ class NutritionPost extends FeedPost {
   });
 
   factory NutritionPost.fromJson(Map<String, dynamic> json) {
-    final meals = (json['meals'] as List)
+    final meals = (json['meals'] as List? ?? [])
         .map((meal) => NutritionMeal.fromJson(meal))
         .toList();
     
@@ -206,10 +222,10 @@ class NutritionPost extends FeedPost {
       timeAgo: json['timeAgo'] as String,
       content: meals.isNotEmpty ? meals[0].content : '',
       images: allImages,
-      likes: json['likes'] as int,
-      likedBy: (json['likedBy'] as List)
-          .map((user) => LikedByUser.fromJson(user))
-          .toList(),
+      likes: (json['likes'] as int?) ?? 0,
+      likedBy: (json['likedBy'] as List? ?? []).map((user) => LikedByUser.fromJson(user)).toList(),
+      // read isLiked from API (default false)
+      isLiked: json['isLiked'] as bool? ?? false,
       commentCount: json['commentCount'] as int? ?? 0,
       meals: meals,
     );
@@ -303,6 +319,14 @@ class MutualFeedRepository {
     }
   }
 
+  Future<void> likePost(String postId) async {
+    try {
+      await _service.likePost(postId);
+    } catch (e) {
+      throw Exception('Failed to like post: $e');
+    }
+  }
+
   Future<List<Comment>> getPostComments(String postId) async {
     // Add delay for testing skeleton loading
     await Future.delayed(const Duration(seconds: 2));
@@ -333,6 +357,26 @@ class MutualFeedRepository {
       return Comment.fromJson(data);
     } catch (e) {
       throw Exception('Failed to add reply: $e');
+    }
+  }
+
+  Future<List<LikedByUser>> getPostLikes(String postId) async {
+    try {
+      final data = await _service.getPostLikes(postId);
+      final likesList = (data['likes'] as List? ?? []);
+      return likesList.map((entry) {
+        return LikedByUser.fromJson(entry as Map<String, dynamic>);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to load post likes: $e');
+    }
+  }
+
+  Future<void> followUser(String username) async {
+    try {
+      await _service.followUser(username);
+    } catch (e) {
+      throw Exception('Failed to follow/unfollow user: $e');
     }
   }
 }

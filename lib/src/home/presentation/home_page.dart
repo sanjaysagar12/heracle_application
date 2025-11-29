@@ -30,6 +30,9 @@ class _HomePageState extends State<HomePage> {
   Map<String, List<Comment>> _commentsCache = {};
   StreamSubscription<int>? _stepsSubscription;
 
+  // Add a set to track like requests in progress
+  final Set<String> _likeInProgress = {};
+
   @override
   void initState() {
     super.initState();
@@ -127,7 +130,15 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _handleLike(String postId) {
+  // Replace the old _handleLike with this async version that does optimistic update
+  Future<void> _handleLike(String postId) async {
+    if (_likeInProgress.contains(postId)) return; // prevent duplicate requests
+    _likeInProgress.add(postId);
+
+    // Keep a copy of previous posts to allow rollback on failure
+    final previousPosts = List<FeedPost>.from(_posts);
+
+    // Optimistic UI update
     setState(() {
       _posts = _posts.map((post) {
         if (post.id == postId) {
@@ -138,6 +149,27 @@ class _HomePageState extends State<HomePage> {
         return post;
       }).toList();
     });
+
+    try {
+      // Persist the like to server
+      await _mutualFeedRepository.likePost(postId);
+    } catch (e) {
+      // Rollback optimistic update on error
+      if (mounted) {
+        setState(() {
+          _posts = previousPosts;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update like: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      _likeInProgress.remove(postId);
+    }
   }
 
   Future<void> _handleAddComment(String postId, String content) async {
@@ -363,7 +395,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _handleLikesClick(List<LikedByUser> likedByUsers) {
+  void _handleLikesClick(String postId) {
+    // Open sheet immediately (sheet shows skeleton while fetching)
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -373,7 +406,7 @@ class _HomePageState extends State<HomePage> {
         minChildSize: 0.4,
         maxChildSize: 0.9,
         builder: (context, scrollController) => LikesBottomSheet(
-          likedByUsers: likedByUsers,
+          postId: postId,
         ),
       ),
     );

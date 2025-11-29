@@ -8,7 +8,7 @@ class TrackMutualsSection extends StatefulWidget {
   final List<FeedPost> posts;
   final Function(String) onLike;
   final Function(String) onComment;
-  final Function(List<LikedByUser>) onLikesClick;
+  final Function(String) onLikesClick;
 
   const TrackMutualsSection({
     super.key,
@@ -115,7 +115,7 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
             commentCount: post.commentCount,
             onLike: () => widget.onLike(post.id),
             onComment: () => widget.onComment(post.id),
-            onLikesClick: () => widget.onLikesClick(post.likedBy),
+            onLikesClick: () => widget.onLikesClick(post.id),
           );
         } else if (post is NutritionPost) {
           return NutritionPostCard(
@@ -130,7 +130,7 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
             commentCount: post.commentCount,
             onLike: () => widget.onLike(post.id),
             onComment: () => widget.onComment(post.id),
-            onLikesClick: () => widget.onLikesClick(post.likedBy),
+            onLikesClick: () => widget.onLikesClick(post.id),
           );
         }
         return const SizedBox.shrink();
