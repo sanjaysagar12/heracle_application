@@ -25,6 +25,9 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
   bool _isLoading = true;
   List<LikedByUser> _likes = [];
 
+  // track follow/unfollow requests in progress per username
+  final Set<String> _followInProgress = {};
+
   @override
   void initState() {
     super.initState();
@@ -61,10 +64,39 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
     }
   }
 
-  void _toggleFollow(String userName) {
+  Future<void> _toggleFollow(String userName) async {
+    if (_followInProgress.contains(userName)) return;
+    final previous = _followingStatus[userName] ?? false;
+
+    // Optimistic update (UI toggles immediately)
     setState(() {
-      _followingStatus[userName] = !(_followingStatus[userName] ?? false);
+      _followingStatus[userName] = !previous;
+      _followInProgress.add(userName);
     });
+
+    try {
+      final repo = MutualFeedRepository();
+      await repo.followUser(userName);
+      // success — UI already updated optimistically
+    } catch (e) {
+      // revert on error
+      if (mounted) {
+        setState(() {
+          _followingStatus[userName] = previous;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update follow: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      // remove in-progress flag (no UI spinner)
+      _followInProgress.remove(userName);
+      if (mounted) setState(() {}); // ensure UI reflects any revert
+    }
   }
 
   @override
@@ -139,7 +171,6 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
 
   Widget _buildUserItem(LikedByUser user) {
     final isFollowing = _followingStatus[user.name] ?? user.isFollowing;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -183,13 +214,11 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
 
   Widget _buildFollowButton(bool isFollowing) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: isFollowing ? Colors.transparent : AppColors.primary,
         borderRadius: BorderRadius.circular(20),
-        border: isFollowing
-            ? Border.all(color: AppColors.white40, width: 1.5)
-            : null,
+        border: isFollowing ? Border.all(color: AppColors.white40, width: 1.5) : null,
       ),
       child: Text(
         isFollowing ? 'Following' : 'Follow',

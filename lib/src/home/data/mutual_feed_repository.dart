@@ -367,4 +367,12 @@ class MutualFeedRepository {
       throw Exception('Failed to load post likes: $e');
     }
   }
+
+  Future<void> followUser(String username) async {
+    try {
+      await _service.followUser(username);
+    } catch (e) {
+      throw Exception('Failed to follow/unfollow user: $e');
+    }
+  }
 }

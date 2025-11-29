@@ -176,4 +176,32 @@ class MutualFeedService {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>?> followUser(String username) async {
+    final stopwatch = Stopwatch()..start();
+    print('MutualFeedService: Starting followUser for username=$username');
+    try {
+      // Sending empty body as per curl example
+      final response = await _dioClient.dio.post('/api/social/follow/$username', data: {});
+
+      stopwatch.stop();
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('MutualFeedService: followUser succeeded for username=$username '
+              'status=${response.statusCode} duration=${stopwatch.elapsedMilliseconds}ms '
+              'response=${response.data}');
+        // return parsed response if needed
+        return response.data as Map<String, dynamic>?;
+      } else {
+        print('MutualFeedService: followUser failed for username=$username '
+              'status=${response.statusCode} duration=${stopwatch.elapsedMilliseconds}ms '
+              'response=${response.data}');
+        throw Exception('Failed to follow user: ${response.statusCode}');
+      }
+    } catch (e, st) {
+      stopwatch.stop();
+      print('MutualFeedService: Error followUser username=$username after ${stopwatch.elapsedMilliseconds}ms '
+            'error=$e\n$st');
+      rethrow;
+    }
+  }
 }
