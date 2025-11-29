@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
+import 'dart:developer' as developer;
 
 class MutualFeedService {
   final DioClient _dioClient = DioClient();
@@ -19,6 +20,33 @@ class MutualFeedService {
       // Return empty list or rethrow based on preference. 
       // Returning empty list to avoid crashing UI if API fails initially
       return [];
+    }
+  }
+
+  Future<void> likePost(String postId) async {
+    final stopwatch = Stopwatch()..start();
+    print('MutualFeedService: Starting likePost for postId=$postId');
+    try {
+      final response = await _dioClient.dio.post('/api/post/$postId/like');
+      
+      stopwatch.stop();
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('MutualFeedService: likePost succeeded for postId=$postId '
+              'status=${response.statusCode} '
+              'duration=${stopwatch.elapsedMilliseconds}ms '
+              'response=${response.data}');
+      } else {
+        print('MutualFeedService: likePost failed for postId=$postId '
+              'status=${response.statusCode} '
+              'duration=${stopwatch.elapsedMilliseconds}ms '
+              'response=${response.data}');
+        throw Exception('Failed to like post: ${response.statusCode}');
+      }
+    } catch (e, st) {
+      stopwatch.stop();
+      print('MutualFeedService: Error liking postId=$postId after ${stopwatch.elapsedMilliseconds}ms '
+            'error=$e\n$st');
+      rethrow;
     }
   }
 

@@ -101,18 +101,16 @@ class WorkoutPost extends FeedPost {
       profileImage: json['profileImage'] as String,
       timeAgo: json['timeAgo'] as String,
       content: json['content'] as String,
-      tags: List<String>.from(json['tags']),
-      images: List<String>.from(json['images']),
-      duration: json['duration'] as String,
-      volume: json['volume'] as String,
-      records: json['records'] as String,
-      exercises: (json['exercises'] as List)
-          .map((e) => Exercise.fromJson(e))
-          .toList(),
-      likes: json['likes'] as int,
-      likedBy: (json['likedBy'] as List)
-          .map((user) => LikedByUser.fromJson(user))
-          .toList(),
+      tags: List<String>.from(json['tags'] ?? const []),
+      images: List<String>.from(json['images'] ?? const []),
+      duration: json['duration'] as String? ?? '',
+      volume: json['volume'] as String? ?? '',
+      records: json['records'] as String? ?? '',
+      exercises: (json['exercises'] as List? ?? []).map((e) => Exercise.fromJson(e)).toList(),
+      likes: (json['likes'] as int?) ?? 0,
+      likedBy: (json['likedBy'] as List? ?? []).map((user) => LikedByUser.fromJson(user)).toList(),
+      // read isLiked from API (default false)
+      isLiked: json['isLiked'] as bool? ?? false,
       commentCount: json['commentCount'] as int? ?? 0,
     );
   }
@@ -191,7 +189,7 @@ class NutritionPost extends FeedPost {
   });
 
   factory NutritionPost.fromJson(Map<String, dynamic> json) {
-    final meals = (json['meals'] as List)
+    final meals = (json['meals'] as List? ?? [])
         .map((meal) => NutritionMeal.fromJson(meal))
         .toList();
     
@@ -206,10 +204,10 @@ class NutritionPost extends FeedPost {
       timeAgo: json['timeAgo'] as String,
       content: meals.isNotEmpty ? meals[0].content : '',
       images: allImages,
-      likes: json['likes'] as int,
-      likedBy: (json['likedBy'] as List)
-          .map((user) => LikedByUser.fromJson(user))
-          .toList(),
+      likes: (json['likes'] as int?) ?? 0,
+      likedBy: (json['likedBy'] as List? ?? []).map((user) => LikedByUser.fromJson(user)).toList(),
+      // read isLiked from API (default false)
+      isLiked: json['isLiked'] as bool? ?? false,
       commentCount: json['commentCount'] as int? ?? 0,
       meals: meals,
     );
@@ -300,6 +298,14 @@ class MutualFeedRepository {
       }).toList();
     } catch (e) {
       throw Exception('Failed to load mutual feed: $e');
+    }
+  }
+
+  Future<void> likePost(String postId) async {
+    try {
+      await _service.likePost(postId);
+    } catch (e) {
+      throw Exception('Failed to like post: $e');
     }
   }
 
