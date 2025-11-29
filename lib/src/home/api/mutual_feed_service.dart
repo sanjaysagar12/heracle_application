@@ -150,4 +150,30 @@ class MutualFeedService {
       'replies': [],
     };
   }
+
+  Future<Map<String, dynamic>> getPostLikes(String postId) async {
+    final stopwatch = Stopwatch()..start();
+    print('MutualFeedService: Starting getPostLikes for postId=$postId');
+    try {
+      final response = await _dioClient.dio.get('/api/post/$postId/likes');
+
+      stopwatch.stop();
+      if (response.statusCode == 200) {
+        print('MutualFeedService: getPostLikes succeeded for postId=$postId '
+              'duration=${stopwatch.elapsedMilliseconds}ms '
+              'response=${response.data}');
+        return response.data as Map<String, dynamic>;
+      } else {
+        print('MutualFeedService: getPostLikes failed for postId=$postId '
+              'status=${response.statusCode} '
+              'duration=${stopwatch.elapsedMilliseconds}ms');
+        throw Exception('Failed to load post likes: ${response.statusCode}');
+      }
+    } catch (e, st) {
+      stopwatch.stop();
+      print('MutualFeedService: Error getPostLikes postId=$postId after ${stopwatch.elapsedMilliseconds}ms '
+            'error=$e\n$st');
+      rethrow;
+    }
+  }
 }

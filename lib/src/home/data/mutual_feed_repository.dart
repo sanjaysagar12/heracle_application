@@ -12,9 +12,23 @@ class LikedByUser {
   });
 
   factory LikedByUser.fromJson(Map<String, dynamic> json) {
+    // API may return either:
+    // 1) { "name": "...", "profileImage": "...", "isFollowing": true }
+    // 2) { "user": { "username":"", "name":"", "avatarUrl": ... }, "isFollowing": true }
+    if (json.containsKey('user')) {
+      final user = json['user'] as Map<String, dynamic>;
+      final name = (user['name'] as String?) ?? (user['username'] as String?) ?? '';
+      final profileImage = (user['avatarUrl'] as String?) ?? '';
+      return LikedByUser(
+        name: name,
+        profileImage: profileImage,
+        isFollowing: json['isFollowing'] as bool? ?? false,
+      );
+    }
+
     return LikedByUser(
-      name: json['name'] as String,
-      profileImage: json['profileImage'] as String,
+      name: json['name'] as String? ?? '',
+      profileImage: json['profileImage'] as String? ?? '',
       isFollowing: json['isFollowing'] as bool? ?? false,
     );
   }
@@ -339,6 +353,18 @@ class MutualFeedRepository {
       return Comment.fromJson(data);
     } catch (e) {
       throw Exception('Failed to add reply: $e');
+    }
+  }
+
+  Future<List<LikedByUser>> getPostLikes(String postId) async {
+    try {
+      final data = await _service.getPostLikes(postId);
+      final likesList = (data['likes'] as List? ?? []);
+      return likesList.map((entry) {
+        return LikedByUser.fromJson(entry as Map<String, dynamic>);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to load post likes: $e');
     }
   }
 }

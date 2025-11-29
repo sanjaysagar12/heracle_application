@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
+import 'likes_skeleton.dart';
 
 class LikesBottomSheet extends StatefulWidget {
-  final List<LikedByUser> likedByUsers;
+  // Either provide postId to fetch likes from backend OR
+  // provide likedByUsers directly. Both are optional but at least
+  // one should be meaningful for the UI.
+  final String? postId;
+  final List<LikedByUser>? likedByUsers;
 
   const LikesBottomSheet({
     super.key,
-    required this.likedByUsers,
+    this.postId,
+    this.likedByUsers,
   });
 
   @override
@@ -16,14 +22,43 @@ class LikesBottomSheet extends StatefulWidget {
 
 class _LikesBottomSheetState extends State<LikesBottomSheet> {
   late Map<String, bool> _followingStatus;
+  bool _isLoading = true;
+  List<LikedByUser> _likes = [];
 
   @override
   void initState() {
     super.initState();
-    // Initialize following status from the user data
-    _followingStatus = {
-      for (var user in widget.likedByUsers) user.name: user.isFollowing
-    };
+    // Initialize following status from the user data (if any provided)
+    _likes = widget.likedByUsers ?? [];
+    _followingStatus = { for (var user in _likes) user.name: user.isFollowing };
+
+    // Show skeleton immediately. If a postId is provided, fetch from backend;
+    // otherwise display the provided likedByUsers immediately.
+    if (widget.postId != null) {
+      _fetchLikes();
+    } else {
+      _isLoading = false;
+    }
+  }
+
+  Future<void> _fetchLikes() async {
+    if (widget.postId == null) return;
+    setState(() => _isLoading = true);
+    try {
+      final repo = MutualFeedRepository();
+      final likes = await repo.getPostLikes(widget.postId!);
+      setState(() {
+        _likes = likes;
+        _followingStatus = { for (var u in _likes) u.name: u.isFollowing };
+        _isLoading = false;
+      });
+    } catch (e) {
+      // On error, keep empty list and stop loading
+      setState(() {
+        _likes = [];
+        _isLoading = false;
+      });
+    }
   }
 
   void _toggleFollow(String userName) {
@@ -43,7 +78,16 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildHeader(context),
-          if (widget.likedByUsers.isEmpty)
+          if (_isLoading)
+            // show likes-specific skeleton while likes are loading
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: SizedBox(
+                height: 160,
+                child: LikesSkeleton(),
+              ),
+            )
+          else if (_likes.isEmpty)
             const Padding(
               padding: EdgeInsets.all(40),
               child: Text(
@@ -59,9 +103,9 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
               child: ListView.builder(
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: widget.likedByUsers.length,
+                itemCount: _likes.length,
                 itemBuilder: (context, index) {
-                  return _buildUserItem(widget.likedByUsers[index]);
+                  return _buildUserItem(_likes[index]);
                 },
               ),
             ),

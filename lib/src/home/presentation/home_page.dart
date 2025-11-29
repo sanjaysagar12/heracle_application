@@ -395,7 +395,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _handleLikesClick(List<LikedByUser> likedByUsers) {
+  void _handleLikesClick(String postId) {
+    // Open sheet immediately (sheet shows skeleton while fetching)
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -405,7 +406,7 @@ class _HomePageState extends State<HomePage> {
         minChildSize: 0.4,
         maxChildSize: 0.9,
         builder: (context, scrollController) => LikesBottomSheet(
-          likedByUsers: likedByUsers,
+          postId: postId,
         ),
       ),
     );
