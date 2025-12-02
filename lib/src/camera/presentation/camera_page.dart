@@ -100,6 +100,7 @@ class _CameraPageState extends State<CameraPage>
                     _path(sensors, CaptureMode.video),
                 initialCaptureMode: _captureMode,
               ),
+              previewFit: CameraPreviewFit.contain,
               // FIX: Explicitly add types (CameraState, AnalysisPreview) here
               builder: (CameraState state, AnalysisPreview preview) {
                 // Auto-record logic after switch
