@@ -77,10 +77,13 @@ class _CameraPageState extends State<CameraPage>
     );
   }
 
+  final TextEditingController _captionController = TextEditingController();
+
   @override
   void dispose() {
     _fadeController.dispose();
     _videoController?.dispose();
+    _captionController.dispose();
     super.dispose();
   }
 
@@ -320,9 +323,10 @@ class _CameraPageState extends State<CameraPage>
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Center(
-                          child: const TextField(
-                            style: TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
+                          child: TextField(
+                            controller: _captionController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: const InputDecoration(
                               hintText: "Add a caption…",
                               hintStyle: TextStyle(color: AppColors.white40),
                               border: InputBorder.none,
@@ -340,7 +344,10 @@ class _CameraPageState extends State<CameraPage>
                           showModalBottomSheet(
                             context: context,
                             backgroundColor: Colors.transparent,
-                            builder: (context) => const ShareBottomSheet(),
+                            builder: (context) => ShareBottomSheet(
+                              filePath: _previewFile!.path,
+                              caption: _captionController.text,
+                            ),
                           );
                         },
                         icon: const Icon(Icons.telegram_sharp, size: 30), // Increased size
