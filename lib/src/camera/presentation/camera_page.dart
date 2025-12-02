@@ -1,13 +1,19 @@
 import 'dart:io';
+import 'dart:typed_data'; // Added
+import 'dart:ui' as ui; // Added
+import 'package:device_info_plus/device_info_plus.dart'; // Added
+import 'package:flutter/rendering.dart'; // Added
 import 'package:heracle/core/theme/app_colors.dart';
 import 'package:heracle/src/camera/presentation/share_bottom_sheet.dart';
 import 'package:heracle/src/camera/presentation/camera_nav_bar.dart';
-import 'package:heracle/src/story/domain/text_overlay.dart'; // Added
-import 'package:heracle/src/story/presentation/text_editor_widget.dart'; // Added
+import 'package:heracle/src/camera/domain/text_overlay.dart';
+import 'package:heracle/src/camera/widgets/text_editor_widget.dart';
 import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:flutter/material.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart'; // Added
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart'; // Added
 import 'package:video_player/video_player.dart';
 
 class CameraPage extends StatefulWidget {
@@ -36,6 +42,8 @@ class _CameraPageState extends State<CameraPage>
   double _baseScale = 1.0;
   double _baseRotation = 0.0;
   Offset _basePosition = Offset.zero;
+  
+  final GlobalKey _captureKey = GlobalKey(); // Added for capturing
 
   /// Helper to generate a path for the captured file
   Future<CaptureRequest> _path(List<Sensor> sensors, CaptureMode mode) async {
@@ -139,6 +147,113 @@ class _CameraPageState extends State<CameraPage>
         ),
       ),
     );
+  }
+
+  // Added: Save Story Logic
+  Future<void> _saveStory() async {
+    PermissionStatus status;
+
+    if (Platform.isAndroid) {
+      try {
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        if (androidInfo.version.sdkInt >= 33) {
+          status = await Permission.photos.request();
+        } else {
+          status = await Permission.storage.request();
+        }
+      } catch (e) {
+        debugPrint("DeviceInfoPlugin failed: $e. Trying fallback.");
+        status = await Permission.storage.request();
+        if (!status.isGranted) {
+          status = await Permission.photos.request();
+        }
+      }
+    } else {
+      status = await Permission.photos.request();
+    }
+
+    if (status.isPermanentlyDenied) {
+      openAppSettings();
+      return;
+    }
+
+    if (!status.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Storage permission denied")),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _selectedOverlay = null;
+    });
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    try {
+      if (_isVideo) {
+        await _saveVideoWithOverlays();
+      } else {
+        await _saveImageWithOverlays();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to save: $e")),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveImageWithOverlays() async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final RenderRepaintBoundary boundary = _captureKey.currentContext!
+          .findRenderObject() as RenderRepaintBoundary;
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      final result = await ImageGallerySaverPlus.saveImage(
+        pngBytes,
+        quality: 100,
+        name: "story_${DateTime.now().millisecondsSinceEpoch}",
+      );
+
+      if (mounted) Navigator.pop(context); // Dismiss loading
+
+      if (result['isSuccess']) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Image saved to gallery!")),
+          );
+        }
+      } else {
+        throw Exception("Failed to save image");
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      rethrow;
+    }
+  }
+
+  Future<void> _saveVideoWithOverlays() async {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Video saving with overlays coming soon!\nSaving thumbnail for now..."),
+        ),
+      );
+    }
+    await _videoController?.pause();
+    await _saveImageWithOverlays();
   }
 
   @override
@@ -268,168 +383,171 @@ class _CameraPageState extends State<CameraPage>
           /// IMAGE / VIDEO PREVIEW WITH OVERLAYS
           if (isPreviewMode)
             Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onScaleStart: _selectedOverlay != null
-                    ? (details) {
-                        _baseScale = _selectedOverlay!.scale;
-                        _baseRotation = _selectedOverlay!.rotation;
-                        _basePosition = _selectedOverlay!.position;
-                      }
-                    : null,
-                onScaleUpdate: _selectedOverlay != null
-                    ? (details) {
-                        setState(() {
-                          _selectedOverlay!.scale =
-                              (_baseScale * details.scale).clamp(0.3, 8.0);
-                          _selectedOverlay!.rotation =
-                              _baseRotation + details.rotation;
-                          _selectedOverlay!.position += details.focalPointDelta;
-                        });
-                      }
-                    : null,
-                onTap: () {
-                  if (_selectedOverlay != null) {
-                    setState(() {
-                      _selectedOverlay = null;
-                    });
-                  }
-                },
-                child: Stack(
-                  children: [
-                    // Media Layer
-                    Positioned.fill(
-                      child: AbsorbPointer(
-                        absorbing: _selectedOverlay != null,
-                        child: InteractiveViewer(
-                          minScale: 0.5,
-                          maxScale: 4.0,
-                          boundaryMargin: const EdgeInsets.all(double.infinity),
-                          child: _isVideo
-                              ? FutureBuilder<void>(
-                                  future: _initializeVideoPlayer(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.done) {
-                                      return _videoController != null &&
-                                              _videoController!
-                                                  .value.isInitialized
-                                          ? GestureDetector(
-                                              onTap: () {
-                                                setState(() {
-                                                  _videoController!
-                                                          .value.isPlaying
-                                                      ? _videoController!
-                                                          .pause()
-                                                      : _videoController!
-                                                          .play();
-                                                });
-                                                _fadeController.forward();
-                                                Future.delayed(
-                                                  const Duration(seconds: 3),
-                                                  () {
-                                                    if (_fadeController
-                                                            .isCompleted &&
-                                                        mounted) {
-                                                      _fadeController.reverse();
-                                                    }
-                                                  },
-                                                );
-                                              },
-                                              child: Stack(
-                                                alignment: Alignment.center,
-                                                children: [
-                                                  Container(
-                                                    color: Colors.black,
-                                                    child: Center(
-                                                      child: AspectRatio(
-                                                        aspectRatio:
-                                                            _videoController!
-                                                                .value
-                                                                .aspectRatio,
-                                                        child: VideoPlayer(
-                                                          _videoController!,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  FadeTransition(
-                                                    opacity: Tween<double>(
-                                                      begin: 1.0,
-                                                      end: 0.0,
-                                                    ).animate(_fadeController),
-                                                    child: Center(
-                                                      child: Container(
-                                                        width: 70,
-                                                        height: 70,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          shape:
-                                                              BoxShape.circle,
-                                                          color: Colors.black54,
-                                                        ),
-                                                        child: Icon(
-                                                          _videoController!
+              child: RepaintBoundary( // Added RepaintBoundary
+                key: _captureKey,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onScaleStart: _selectedOverlay != null
+                      ? (details) {
+                          _baseScale = _selectedOverlay!.scale;
+                          _baseRotation = _selectedOverlay!.rotation;
+                          _basePosition = _selectedOverlay!.position;
+                        }
+                      : null,
+                  onScaleUpdate: _selectedOverlay != null
+                      ? (details) {
+                          setState(() {
+                            _selectedOverlay!.scale =
+                                (_baseScale * details.scale).clamp(0.3, 8.0);
+                            _selectedOverlay!.rotation =
+                                _baseRotation + details.rotation;
+                            _selectedOverlay!.position += details.focalPointDelta;
+                          });
+                        }
+                      : null,
+                  onTap: () {
+                    if (_selectedOverlay != null) {
+                      setState(() {
+                        _selectedOverlay = null;
+                      });
+                    }
+                  },
+                  child: Stack(
+                    children: [
+                      // Media Layer
+                      Positioned.fill(
+                        child: AbsorbPointer(
+                          absorbing: _selectedOverlay != null,
+                          child: InteractiveViewer(
+                            minScale: 0.5,
+                            maxScale: 4.0,
+                            boundaryMargin: const EdgeInsets.all(double.infinity),
+                            child: _isVideo
+                                ? FutureBuilder<void>(
+                                    future: _initializeVideoPlayer(),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.done) {
+                                        return _videoController != null &&
+                                                _videoController!
+                                                    .value.isInitialized
+                                            ? GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    _videoController!
+                                                            .value.isPlaying
+                                                        ? _videoController!
+                                                            .pause()
+                                                        : _videoController!
+                                                            .play();
+                                                  });
+                                                  _fadeController.forward();
+                                                  Future.delayed(
+                                                    const Duration(seconds: 3),
+                                                    () {
+                                                      if (_fadeController
+                                                              .isCompleted &&
+                                                          mounted) {
+                                                        _fadeController.reverse();
+                                                      }
+                                                    },
+                                                  );
+                                                },
+                                                child: Stack(
+                                                  alignment: Alignment.center,
+                                                  children: [
+                                                    Container(
+                                                      color: Colors.black,
+                                                      child: Center(
+                                                        child: AspectRatio(
+                                                          aspectRatio:
+                                                              _videoController!
                                                                   .value
-                                                                  .isPlaying
-                                                              ? Icons.pause
-                                                              : Icons
-                                                                  .play_arrow,
-                                                          color: Colors.white,
-                                                          size: 40,
+                                                                  .aspectRatio,
+                                                          child: VideoPlayer(
+                                                            _videoController!,
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                          : Container(
-                                              color: Colors.black,
-                                              child: const Center(
-                                                child:
-                                                    CircularProgressIndicator(),
-                                              ),
-                                            );
-                                    }
-                                    return Container(
-                                      color: Colors.black,
-                                      child: const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    );
-                                  },
-                                )
-                              : Container(
-                                  color: Colors.black,
-                                  child: Image.file(_previewFile!,
-                                      fit: BoxFit.contain),
-                                ),
+                                                    FadeTransition(
+                                                      opacity: Tween<double>(
+                                                        begin: 1.0,
+                                                        end: 0.0,
+                                                      ).animate(_fadeController),
+                                                      child: Center(
+                                                        child: Container(
+                                                          width: 70,
+                                                          height: 70,
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            shape:
+                                                                BoxShape.circle,
+                                                            color: Colors.black54,
+                                                          ),
+                                                          child: Icon(
+                                                            _videoController!
+                                                                    .value
+                                                                    .isPlaying
+                                                                ? Icons.pause
+                                                                : Icons
+                                                                    .play_arrow,
+                                                            color: Colors.white,
+                                                            size: 40,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              )
+                                            : Container(
+                                                color: Colors.black,
+                                                child: const Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ),
+                                              );
+                                      }
+                                      return Container(
+                                        color: Colors.black,
+                                        child: const Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Container(
+                                    color: Colors.black,
+                                    child: Image.file(_previewFile!,
+                                        fit: BoxFit.contain),
+                                  ),
+                          ),
                         ),
                       ),
-                    ),
 
-                    // Text Overlays Layer
-                    ..._textOverlays.map((overlay) {
-                      final isSelected = _selectedOverlay == overlay;
-                      return Positioned(
-                        left: overlay.position.dx,
-                        top: overlay.position.dy,
-                        child: _TextOverlayWidget(
-                          overlay: overlay,
-                          isSelected: isSelected,
-                          onTap: () {
-                            setState(() {
-                              _selectedOverlay = overlay;
-                            });
-                          },
-                          onDoubleTap: () {
-                            _openEditorForOverlay(overlay);
-                          },
-                        ),
-                      );
-                    }).toList(),
-                  ],
+                      // Text Overlays Layer
+                      ..._textOverlays.map((overlay) {
+                        final isSelected = _selectedOverlay == overlay;
+                        return Positioned(
+                          left: overlay.position.dx,
+                          top: overlay.position.dy,
+                          child: _TextOverlayWidget(
+                            overlay: overlay,
+                            isSelected: isSelected,
+                            onTap: () {
+                              setState(() {
+                                _selectedOverlay = overlay;
+                              });
+                            },
+                            onDoubleTap: () {
+                              _openEditorForOverlay(overlay);
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -457,7 +575,7 @@ class _CameraPageState extends State<CameraPage>
               ),
             ),
 
-          /// PREVIEW MODE CAPTION BAR (unchanged)
+          /// PREVIEW MODE CAPTION BAR
           if (isPreviewMode)
             Positioned(
               bottom: 20,
@@ -502,6 +620,10 @@ class _CameraPageState extends State<CameraPage>
                             builder: (context) => ShareBottomSheet(
                               filePath: _previewFile!.path,
                               caption: _captionController.text,
+                              onDownload: () { // Added callback
+                                Navigator.pop(context);
+                                _saveStory();
+                              },
                             ),
                           );
                         },

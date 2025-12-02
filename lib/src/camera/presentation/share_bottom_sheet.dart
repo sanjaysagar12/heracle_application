@@ -5,11 +5,13 @@ import 'package:heracle/src/story/presentation/create_story_page.dart';
 class ShareBottomSheet extends StatefulWidget {
   final String filePath;
   final String? caption;
+  final VoidCallback? onDownload; // Added
 
   const ShareBottomSheet({
     super.key,
     required this.filePath,
     this.caption,
+    this.onDownload, // Added
   });
 
   @override
@@ -155,7 +157,7 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
                 ),
                 child: IconButton(
                   onPressed: () {
-                    // Handle download
+                    widget.onDownload?.call(); // Trigger download callback
                   },
                   icon: const Icon(Icons.download, color: Color(0xFFD0FD3E)),
                 ),

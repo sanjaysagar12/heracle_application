@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:heracle/src/story/domain/text_overlay.dart';
+import 'package:heracle/src/camera/domain/text_overlay.dart';
 import 'package:uuid/uuid.dart';
 
 class TextEditorWidget extends StatefulWidget {
