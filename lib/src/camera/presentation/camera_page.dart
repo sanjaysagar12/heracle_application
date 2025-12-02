@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:heracle/core/theme/app_colors.dart';
 import 'package:heracle/src/camera/presentation/share_bottom_sheet.dart';
+import 'package:heracle/src/camera/presentation/camera_nav_bar.dart'; // Import new navbar
 import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,6 +24,7 @@ class _CameraPageState extends State<CameraPage>
   bool get isPreviewMode => _previewFile != null;
   CaptureMode _captureMode = CaptureMode.photo;
   bool _postSwitchRecord = false;
+  int _currentIndex = 1; // Default to Camera
 
   String? _currentVideoPath;
 
@@ -91,6 +93,16 @@ class _CameraPageState extends State<CameraPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      bottomNavigationBar: isPreviewMode
+          ? null
+          : CameraNavBar(
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+            ),
       body: Stack(
         children: [
           /// CAMERA VIEW
@@ -103,6 +115,10 @@ class _CameraPageState extends State<CameraPage>
                 videoPathBuilder: (sensors) =>
                     _path(sensors, CaptureMode.video),
                 initialCaptureMode: _captureMode,
+              ),
+              sensorConfig: SensorConfig.single(
+                sensor: Sensor.position(SensorPosition.back),
+                aspectRatio: CameraAspectRatios.ratio_4_3, // Ensure 4:3 is used
               ),
               // FIX: Explicitly add types (CameraState, AnalysisPreview) here
               builder: (CameraState state, AnalysisPreview preview) {
@@ -350,7 +366,10 @@ class _CameraPageState extends State<CameraPage>
                             ),
                           );
                         },
-                        icon: const Icon(Icons.telegram_sharp, size: 30), // Increased size
+                        icon: const Icon(
+                          Icons.telegram_sharp,
+                          size: 30,
+                        ), // Increased size
                         label: const Text(
                           "Share",
                           style: TextStyle(fontSize: 17),
@@ -392,11 +411,7 @@ class _CameraPageState extends State<CameraPage>
                     color: Colors.black54,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 30,
-                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 30),
                 ),
               ),
             ),
@@ -628,18 +643,17 @@ class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton>
               child: _isLocked
                   ? const Icon(Icons.stop, color: Colors.white, size: 30)
                   : (_isRecording
-                      ? const Icon(Icons.videocam, color: Colors.white)
-                      : Container(
-                          margin: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.primary,
-                          ),
-                        )),
+                        ? const Icon(Icons.videocam, color: Colors.white)
+                        : Container(
+                            margin: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primary,
+                            ),
+                          )),
             ),
           ),
         ),
-      ],
-    );
-  }
+      ],    );
+  } 
 }
