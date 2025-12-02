@@ -52,19 +52,24 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
         children: [
           // Background Media
           Positioned.fill(
-            child: _isVideo
-                ? (_videoController != null && _videoController!.value.isInitialized
-                    ? Center(
-                        child: AspectRatio(
-                          aspectRatio: _videoController!.value.aspectRatio,
-                          child: VideoPlayer(_videoController!),
-                        ),
-                      )
-                    : const Center(child: CircularProgressIndicator()))
-                : Image.file(
-                    File(widget.filePath),
-                    fit: BoxFit.contain,
-                  ),
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              boundaryMargin: const EdgeInsets.all(double.infinity),
+              child: _isVideo
+                  ? (_videoController != null && _videoController!.value.isInitialized
+                      ? Center(
+                          child: AspectRatio(
+                            aspectRatio: _videoController!.value.aspectRatio,
+                            child: VideoPlayer(_videoController!),
+                          ),
+                        )
+                      : const Center(child: CircularProgressIndicator()))
+                  : Image.file(
+                      File(widget.filePath),
+                      fit: BoxFit.contain,
+                    ),
+            ),
           ),
 
           // Top Bar
