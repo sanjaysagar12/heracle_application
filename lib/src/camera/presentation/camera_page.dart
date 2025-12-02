@@ -21,6 +21,7 @@ class _CameraPageState extends State<CameraPage>
   late AnimationController _fadeController;
   bool get isPreviewMode => _previewFile != null;
   CaptureMode _captureMode = CaptureMode.photo;
+  bool _postSwitchRecord = false;
 
   String? _currentVideoPath;
 
@@ -101,6 +102,25 @@ class _CameraPageState extends State<CameraPage>
               ),
               // FIX: Explicitly add types (CameraState, AnalysisPreview) here
               builder: (CameraState state, AnalysisPreview preview) {
+                // Auto-record logic after switch
+                if (_postSwitchRecord) {
+                  state.when(
+                    onVideoMode: (videoState) {
+                      // Use post frame callback to avoid build conflicts
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _postSwitchRecord = false;
+                          });
+                          videoState.startRecording();
+                        }
+                      });
+                    },
+                    onPhotoMode: (p) {},
+                    onVideoRecordingMode: (v) {},
+                  );
+                }
+
                 return Stack(
                   children: [
                     /// CONTROLS
@@ -136,6 +156,20 @@ class _CameraPageState extends State<CameraPage>
                             getCurrentVideoPath: () => _currentVideoPath,
                             onModeChange: (mode) {
                               setState(() => _captureMode = mode);
+                            },
+                            onSwitchToRecordingMode: () {
+                              setState(() {
+                                _postSwitchRecord = true;
+                                _captureMode = CaptureMode.video;
+                              });
+                              // Trigger the switch
+                              state.when(
+                                onPhotoMode: (photoState) {
+                                  photoState.setState(CaptureMode.video);
+                                },
+                                onVideoMode: (v) {},
+                                onVideoRecordingMode: (v) {},
+                              );
                             },
                           ),
 
@@ -330,6 +364,7 @@ class AwesomeCaptureButton extends StatefulWidget {
   final Function(String) onMediaCapture;
   final String? Function() getCurrentVideoPath;
   final Function(CaptureMode) onModeChange;
+  final VoidCallback? onSwitchToRecordingMode;
 
   const AwesomeCaptureButton({
     super.key,
@@ -337,6 +372,7 @@ class AwesomeCaptureButton extends StatefulWidget {
     required this.onMediaCapture,
     required this.getCurrentVideoPath,
     required this.onModeChange,
+    this.onSwitchToRecordingMode,
   });
 
   @override
@@ -374,7 +410,18 @@ class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton>
   void didUpdateWidget(AwesomeCaptureButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Sync local state with actual camera state
-    if (widget.state is! VideoRecordingCameraState && _isRecording) {
+    if (widget.state is VideoRecordingCameraState) {
+      if (!_isRecording) {
+        setState(() {
+          _isRecording = true;
+        });
+        _pulseController.forward();
+      }
+    } else if (widget.state is! VideoRecordingCameraState && _isRecording) {
+      // Only reset if we are not in the middle of a switch-and-record flow
+      // But actually, if state is NOT recording, we should probably stop UI recording unless we are waiting for the switch.
+      // However, the parent handles the switch logic.
+      // Let's rely on the parent's state.
       _resetUI();
     }
   }
@@ -386,26 +433,28 @@ class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton>
   }
 
   void _resetUI() {
-    setState(() {
-      _isRecording = false;
-      _isLocked = false;
-    });
-    _pulseController.stop();
-    _pulseController.reset();
+    if (mounted) {
+      setState(() {
+        _isRecording = false;
+        _isLocked = false;
+      });
+      _pulseController.stop();
+      _pulseController.reset();
+    }
   }
 
   void _startRecording() async {
-    setState(() {
-      _isRecording = true;
-      _isLocked = false;
-    });
-    _pulseController.forward();
     await widget.state.when(
       onPhotoMode: (photoState) async {
-        photoState.setState(CaptureMode.video);
-        await Future.delayed(const Duration(milliseconds: 200));
+        // Delegate switch to parent
+        widget.onSwitchToRecordingMode?.call();
       },
       onVideoMode: (videoState) async {
+        setState(() {
+          _isRecording = true;
+          _isLocked = false;
+        });
+        _pulseController.forward();
         await videoState.startRecording();
       },
       onVideoRecordingMode: (videoRec) async {
