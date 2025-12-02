@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:heracle/core/theme/app_colors.dart';
 import 'package:heracle/src/camera/presentation/share_bottom_sheet.dart';
-import 'package:heracle/src/camera/presentation/camera_nav_bar.dart'; // Import new navbar
+import 'package:heracle/src/camera/presentation/camera_nav_bar.dart';
+import 'package:heracle/src/story/domain/text_overlay.dart'; // Added
+import 'package:heracle/src/story/presentation/text_editor_widget.dart'; // Added
 import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,9 +26,16 @@ class _CameraPageState extends State<CameraPage>
   bool get isPreviewMode => _previewFile != null;
   CaptureMode _captureMode = CaptureMode.photo;
   bool _postSwitchRecord = false;
-  int _currentIndex = 1; // Default to Camera
+  int _currentIndex = 1;
 
   String? _currentVideoPath;
+
+  // Text Overlay State
+  final List<TextOverlay> _textOverlays = [];
+  TextOverlay? _selectedOverlay;
+  double _baseScale = 1.0;
+  double _baseRotation = 0.0;
+  Offset _basePosition = Offset.zero;
 
   /// Helper to generate a path for the captured file
   Future<CaptureRequest> _path(List<Sensor> sensors, CaptureMode mode) async {
@@ -89,6 +98,49 @@ class _CameraPageState extends State<CameraPage>
     super.dispose();
   }
 
+  void _addText() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (context, _, __) => TextEditorWidget(
+          onDone: (overlay) {
+            setState(() {
+              _textOverlays.add(overlay);
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openEditorForOverlay(TextOverlay overlay) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (context, _, __) => TextEditorWidget(
+          initialOverlay: overlay,
+          onDone: (updated) {
+            setState(() {
+              if (updated.text.isEmpty) {
+                _textOverlays.remove(overlay);
+                _selectedOverlay = null;
+              } else {
+                overlay.text = updated.text;
+                overlay.style = updated.style;
+                overlay.color = updated.color;
+                overlay.position = updated.position;
+                overlay.scale = updated.scale;
+                overlay.rotation = updated.rotation;
+              }
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,7 +159,7 @@ class _CameraPageState extends State<CameraPage>
         children: [
           /// CAMERA VIEW
           if (!isPreviewMode)
-            // ... inside your Stack
+            // ...existing code...
             CameraAwesomeBuilder.custom(
               saveConfig: SaveConfig.photoAndVideo(
                 photoPathBuilder: (sensors) =>
@@ -118,15 +170,13 @@ class _CameraPageState extends State<CameraPage>
               ),
               sensorConfig: SensorConfig.single(
                 sensor: Sensor.position(SensorPosition.back),
-                aspectRatio: CameraAspectRatios.ratio_4_3, // Ensure 4:3 is used
+                aspectRatio: CameraAspectRatios.ratio_4_3,
               ),
-              // FIX: Explicitly add types (CameraState, AnalysisPreview) here
               builder: (CameraState state, AnalysisPreview preview) {
-                // Auto-record logic after switch
+                // ...existing code...
                 if (_postSwitchRecord) {
                   state.when(
                     onVideoMode: (videoState) {
-                      // Use post frame callback to avoid build conflicts
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (mounted) {
                           setState(() {
@@ -215,113 +265,202 @@ class _CameraPageState extends State<CameraPage>
               },
             ),
 
-          /// IMAGE / VIDEO PREVIEW
+          /// IMAGE / VIDEO PREVIEW WITH OVERLAYS
           if (isPreviewMode)
-            _isVideo
-                ? Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 100,
-                    child: FutureBuilder<void>(
-                      future: _initializeVideoPlayer(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.done) {
-                          return _videoController != null &&
-                                  _videoController!.value.isInitialized
-                              ? GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _videoController!.value.isPlaying
-                                          ? _videoController!.pause()
-                                          : _videoController!.play();
-                                    });
-                                    _fadeController.forward();
-                                    Future.delayed(
-                                      const Duration(seconds: 3),
-                                      () {
-                                        if (_fadeController.isCompleted &&
-                                            mounted) {
-                                          _fadeController.reverse();
-                                        }
-                                      },
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onScaleStart: _selectedOverlay != null
+                    ? (details) {
+                        _baseScale = _selectedOverlay!.scale;
+                        _baseRotation = _selectedOverlay!.rotation;
+                        _basePosition = _selectedOverlay!.position;
+                      }
+                    : null,
+                onScaleUpdate: _selectedOverlay != null
+                    ? (details) {
+                        setState(() {
+                          _selectedOverlay!.scale =
+                              (_baseScale * details.scale).clamp(0.3, 8.0);
+                          _selectedOverlay!.rotation =
+                              _baseRotation + details.rotation;
+                          _selectedOverlay!.position += details.focalPointDelta;
+                        });
+                      }
+                    : null,
+                onTap: () {
+                  if (_selectedOverlay != null) {
+                    setState(() {
+                      _selectedOverlay = null;
+                    });
+                  }
+                },
+                child: Stack(
+                  children: [
+                    // Media Layer
+                    Positioned.fill(
+                      child: AbsorbPointer(
+                        absorbing: _selectedOverlay != null,
+                        child: InteractiveViewer(
+                          minScale: 0.5,
+                          maxScale: 4.0,
+                          boundaryMargin: const EdgeInsets.all(double.infinity),
+                          child: _isVideo
+                              ? FutureBuilder<void>(
+                                  future: _initializeVideoPlayer(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.done) {
+                                      return _videoController != null &&
+                                              _videoController!
+                                                  .value.isInitialized
+                                          ? GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  _videoController!
+                                                          .value.isPlaying
+                                                      ? _videoController!
+                                                          .pause()
+                                                      : _videoController!
+                                                          .play();
+                                                });
+                                                _fadeController.forward();
+                                                Future.delayed(
+                                                  const Duration(seconds: 3),
+                                                  () {
+                                                    if (_fadeController
+                                                            .isCompleted &&
+                                                        mounted) {
+                                                      _fadeController.reverse();
+                                                    }
+                                                  },
+                                                );
+                                              },
+                                              child: Stack(
+                                                alignment: Alignment.center,
+                                                children: [
+                                                  Container(
+                                                    color: Colors.black,
+                                                    child: Center(
+                                                      child: AspectRatio(
+                                                        aspectRatio:
+                                                            _videoController!
+                                                                .value
+                                                                .aspectRatio,
+                                                        child: VideoPlayer(
+                                                          _videoController!,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  FadeTransition(
+                                                    opacity: Tween<double>(
+                                                      begin: 1.0,
+                                                      end: 0.0,
+                                                    ).animate(_fadeController),
+                                                    child: Center(
+                                                      child: Container(
+                                                        width: 70,
+                                                        height: 70,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          shape:
+                                                              BoxShape.circle,
+                                                          color: Colors.black54,
+                                                        ),
+                                                        child: Icon(
+                                                          _videoController!
+                                                                  .value
+                                                                  .isPlaying
+                                                              ? Icons.pause
+                                                              : Icons
+                                                                  .play_arrow,
+                                                          color: Colors.white,
+                                                          size: 40,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            )
+                                          : Container(
+                                              color: Colors.black,
+                                              child: const Center(
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
+                                            );
+                                    }
+                                    return Container(
+                                      color: Colors.black,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
                                     );
                                   },
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Container(
-                                        color: Colors.black,
-                                        child: Center(
-                                          child: AspectRatio(
-                                            aspectRatio: _videoController!
-                                                .value
-                                                .aspectRatio,
-                                            child: AbsorbPointer(
-                                              child: VideoPlayer(
-                                                _videoController!,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      FadeTransition(
-                                        opacity: Tween<double>(
-                                          begin: 1.0,
-                                          end: 0.0,
-                                        ).animate(_fadeController),
-                                        child: Center(
-                                          child: Container(
-                                            width: 70,
-                                            height: 70,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: Colors.black54,
-                                            ),
-                                            child: Icon(
-                                              _videoController!.value.isPlaying
-                                                  ? Icons.pause
-                                                  : Icons.play_arrow,
-                                              color: Colors.white,
-                                              size: 40,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                                 )
                               : Container(
                                   color: Colors.black,
-                                  child: const Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                );
-                        }
-                        return Container(
-                          color: Colors.black,
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
-                      },
+                                  child: Image.file(_previewFile!,
+                                      fit: BoxFit.contain),
+                                ),
+                        ),
+                      ),
                     ),
-                  )
-                : Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 100,
-                    child: Container(
-                      color: Colors.black,
-                      child: Image.file(_previewFile!, fit: BoxFit.contain),
-                    ),
+
+                    // Text Overlays Layer
+                    ..._textOverlays.map((overlay) {
+                      final isSelected = _selectedOverlay == overlay;
+                      return Positioned(
+                        left: overlay.position.dx,
+                        top: overlay.position.dy,
+                        child: _TextOverlayWidget(
+                          overlay: overlay,
+                          isSelected: isSelected,
+                          onTap: () {
+                            setState(() {
+                              _selectedOverlay = overlay;
+                            });
+                          },
+                          onDoubleTap: () {
+                            _openEditorForOverlay(overlay);
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+            ),
+
+          // Delete button for selected overlay
+          if (isPreviewMode && _selectedOverlay != null)
+            Positioned(
+              left: _selectedOverlay!.position.dx - 30,
+              top: _selectedOverlay!.position.dy - 30,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _textOverlays.remove(_selectedOverlay);
+                    _selectedOverlay = null;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
                   ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 20),
+                ),
+              ),
+            ),
 
           /// PREVIEW MODE CAPTION BAR (unchanged)
           if (isPreviewMode)
             Positioned(
-              bottom: 20, // Moved up
+              bottom: 20,
               left: 0,
               right: 0,
               child: Container(
@@ -369,7 +508,7 @@ class _CameraPageState extends State<CameraPage>
                         icon: const Icon(
                           Icons.telegram_sharp,
                           size: 30,
-                        ), // Increased size
+                        ),
                         label: const Text(
                           "Share",
                           style: TextStyle(fontSize: 17),
@@ -380,12 +519,30 @@ class _CameraPageState extends State<CameraPage>
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          // Ensure minimum size matches if SizedBox wasn't enough (though SizedBox forces it)
                           minimumSize: const Size(0, 55),
                         ),
                       ),
                     ),
                   ],
+                ),
+              ),
+            ),
+
+          /// ADD TEXT BUTTON
+          if (isPreviewMode)
+            Positioned(
+              top: 40,
+              right: 70,
+              child: GestureDetector(
+                onTap: _addText,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.text_fields,
+                      color: Colors.white, size: 30),
                 ),
               ),
             ),
@@ -403,6 +560,8 @@ class _CameraPageState extends State<CameraPage>
                     _videoController?.dispose();
                     _videoController = null;
                     _isVideo = false;
+                    _textOverlays.clear(); // Clear overlays
+                    _selectedOverlay = null;
                   });
                 },
                 child: Container(
@@ -654,6 +813,52 @@ class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton>
             ),
           ),
         ),
-      ],    );
-  } 
+      ],
+    );
+  }
+}
+/// Separate widget to handle individual text overlay gestures
+class _TextOverlayWidget extends StatelessWidget {
+  final TextOverlay overlay;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final VoidCallback onDoubleTap;
+
+  const _TextOverlayWidget({
+    required this.overlay,
+    required this.isSelected,
+    required this.onTap,
+    required this.onDoubleTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: onTap,
+      onDoubleTap: onDoubleTap,
+      child: Transform.scale(
+        scale: overlay.scale,
+        alignment: Alignment.center,
+        child: Transform.rotate(
+          angle: overlay.rotation,
+          alignment: Alignment.center,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: isSelected
+                ? BoxDecoration(
+                    border: Border.all(
+                        color: Colors.white.withOpacity(0.5), width: 2),
+                    borderRadius: BorderRadius.circular(4),
+                  )
+                : null,
+            child: Text(
+              overlay.text,
+              style: overlay.style,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
