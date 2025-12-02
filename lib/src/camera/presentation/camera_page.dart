@@ -301,7 +301,7 @@ class _CameraPageState extends State<CameraPage>
           /// PREVIEW MODE CAPTION BAR (unchanged)
           if (isPreviewMode)
             Positioned(
-              bottom: 0,
+              bottom: 20, // Moved up
               left: 0,
               right: 0,
               child: Container(
@@ -331,24 +331,59 @@ class _CameraPageState extends State<CameraPage>
                       ),
                     ),
                     const SizedBox(width: 10),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // Add your share logic here
-                      },
-                      icon: const Icon(Icons.telegram_sharp),
-                      label: const Text(
-                        "Share",
-                        style: TextStyle(fontSize: 17),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.black,
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                    SizedBox(
+                      height: 55,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          // Add your share logic here
+                        },
+                        icon: const Icon(Icons.telegram_sharp, size: 30), // Increased size
+                        label: const Text(
+                          "Share",
+                          style: TextStyle(fontSize: 17),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.black,
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          // Ensure minimum size matches if SizedBox wasn't enough (though SizedBox forces it)
+                          minimumSize: const Size(0, 55),
                         ),
                       ),
                     ),
                   ],
+                ),
+              ),
+            ),
+
+          /// RETAKE BUTTON (X Icon)
+          if (isPreviewMode)
+            Positioned(
+              top: 40,
+              right: 20,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _previewFile = null;
+                    _videoController?.pause();
+                    _videoController?.dispose();
+                    _videoController = null;
+                    _isVideo = false;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 30,
+                  ),
                 ),
               ),
             ),
