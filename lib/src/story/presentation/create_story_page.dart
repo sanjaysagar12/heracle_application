@@ -35,6 +35,11 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
   TextOverlay? _selectedOverlay;
   final GlobalKey _captureKey = GlobalKey();
 
+  // State for gesture handling at page level
+  double _baseScale = 1.0;
+  double _baseRotation = 0.0;
+  Offset _basePosition = Offset.zero;
+
   @override
   void initState() {
     super.initState();
@@ -259,18 +264,43 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
           // Wrap the entire story view in RepaintBoundary for capturing
           RepaintBoundary(
             key: _captureKey,
-            child: Stack(
-              children: [
-                // Background Media
-                Positioned.fill(
-                  child: GestureDetector(
-                    onTap: () {
-                      if (_selectedOverlay != null) {
-                        setState(() {
-                          _selectedOverlay = null;
-                        });
-                      }
-                    },
+            child: GestureDetector(
+              // This detector handles gestures for the selected overlay anywhere on screen
+              onScaleStart: (details) {
+                if (_selectedOverlay == null) return;
+                _baseScale = _selectedOverlay!.scale;
+                _baseRotation = _selectedOverlay!.rotation;
+                _basePosition = _selectedOverlay!.position;
+              },
+              onScaleUpdate: (details) {
+                if (_selectedOverlay == null) return;
+                setState(() {
+                  // Scale
+                  _selectedOverlay!.scale = (_baseScale * details.scale).clamp(0.3, 8.0);
+                  
+                  // Rotation
+                  _selectedOverlay!.rotation = _baseRotation + details.rotation;
+                  
+                  // Position (Pan)
+                  // We rotate the focal point delta to match the rotation if needed, 
+                  // but usually for "drag anywhere" simple addition is intuitive enough 
+                  // or we just add the delta.
+                  // details.focalPointDelta is the movement since last update.
+                  _selectedOverlay!.position += details.focalPointDelta;
+                });
+              },
+              onTap: () {
+                // Deselect if tapping empty space
+                if (_selectedOverlay != null) {
+                  setState(() {
+                    _selectedOverlay = null;
+                  });
+                }
+              },
+              child: Stack(
+                children: [
+                  // Background Media
+                  Positioned.fill(
                     child: AbsorbPointer(
                       absorbing: _selectedOverlay != null,
                       child: InteractiveViewer(
@@ -293,33 +323,30 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
                       ),
                     ),
                   ),
-                ),
 
-                // Text Overlays Layer
-                ..._textOverlays.map((overlay) {
-                  final isSelected = _selectedOverlay == overlay;
+                  // Text Overlays Layer
+                  ..._textOverlays.map((overlay) {
+                    final isSelected = _selectedOverlay == overlay;
 
-                  return Positioned(
-                    left: overlay.position.dx,
-                    top: overlay.position.dy,
-                    child: _TextOverlayWidget(
-                      overlay: overlay,
-                      isSelected: isSelected,
-                      onTap: () {
-                        setState(() {
-                          _selectedOverlay = overlay;
-                        });
-                      },
-                      onDoubleTap: () {
-                        _openEditorForOverlay(overlay);
-                      },
-                      onUpdate: () {
-                        setState(() {});
-                      },
-                    ),
-                  );
-                }).toList(),
-              ],
+                    return Positioned(
+                      left: overlay.position.dx,
+                      top: overlay.position.dy,
+                      child: _TextOverlayWidget(
+                        overlay: overlay,
+                        isSelected: isSelected,
+                        onTap: () {
+                          setState(() {
+                            _selectedOverlay = overlay;
+                          });
+                        },
+                        onDoubleTap: () {
+                          _openEditorForOverlay(overlay);
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
             ),
           ),
 
@@ -458,123 +485,46 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
 }
 
 /// Separate widget to handle individual text overlay gestures
-class _TextOverlayWidget extends StatefulWidget {
+class _TextOverlayWidget extends StatelessWidget {
   final TextOverlay overlay;
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onDoubleTap;
-  final VoidCallback onUpdate;
 
   const _TextOverlayWidget({
     required this.overlay,
     required this.isSelected,
     required this.onTap,
     required this.onDoubleTap,
-    required this.onUpdate,
   });
 
   @override
-  State<_TextOverlayWidget> createState() => _TextOverlayWidgetState();
-}
-
-class _TextOverlayWidgetState extends State<_TextOverlayWidget> {
-  double _startScale = 1.0;
-  double _startRotation = 0.0;
-  Offset _startPosition = Offset.zero;
-  Offset _startFocalPoint = Offset.zero;
-  Offset _startLocalFocalPoint = Offset.zero;
-  int _pointerCount = 0;
-  final GlobalKey _textKey = GlobalKey();
-
-  @override
   Widget build(BuildContext context) {
-    return Listener(
-      onPointerDown: (_) => _pointerCount++,
-      onPointerUp: (_) => _pointerCount--,
-      onPointerCancel: (_) => _pointerCount--,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: widget.onTap,
-        onDoubleTap: widget.onDoubleTap,
-        onScaleStart: (details) {
-          widget.onTap();
-          _startScale = widget.overlay.scale;
-          _startRotation = widget.overlay.rotation;
-          _startPosition = widget.overlay.position;
-          _startFocalPoint = details.focalPoint;
-          _startLocalFocalPoint = details.localFocalPoint;
-        },
-        onScaleUpdate: (details) {
-          if (!widget.isSelected) return;
-
-          if (_pointerCount == 1) {
-            // Single finger: only move (pan)
-            final delta = details.focalPoint - _startFocalPoint;
-            widget.overlay.position = _startPosition + delta;
-          } else if (_pointerCount >= 2) {
-            // Two fingers: scale and rotate
-            
-            // Apply scale
-            final newScale = (_startScale * details.scale).clamp(0.3, 8.0);
-            widget.overlay.scale = newScale;
-            
-            // Apply rotation
-            final deltaRotation = details.rotation;
-            widget.overlay.rotation = _startRotation + deltaRotation;
-            
-            // Calculate position adjustment to keep the pinch point fixed
-            // The local focal point (relative to widget) should stay under fingers
-            
-            // Start: where the focal point was relative to widget start position
-            final startFocalInWidget = _startLocalFocalPoint;
-            
-            // Apply scale to that point
-            final scaledFocal = Offset(
-              startFocalInWidget.dx * (newScale / _startScale),
-              startFocalInWidget.dy * (newScale / _startScale),
-            );
-            
-            // Apply rotation to that scaled point
-            final rotatedScaledFocal = _rotateOffset(scaledFocal, deltaRotation);
-            
-            // New position: current focal point minus the transformed local focal point
-            widget.overlay.position = details.focalPoint - rotatedScaledFocal;
-          }
-
-          widget.onUpdate();
-        },
-        child: Transform.scale(
-          scale: widget.overlay.scale,
-          alignment: Alignment.topLeft,
-          child: Transform.rotate(
-            angle: widget.overlay.rotation,
-            alignment: Alignment.topLeft,
-            child: Container(
-              key: _textKey,
-              padding: const EdgeInsets.all(8),
-              decoration: widget.isSelected
-                  ? BoxDecoration(
-                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
-                      borderRadius: BorderRadius.circular(4),
-                    )
-                  : null,
-              child: Text(
-                widget.overlay.text,
-                style: widget.overlay.style,
-              ),
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: onTap,
+      onDoubleTap: onDoubleTap,
+      child: Transform.scale(
+        scale: overlay.scale,
+        alignment: Alignment.center,
+        child: Transform.rotate(
+          angle: overlay.rotation,
+          alignment: Alignment.center,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: isSelected
+                ? BoxDecoration(
+                    border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+                    borderRadius: BorderRadius.circular(4),
+                  )
+                : null,
+            child: Text(
+              overlay.text,
+              style: overlay.style,
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Offset _rotateOffset(Offset offset, double angle) {
-    final cos = math.cos(angle);
-    final sin = math.sin(angle);
-    return Offset(
-      offset.dx * cos - offset.dy * sin,
-      offset.dx * sin + offset.dy * cos,
     );
   }
 }
