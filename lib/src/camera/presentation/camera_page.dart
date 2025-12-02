@@ -1,19 +1,20 @@
 import 'dart:io';
-import 'dart:typed_data'; // Added
-import 'dart:ui' as ui; // Added
-import 'package:device_info_plus/device_info_plus.dart'; // Added
-import 'package:flutter/rendering.dart'; // Added
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/rendering.dart';
 import 'package:heracle/core/theme/app_colors.dart';
 import 'package:heracle/src/camera/presentation/share_bottom_sheet.dart';
 import 'package:heracle/src/camera/presentation/camera_nav_bar.dart';
 import 'package:heracle/src/camera/domain/text_overlay.dart';
 import 'package:heracle/src/camera/widgets/text_editor_widget.dart';
+import 'package:heracle/src/story/data/story_repository.dart'; // Added
 import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:flutter/material.dart';
-import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart'; // Added
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart'; // Added
+import 'package:permission_handler/permission_handler.dart';
 import 'package:video_player/video_player.dart';
 
 class CameraPage extends StatefulWidget {
@@ -254,6 +255,59 @@ class _CameraPageState extends State<CameraPage>
     }
     await _videoController?.pause();
     await _saveImageWithOverlays();
+  }
+
+  // Helper to capture RepaintBoundary to a temporary file
+  Future<File> _capturePngToFile() async {
+    final RenderRepaintBoundary boundary = _captureKey.currentContext!
+        .findRenderObject() as RenderRepaintBoundary;
+    final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+    final ByteData? byteData =
+        await image.toByteData(format: ui.ImageByteFormat.png);
+    final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/story_${DateTime.now().millisecondsSinceEpoch}.png');
+    await file.writeAsBytes(pngBytes);
+    return file;
+  }
+
+  Future<void> _shareStory(int index) async {
+    // 1. Deselect overlay to avoid capturing selection border
+    setState(() {
+      _selectedOverlay = null;
+    });
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // 2. Capture edited image
+      File fileToUpload = await _capturePngToFile();
+
+      // 3. Upload
+      final repository = StoryRepository();
+      await repository.createStory(fileToUpload, _captionController.text);
+
+      if (mounted) {
+        Navigator.pop(context); // Dismiss loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Story shared successfully!")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Dismiss loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to share story: $e")),
+        );
+      }
+    }
   }
 
   @override
@@ -620,9 +674,12 @@ class _CameraPageState extends State<CameraPage>
                             builder: (context) => ShareBottomSheet(
                               filePath: _previewFile!.path,
                               caption: _captionController.text,
-                              onDownload: () { // Added callback
+                              onDownload: () {
                                 Navigator.pop(context);
                                 _saveStory();
+                              },
+                              onShare: (index) { // Added callback
+                                _shareStory(index);
                               },
                             ),
                           );

@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:heracle/core/theme/app_colors.dart';
-import 'package:heracle/src/story/presentation/create_story_page.dart';
 
 class ShareBottomSheet extends StatefulWidget {
   final String filePath;
   final String? caption;
-  final VoidCallback? onDownload; // Added
+  final VoidCallback? onDownload;
+  final Function(int)? onShare; // Added
 
   const ShareBottomSheet({
     super.key,
     required this.filePath,
     this.caption,
-    this.onDownload, // Added
+    this.onDownload,
+    this.onShare, // Added
   });
 
   @override
@@ -118,16 +119,9 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
                   child: ElevatedButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
-                      // Navigate to CreateStoryPage
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CreateStoryPage(
-                            filePath: widget.filePath,
-                            caption: widget.caption,
-                          ),
-                        ),
-                      );
+                      if (widget.onShare != null) {
+                        widget.onShare!(_selectedIndex);
+                      }
                     },
                     icon: const Icon(Icons.send, color: Colors.black),
                     label: const Text(
