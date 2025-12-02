@@ -48,6 +48,7 @@ dependencies:
   image_picker: ^1.2.1
   camerawesome: ^2.5.0
   video_player: ^2.9.0
+  uuid: ^4.5.2
 
 dev_dependencies:
   flutter_test:

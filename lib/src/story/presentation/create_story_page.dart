@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:heracle/core/theme/app_colors.dart';
+import 'package:heracle/src/story/domain/text_overlay.dart';
+import 'package:heracle/src/story/presentation/text_editor_widget.dart';
 import 'package:video_player/video_player.dart';
 
 class CreateStoryPage extends StatefulWidget {
@@ -21,6 +23,7 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
   late bool _isVideo;
   VideoPlayerController? _videoController;
   late TextEditingController _captionController;
+  final List<TextOverlay> _textOverlays = [];
 
   @override
   void initState() {
@@ -44,13 +47,54 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
     super.dispose();
   }
 
+  void _addText() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (context, _, __) => TextEditorWidget(
+          onDone: (overlay) {
+            setState(() {
+              _textOverlays.add(overlay);
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  // New: open editor for an existing overlay and update it in-place
+  void _openEditorForOverlay(TextOverlay overlay) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (context, _, __) => TextEditorWidget(
+          initialOverlay: overlay,
+          onDone: (updated) {
+            setState(() {
+              // Update fields in-place so the existing overlay keeps its identity and transform
+              overlay.text = updated.text;
+              overlay.style = updated.style;
+              overlay.color = updated.color;
+              // Keep position/scale/rotation unless the editor returns different ones
+              overlay.position = updated.position;
+              overlay.scale = updated.scale;
+              overlay.rotation = updated.rotation;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Background Media
+          // Background Media (InteractiveViewer)
           Positioned.fill(
             child: InteractiveViewer(
               minScale: 0.5,
@@ -72,6 +116,53 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
             ),
           ),
 
+          // Text Overlays Layer
+          ..._textOverlays.map((overlay) {
+            // Local start values captured per overlay instance for gestures
+            double _startScale = overlay.scale;
+            double _startRotation = overlay.rotation;
+
+            return Positioned(
+              left: overlay.position.dx,
+              top: overlay.position.dy,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  // Open editor to edit this overlay
+                  _openEditorForOverlay(overlay);
+                },
+                onScaleStart: (details) {
+                  _startScale = overlay.scale;
+                  _startRotation = overlay.rotation;
+                },
+                onScaleUpdate: (details) {
+                  setState(() {
+                    // Scale: pinch to resize
+                    overlay.scale = (_startScale * details.scale).clamp(0.3, 8.0);
+                    // Rotation: two-finger rotate
+                    overlay.rotation = _startRotation + details.rotation;
+                    // Pan while scaling (or single finger pan)
+                    // details.focalPointDelta is in global coordinates so we can move by it
+                    overlay.position += details.focalPointDelta;
+                  });
+                },
+                child: Transform.translate(
+                  offset: Offset.zero,
+                  child: Transform.scale(
+                    scale: overlay.scale,
+                    child: Transform.rotate(
+                      angle: overlay.rotation,
+                      child: Text(
+                        overlay.text,
+                        style: overlay.style,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+
           // Top Bar
           Positioned(
             top: 50,
@@ -91,7 +182,10 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
                   ),
                 ),
                 const Spacer(),
-                _buildTopIcon(Icons.text_fields, "Text"),
+                GestureDetector(
+                  onTap: _addText,
+                  child: _buildTopIcon(Icons.text_fields, "Text"),
+                ),
                 _buildTopIcon(Icons.face, "Stickers"),
                 _buildTopIcon(Icons.music_note, "Music"),
                 _buildTopIcon(Icons.auto_fix_high, "Effects"),
@@ -161,45 +255,12 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
     return Padding(
       padding: const EdgeInsets.only(left: 16),
       child: Container(
-         padding: const EdgeInsets.all(8),
-         decoration: const BoxDecoration(
-           color: Colors.black26,
-           shape: BoxShape.circle,
-         ),
+        padding: const EdgeInsets.all(8),
+        decoration: const BoxDecoration(
+          color: Colors.black26,
+          shape: BoxShape.circle,
+        ),
         child: Icon(icon, color: Colors.white, size: 24),
-      ),
-    );
-  }
-
-  Widget _buildBottomPillButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    Color? iconColor,
-    required Color backgroundColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: iconColor != null ? Colors.transparent : Colors.grey[700],
-            ),
-             child: Icon(icon, color: iconColor ?? Colors.white, size: 20),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(color: color, fontWeight: FontWeight.w600),
-          ),
-        ],
       ),
     );
   }
