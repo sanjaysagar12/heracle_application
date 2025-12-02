@@ -324,7 +324,7 @@ class _CameraPageState extends State<CameraPage>
   }
 }
 
-/// Custom Button to handle both Photo (Tap) and Video (Long Press)
+/// Custom Button to handle both Photo (Tap) and Video (Long Press) with Animation and Lock
 class AwesomeCaptureButton extends StatefulWidget {
   final CameraState state;
   final Function(String) onMediaCapture;
@@ -343,88 +343,206 @@ class AwesomeCaptureButton extends StatefulWidget {
   State<AwesomeCaptureButton> createState() => _AwesomeCaptureButtonState();
 }
 
-class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton> {
+class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+  bool _isRecording = false;
+  bool _isLocked = false;
+  final double _lockThreshold = -60.0; // Distance to drag up to lock
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _pulseController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _pulseController.reverse();
+      } else if (status == AnimationStatus.dismissed) {
+        _pulseController.forward();
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(AwesomeCaptureButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync local state with actual camera state
+    if (widget.state is! VideoRecordingCameraState && _isRecording) {
+      _resetUI();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  void _resetUI() {
+    setState(() {
+      _isRecording = false;
+      _isLocked = false;
+    });
+    _pulseController.stop();
+    _pulseController.reset();
+  }
+
+  void _startRecording() async {
+    setState(() {
+      _isRecording = true;
+      _isLocked = false;
+    });
+    _pulseController.forward();
+    await widget.state.when(
+      onPhotoMode: (photoState) async {
+        photoState.setState(CaptureMode.video);
+        await Future.delayed(const Duration(milliseconds: 200));
+      },
+      onVideoMode: (videoState) async {
+        await videoState.startRecording();
+      },
+      onVideoRecordingMode: (videoRec) async {
+        // Already recording
+      },
+    );
+  }
+
+  void _stopRecording() async {
+    _resetUI();
+
+    await widget.state.when(
+      onVideoRecordingMode: (videoRec) async {
+        await videoRec.stopRecording();
+        final videoPath = widget.getCurrentVideoPath();
+        if (videoPath != null) {
+          widget.onMediaCapture(videoPath);
+        }
+      },
+      onPhotoMode: (p) {},
+      onVideoMode: (v) {},
+    );
+  }
+
+  void _takePhoto() async {
+    await widget.state.when(
+      onPhotoMode: (photoState) async {
+        final captureRequest = await photoState.takePhoto();
+        captureRequest.when(
+          single: (single) {
+            if (single.file != null) {
+              widget.onMediaCapture(single.file!.path);
+            }
+          },
+          multiple: (multiple) {
+            if (multiple.fileBySensor.isNotEmpty) {
+              final firstFile = multiple.fileBySensor.values.first;
+              if (firstFile != null) {
+                widget.onMediaCapture(firstFile.path);
+              }
+            }
+          },
+        );
+      },
+      onVideoMode: (videoState) async {
+        // Switch to photo? Or just ignore?
+        // Usually tap in video mode might take a snapshot or do nothing.
+        // For now, let's assume we want to take a photo, so switch mode.
+        videoState.setState(CaptureMode.photo);
+      },
+      onVideoRecordingMode: (videoRec) async {
+        // Maybe take a snapshot during recording?
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        await widget.state.when(
-          onPhotoMode: (photoState) async {
-            final captureRequest = await photoState.takePhoto();
-            captureRequest.when(
-              single: (single) {
-                if (single.file != null) {
-                  widget.onMediaCapture(single.file!.path);
-                }
-              },
-              multiple: (multiple) {
-                if (multiple.fileBySensor.isNotEmpty) {
-                  final firstFile = multiple.fileBySensor.values.first;
-                  if (firstFile != null) {
-                    widget.onMediaCapture(firstFile.path);
-                  }
-                }
-              },
-            );
-          },
-          onVideoMode: (videoState) async {
-            await videoState.startRecording();
-          },
-          onVideoRecordingMode: (videoRec) async {
-            await videoRec.stopRecording();
-            final videoPath = widget.getCurrentVideoPath();
-            if (videoPath != null) {
-              widget.onMediaCapture(videoPath);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_isRecording && !_isLocked)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Icon(
+              Icons.lock_open,
+              color: Colors.white.withOpacity(0.8),
+              size: 30,
+            ),
+          )
+        else
+          const SizedBox(height: 50), // Placeholder to keep layout stable
+
+        GestureDetector(
+          onTap: () {
+            if (_isLocked) {
+              _stopRecording();
+            } else {
+              _takePhoto();
             }
           },
-        );
-      },
-      onLongPress: () async {
-        await widget.state.when(
-          onPhotoMode: (photoState) async {
-            // Switch to video mode first
-            photoState.setState(CaptureMode.video);
-            // Wait for state transition
-            await Future.delayed(const Duration(milliseconds: 200));
-          },
-          onVideoMode: (videoState) async {
-            await videoState.startRecording();
-          },
-          onVideoRecordingMode: (videoRec) async {
-            // Already recording
-          },
-        );
-      },
-      onLongPressUp: () async {
-        await widget.state.when(
-          onVideoRecordingMode: (videoRec) async {
-            await videoRec.stopRecording();
-            final videoPath = widget.getCurrentVideoPath();
-            if (videoPath != null) {
-              widget.onMediaCapture(videoPath);
+          onLongPress: () {
+            if (!_isLocked) {
+              _startRecording();
             }
           },
-        );
-      },
-      child: Container(
-        width: 73,
-        height: 73,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: (widget.state is VideoRecordingCameraState)
-              ? Colors.red
-              : Colors.transparent,
-          border: Border.all(width: 4, color: AppColors.pureWhite),
-        ),
-        child: (widget.state is VideoRecordingCameraState)
-            ? const Icon(Icons.stop, color: Colors.white)
-            : Container(
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary,
-                ),
+          onLongPressMoveUpdate: (details) {
+            if (_isRecording && !_isLocked) {
+              // Check drag distance
+              // localOffsetFromOrigin is relative to the touch start position
+              if (details.localOffsetFromOrigin.dy < _lockThreshold) {
+                setState(() {
+                  _isLocked = true;
+                });
+              }
+            }
+          },
+          onLongPressEnd: (details) {
+            if (_isRecording) {
+              if (_isLocked) {
+                // Keep recording
+              } else {
+                _stopRecording();
+              }
+            }
+          },
+          child: AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _isRecording && !_isLocked ? _pulseAnimation.value : 1.0,
+                child: child,
+              );
+            },
+            child: Container(
+              width: 73,
+              height: 73,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _isRecording ? Colors.red : Colors.transparent,
+                border: Border.all(width: 4, color: AppColors.pureWhite),
               ),
-      ),
+              child: _isLocked
+                  ? const Icon(Icons.stop, color: Colors.white, size: 30)
+                  : (_isRecording
+                      ? const Icon(Icons.videocam, color: Colors.white)
+                      : Container(
+                          margin: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.primary,
+                          ),
+                        )),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
