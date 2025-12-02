@@ -299,6 +299,9 @@ class _CameraPageState extends State<CameraPage>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Story shared successfully!")),
         );
+
+        // Navigate to Home
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
     } catch (e) {
       if (mounted) {
