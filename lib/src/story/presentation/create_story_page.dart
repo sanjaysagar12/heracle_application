@@ -1,10 +1,17 @@
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:device_info_plus/device_info_plus.dart'; // Added dependency
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:heracle/core/theme/app_colors.dart';
 import 'package:heracle/src/story/domain/text_overlay.dart';
 import 'package:heracle/src/story/presentation/text_editor_widget.dart';
 import 'package:video_player/video_player.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
 
 class CreateStoryPage extends StatefulWidget {
   final String filePath;
@@ -26,6 +33,7 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
   late TextEditingController _captionController;
   final List<TextOverlay> _textOverlays = [];
   TextOverlay? _selectedOverlay;
+  final GlobalKey _captureKey = GlobalKey();
 
   @override
   void initState() {
@@ -95,71 +103,225 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
     );
   }
 
+  void _showMoreOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.download),
+              title: const Text("Save to Gallery"),
+              onTap: () {
+                Navigator.pop(context);
+                _saveStory();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.cancel),
+              title: const Text("Cancel"),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveStory() async {
+    PermissionStatus status;
+
+    if (Platform.isAndroid) {
+      try {
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        // On Android 13+ (SDK 33), use photos permission (READ_MEDIA_IMAGES)
+        if (androidInfo.version.sdkInt >= 33) {
+          status = await Permission.photos.request();
+        } else {
+          // On older Android, use storage permission
+          status = await Permission.storage.request();
+        }
+      } catch (e) {
+        // Fallback if DeviceInfoPlugin fails (e.g. MissingPluginException before rebuild)
+        debugPrint("DeviceInfoPlugin failed: $e. App needs full restart. Trying fallback permissions.");
+        
+        // Try storage first
+        status = await Permission.storage.request();
+        
+        // If storage is denied (likely Android 13+ where it's invalid), try photos
+        if (!status.isGranted) {
+          status = await Permission.photos.request();
+        }
+      }
+    } else {
+      // iOS
+      status = await Permission.photos.request();
+    }
+
+    if (status.isPermanentlyDenied) {
+      openAppSettings();
+      return;
+    }
+
+    if (!status.isGranted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Storage permission denied")),
+      );
+      return;
+    }
+
+    // Deselect any selected overlay before capturing
+    setState(() {
+      _selectedOverlay = null;
+    });
+
+    // Wait for UI to update
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    try {
+      if (_isVideo) {
+        await _saveVideoWithOverlays();
+      } else {
+        await _saveImageWithOverlays();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to save: $e")),
+      );
+    }
+  }
+
+  Future<void> _saveImageWithOverlays() async {
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final RenderRepaintBoundary boundary = _captureKey.currentContext!
+          .findRenderObject() as RenderRepaintBoundary;
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      // Save to gallery
+      final result = await ImageGallerySaverPlus.saveImage(
+        pngBytes,
+        quality: 100,
+        name: "story_${DateTime.now().millisecondsSinceEpoch}",
+      );
+
+      Navigator.pop(context); // Dismiss loading
+
+      if (result['isSuccess']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Image saved to gallery!")),
+        );
+      } else {
+        throw Exception("Failed to save image");
+      }
+    } catch (e) {
+      Navigator.pop(context); // Dismiss loading
+      rethrow;
+    }
+  }
+
+  Future<void> _saveVideoWithOverlays() async {
+    // For video, we'll save a thumbnail with overlays for now
+    // Full video editing with overlays requires FFmpeg integration
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Video saving with overlays coming soon!\nSaving thumbnail for now..."),
+      ),
+    );
+
+    // Pause video and capture current frame
+    await _videoController?.pause();
+    await _saveImageWithOverlays();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Background Media (InteractiveViewer)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () {
-                // Deselect any selected overlay when tapping background
-                if (_selectedOverlay != null) {
-                  setState(() {
-                    _selectedOverlay = null;
-                  });
-                }
-              },
-              child: AbsorbPointer(
-                absorbing: _selectedOverlay != null, // Disable InteractiveViewer when text is selected
-                child: InteractiveViewer(
-                  minScale: 0.5,
-                  maxScale: 4.0,
-                  boundaryMargin: const EdgeInsets.all(double.infinity),
-                  child: _isVideo
-                      ? (_videoController != null && _videoController!.value.isInitialized
-                          ? Center(
-                              child: AspectRatio(
-                                aspectRatio: _videoController!.value.aspectRatio,
-                                child: VideoPlayer(_videoController!),
+          // Wrap the entire story view in RepaintBoundary for capturing
+          RepaintBoundary(
+            key: _captureKey,
+            child: Stack(
+              children: [
+                // Background Media
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (_selectedOverlay != null) {
+                        setState(() {
+                          _selectedOverlay = null;
+                        });
+                      }
+                    },
+                    child: AbsorbPointer(
+                      absorbing: _selectedOverlay != null,
+                      child: InteractiveViewer(
+                        minScale: 0.5,
+                        maxScale: 4.0,
+                        boundaryMargin: const EdgeInsets.all(double.infinity),
+                        child: _isVideo
+                            ? (_videoController != null && _videoController!.value.isInitialized
+                                ? Center(
+                                    child: AspectRatio(
+                                      aspectRatio: _videoController!.value.aspectRatio,
+                                      child: VideoPlayer(_videoController!),
+                                    ),
+                                  )
+                                : const Center(child: CircularProgressIndicator()))
+                            : Image.file(
+                                File(widget.filePath),
+                                fit: BoxFit.contain,
                               ),
-                            )
-                          : const Center(child: CircularProgressIndicator()))
-                      : Image.file(
-                          File(widget.filePath),
-                          fit: BoxFit.contain,
-                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+
+                // Text Overlays Layer
+                ..._textOverlays.map((overlay) {
+                  final isSelected = _selectedOverlay == overlay;
+
+                  return Positioned(
+                    left: overlay.position.dx,
+                    top: overlay.position.dy,
+                    child: _TextOverlayWidget(
+                      overlay: overlay,
+                      isSelected: isSelected,
+                      onTap: () {
+                        setState(() {
+                          _selectedOverlay = overlay;
+                        });
+                      },
+                      onDoubleTap: () {
+                        _openEditorForOverlay(overlay);
+                      },
+                      onUpdate: () {
+                        setState(() {});
+                      },
+                    ),
+                  );
+                }).toList(),
+              ],
             ),
           ),
-
-          // Text Overlays Layer
-          ..._textOverlays.map((overlay) {
-            final isSelected = _selectedOverlay == overlay;
-
-            return Positioned(
-              left: overlay.position.dx,
-              top: overlay.position.dy,
-              child: _TextOverlayWidget(
-                overlay: overlay,
-                isSelected: isSelected,
-                onTap: () {
-                  setState(() {
-                    _selectedOverlay = overlay;
-                  });
-                },
-                onDoubleTap: () {
-                  _openEditorForOverlay(overlay);
-                },
-                onUpdate: () {
-                  setState(() {});
-                },
-              ),
-            );
-          }).toList(),
 
           // Delete button for selected overlay
           if (_selectedOverlay != null)
@@ -206,7 +368,7 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
                 GestureDetector(
                   onTap: () {
                     setState(() {
-                      _selectedOverlay = null; // Deselect before adding new
+                      _selectedOverlay = null;
                     });
                     _addText();
                   },
@@ -215,7 +377,10 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
                 _buildTopIcon(Icons.face, "Stickers"),
                 _buildTopIcon(Icons.music_note, "Music"),
                 _buildTopIcon(Icons.auto_fix_high, "Effects"),
-                _buildTopIcon(Icons.more_horiz, "More"),
+                GestureDetector(
+                  onTap: _showMoreOptions,
+                  child: _buildTopIcon(Icons.more_horiz, "More"),
+                ),
               ],
             ),
           ),
