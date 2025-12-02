@@ -24,6 +24,7 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
   VideoPlayerController? _videoController;
   late TextEditingController _captionController;
   final List<TextOverlay> _textOverlays = [];
+  TextOverlay? _selectedOverlay;
 
   @override
   void initState() {
@@ -73,14 +74,19 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
           initialOverlay: overlay,
           onDone: (updated) {
             setState(() {
-              // Update fields in-place so the existing overlay keeps its identity and transform
-              overlay.text = updated.text;
-              overlay.style = updated.style;
-              overlay.color = updated.color;
-              // Keep position/scale/rotation unless the editor returns different ones
-              overlay.position = updated.position;
-              overlay.scale = updated.scale;
-              overlay.rotation = updated.rotation;
+              // If text is empty after editing, remove the overlay
+              if (updated.text.isEmpty) {
+                _textOverlays.remove(overlay);
+                _selectedOverlay = null;
+              } else {
+                // Update fields in-place
+                overlay.text = updated.text;
+                overlay.style = updated.style;
+                overlay.color = updated.color;
+                overlay.position = updated.position;
+                overlay.scale = updated.scale;
+                overlay.rotation = updated.rotation;
+              }
             });
           },
         ),
@@ -96,23 +102,36 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
         children: [
           // Background Media (InteractiveViewer)
           Positioned.fill(
-            child: InteractiveViewer(
-              minScale: 0.5,
-              maxScale: 4.0,
-              boundaryMargin: const EdgeInsets.all(double.infinity),
-              child: _isVideo
-                  ? (_videoController != null && _videoController!.value.isInitialized
-                      ? Center(
-                          child: AspectRatio(
-                            aspectRatio: _videoController!.value.aspectRatio,
-                            child: VideoPlayer(_videoController!),
-                          ),
-                        )
-                      : const Center(child: CircularProgressIndicator()))
-                  : Image.file(
-                      File(widget.filePath),
-                      fit: BoxFit.contain,
-                    ),
+            child: GestureDetector(
+              onTap: () {
+                // Deselect any selected overlay when tapping background
+                if (_selectedOverlay != null) {
+                  setState(() {
+                    _selectedOverlay = null;
+                  });
+                }
+              },
+              child: AbsorbPointer(
+                absorbing: _selectedOverlay != null, // Disable InteractiveViewer when text is selected
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  boundaryMargin: const EdgeInsets.all(double.infinity),
+                  child: _isVideo
+                      ? (_videoController != null && _videoController!.value.isInitialized
+                          ? Center(
+                              child: AspectRatio(
+                                aspectRatio: _videoController!.value.aspectRatio,
+                                child: VideoPlayer(_videoController!),
+                              ),
+                            )
+                          : const Center(child: CircularProgressIndicator()))
+                      : Image.file(
+                          File(widget.filePath),
+                          fit: BoxFit.contain,
+                        ),
+                ),
+              ),
             ),
           ),
 
@@ -121,6 +140,9 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
             // Local start values captured per overlay instance for gestures
             double _startScale = overlay.scale;
             double _startRotation = overlay.rotation;
+            Offset _startPosition = overlay.position;
+
+            final isSelected = _selectedOverlay == overlay;
 
             return Positioned(
               left: overlay.position.dx,
@@ -128,26 +150,41 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTap: () {
-                  // Open editor to edit this overlay
+                  setState(() {
+                    _selectedOverlay = overlay;
+                  });
+                },
+                onDoubleTap: () {
                   _openEditorForOverlay(overlay);
                 },
                 onScaleStart: (details) {
+                  setState(() {
+                    _selectedOverlay = overlay;
+                  });
                   _startScale = overlay.scale;
                   _startRotation = overlay.rotation;
+                  _startPosition = overlay.position;
                 },
                 onScaleUpdate: (details) {
-                  setState(() {
-                    // Scale: pinch to resize
-                    overlay.scale = (_startScale * details.scale).clamp(0.3, 8.0);
-                    // Rotation: two-finger rotate
-                    overlay.rotation = _startRotation + details.rotation;
-                    // Pan while scaling (or single finger pan)
-                    // details.focalPointDelta is in global coordinates so we can move by it
-                    overlay.position += details.focalPointDelta;
-                  });
+                  // Only allow transformation if this overlay is selected
+                  if (isSelected) {
+                    setState(() {
+                      // Scale: pinch to resize
+                      overlay.scale = (_startScale * details.scale).clamp(0.3, 8.0);
+                      // Rotation: two-finger rotate
+                      overlay.rotation = _startRotation + details.rotation;
+                      // Pan: move by focal point delta
+                      overlay.position = _startPosition + details.focalPointDelta;
+                    });
+                  }
                 },
-                child: Transform.translate(
-                  offset: Offset.zero,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: isSelected
+                      ? BoxDecoration(
+                          border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+                        )
+                      : null,
                   child: Transform.scale(
                     scale: overlay.scale,
                     child: Transform.rotate(
@@ -162,6 +199,29 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
               ),
             );
           }).toList(),
+
+          // Delete button for selected overlay
+          if (_selectedOverlay != null)
+            Positioned(
+              left: _selectedOverlay!.position.dx - 30,
+              top: _selectedOverlay!.position.dy - 30,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _textOverlays.remove(_selectedOverlay);
+                    _selectedOverlay = null;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 20),
+                ),
+              ),
+            ),
 
           // Top Bar
           Positioned(
@@ -183,7 +243,12 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
                 ),
                 const Spacer(),
                 GestureDetector(
-                  onTap: _addText,
+                  onTap: () {
+                    setState(() {
+                      _selectedOverlay = null; // Deselect before adding new
+                    });
+                    _addText();
+                  },
                   child: _buildTopIcon(Icons.text_fields, "Text"),
                 ),
                 _buildTopIcon(Icons.face, "Stickers"),
