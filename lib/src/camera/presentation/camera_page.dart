@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:heracle/core/theme/app_colors.dart';
+import 'package:heracle/src/camera/presentation/share_bottom_sheet.dart';
 import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -100,7 +101,6 @@ class _CameraPageState extends State<CameraPage>
                     _path(sensors, CaptureMode.video),
                 initialCaptureMode: _captureMode,
               ),
-              previewFit: CameraPreviewFit.contain,
               // FIX: Explicitly add types (CameraState, AnalysisPreview) here
               builder: (CameraState state, AnalysisPreview preview) {
                 // Auto-record logic after switch
@@ -332,11 +332,16 @@ class _CameraPageState extends State<CameraPage>
                       ),
                     ),
                     const SizedBox(width: 10),
+
                     SizedBox(
                       height: 55,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          // Add your share logic here
+                          showModalBottomSheet(
+                            context: context,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => const ShareBottomSheet(),
+                          );
                         },
                         icon: const Icon(Icons.telegram_sharp, size: 30), // Increased size
                         label: const Text(
