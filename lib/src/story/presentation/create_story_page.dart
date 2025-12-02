@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:heracle/core/theme/app_colors.dart';
 import 'package:heracle/src/story/domain/text_overlay.dart';
@@ -137,18 +138,14 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
 
           // Text Overlays Layer
           ..._textOverlays.map((overlay) {
-            // Local start values captured per overlay instance for gestures
-            double _startScale = overlay.scale;
-            double _startRotation = overlay.rotation;
-            Offset _startPosition = overlay.position;
-
             final isSelected = _selectedOverlay == overlay;
 
             return Positioned(
               left: overlay.position.dx,
               top: overlay.position.dy,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
+              child: _TextOverlayWidget(
+                overlay: overlay,
+                isSelected: isSelected,
                 onTap: () {
                   setState(() {
                     _selectedOverlay = overlay;
@@ -157,45 +154,9 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
                 onDoubleTap: () {
                   _openEditorForOverlay(overlay);
                 },
-                onScaleStart: (details) {
-                  setState(() {
-                    _selectedOverlay = overlay;
-                  });
-                  _startScale = overlay.scale;
-                  _startRotation = overlay.rotation;
-                  _startPosition = overlay.position;
+                onUpdate: () {
+                  setState(() {});
                 },
-                onScaleUpdate: (details) {
-                  // Only allow transformation if this overlay is selected
-                  if (isSelected) {
-                    setState(() {
-                      // Scale: pinch to resize
-                      overlay.scale = (_startScale * details.scale).clamp(0.3, 8.0);
-                      // Rotation: two-finger rotate
-                      overlay.rotation = _startRotation + details.rotation;
-                      // Pan: move by focal point delta
-                      overlay.position = _startPosition + details.focalPointDelta;
-                    });
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: isSelected
-                      ? BoxDecoration(
-                          border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
-                        )
-                      : null,
-                  child: Transform.scale(
-                    scale: overlay.scale,
-                    child: Transform.rotate(
-                      angle: overlay.rotation,
-                      child: Text(
-                        overlay.text,
-                        style: overlay.style,
-                      ),
-                    ),
-                  ),
-                ),
               ),
             );
           }).toList(),
@@ -327,6 +288,128 @@ class _CreateStoryPageState extends State<CreateStoryPage> {
         ),
         child: Icon(icon, color: Colors.white, size: 24),
       ),
+    );
+  }
+}
+
+/// Separate widget to handle individual text overlay gestures
+class _TextOverlayWidget extends StatefulWidget {
+  final TextOverlay overlay;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final VoidCallback onDoubleTap;
+  final VoidCallback onUpdate;
+
+  const _TextOverlayWidget({
+    required this.overlay,
+    required this.isSelected,
+    required this.onTap,
+    required this.onDoubleTap,
+    required this.onUpdate,
+  });
+
+  @override
+  State<_TextOverlayWidget> createState() => _TextOverlayWidgetState();
+}
+
+class _TextOverlayWidgetState extends State<_TextOverlayWidget> {
+  double _startScale = 1.0;
+  double _startRotation = 0.0;
+  Offset _startPosition = Offset.zero;
+  Offset _startFocalPoint = Offset.zero;
+  Offset _startLocalFocalPoint = Offset.zero;
+  int _pointerCount = 0;
+  final GlobalKey _textKey = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => _pointerCount++,
+      onPointerUp: (_) => _pointerCount--,
+      onPointerCancel: (_) => _pointerCount--,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: widget.onTap,
+        onDoubleTap: widget.onDoubleTap,
+        onScaleStart: (details) {
+          widget.onTap();
+          _startScale = widget.overlay.scale;
+          _startRotation = widget.overlay.rotation;
+          _startPosition = widget.overlay.position;
+          _startFocalPoint = details.focalPoint;
+          _startLocalFocalPoint = details.localFocalPoint;
+        },
+        onScaleUpdate: (details) {
+          if (!widget.isSelected) return;
+
+          if (_pointerCount == 1) {
+            // Single finger: only move (pan)
+            final delta = details.focalPoint - _startFocalPoint;
+            widget.overlay.position = _startPosition + delta;
+          } else if (_pointerCount >= 2) {
+            // Two fingers: scale and rotate
+            
+            // Apply scale
+            final newScale = (_startScale * details.scale).clamp(0.3, 8.0);
+            widget.overlay.scale = newScale;
+            
+            // Apply rotation
+            final deltaRotation = details.rotation;
+            widget.overlay.rotation = _startRotation + deltaRotation;
+            
+            // Calculate position adjustment to keep the pinch point fixed
+            // The local focal point (relative to widget) should stay under fingers
+            
+            // Start: where the focal point was relative to widget start position
+            final startFocalInWidget = _startLocalFocalPoint;
+            
+            // Apply scale to that point
+            final scaledFocal = Offset(
+              startFocalInWidget.dx * (newScale / _startScale),
+              startFocalInWidget.dy * (newScale / _startScale),
+            );
+            
+            // Apply rotation to that scaled point
+            final rotatedScaledFocal = _rotateOffset(scaledFocal, deltaRotation);
+            
+            // New position: current focal point minus the transformed local focal point
+            widget.overlay.position = details.focalPoint - rotatedScaledFocal;
+          }
+
+          widget.onUpdate();
+        },
+        child: Transform.scale(
+          scale: widget.overlay.scale,
+          alignment: Alignment.topLeft,
+          child: Transform.rotate(
+            angle: widget.overlay.rotation,
+            alignment: Alignment.topLeft,
+            child: Container(
+              key: _textKey,
+              padding: const EdgeInsets.all(8),
+              decoration: widget.isSelected
+                  ? BoxDecoration(
+                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+                      borderRadius: BorderRadius.circular(4),
+                    )
+                  : null,
+              child: Text(
+                widget.overlay.text,
+                style: widget.overlay.style,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Offset _rotateOffset(Offset offset, double angle) {
+    final cos = math.cos(angle);
+    final sin = math.sin(angle);
+    return Offset(
+      offset.dx * cos - offset.dy * sin,
+      offset.dx * sin + offset.dy * cos,
     );
   }
 }
