@@ -9,6 +9,8 @@ class StoryContent {
   final String? backgroundColor;
   final Duration duration;
   final bool isLiked;
+  final int likes;
+  final int views;
   final List<LikedByUser> likedBy;
 
   StoryContent({
@@ -19,6 +21,8 @@ class StoryContent {
     this.backgroundColor,
     this.duration = const Duration(seconds: 5),
     this.isLiked = false,
+    this.likes = 0,
+    this.views = 0,
     this.likedBy = const [],
   });
 
@@ -33,10 +37,38 @@ class StoryContent {
         seconds: json['duration'] as int? ?? 5,
       ),
       isLiked: json['isLiked'] as bool? ?? false,
+      likes: json['likes'] as int? ?? 0,
+      views: json['views'] as int? ?? 0,
       likedBy: (json['likedBy'] as List<dynamic>?)
           ?.map((e) => LikedByUser.fromJson(e as Map<String, dynamic>))
           .toList() ??
           [],
+    );
+  }
+
+  StoryContent copyWith({
+    String? id,
+    String? type,
+    String? imageUrl,
+    String? text,
+    String? backgroundColor,
+    Duration? duration,
+    bool? isLiked,
+    int? likes,
+    int? views,
+    List<LikedByUser>? likedBy,
+  }) {
+    return StoryContent(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      imageUrl: imageUrl ?? this.imageUrl,
+      text: text ?? this.text,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      duration: duration ?? this.duration,
+      isLiked: isLiked ?? this.isLiked,
+      likes: likes ?? this.likes,
+      views: views ?? this.views,
+      likedBy: likedBy ?? this.likedBy,
     );
   }
 }
@@ -260,6 +292,25 @@ class StoriesRepository {
         return story.copyWith(isViewed: true);
       }
       return story;
+    }).toList();
+  }
+
+  // Toggle like on story content
+  List<StoryUser> toggleStoryLike(List<StoryUser> stories, String storyId) {
+    return stories.map((user) {
+      final updatedStories = user.stories.map((story) {
+        if (story.id == storyId) {
+          final newIsLiked = !story.isLiked;
+          final newLikes = newIsLiked ? story.likes + 1 : story.likes - 1;
+          return story.copyWith(
+            isLiked: newIsLiked,
+            likes: newLikes,
+          );
+        }
+        return story;
+      }).toList();
+      
+      return user.copyWith(stories: updatedStories);
     }).toList();
   }
 }

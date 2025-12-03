@@ -7,12 +7,14 @@ class StoryViewer extends StatefulWidget {
   final List<StoryUser> stories;
   final int initialIndex;
   final Function(String) onStoryViewed;
+  final Function(String)? onStoryLiked;
 
   const StoryViewer({
     super.key,
     required this.stories,
     required this.initialIndex,
     required this.onStoryViewed,
+    this.onStoryLiked,
   });
 
   @override
@@ -29,10 +31,14 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   Animation<double>? _progressAnimation;
   Duration _storyDuration = const Duration(seconds: 5);
   bool _isVideoProgressTracking = false;
+  final TextEditingController _commentController = TextEditingController();
+  final FocusNode _commentFocus = FocusNode();
+  List<StoryUser> _localStories = []; // Local copy for state management
 
   @override
   void initState() {
     super.initState();
+    _localStories = List.from(widget.stories); // Create local copy
     _currentUserIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
     _setupProgressController();
@@ -62,7 +68,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     });
     
     _progressController?.reset();
-    final currentUser = widget.stories[_currentUserIndex];
+    final currentUser = _localStories[_currentUserIndex];
     if (currentUser.stories.isNotEmpty) {
       _loadContent(currentUser.stories[_currentStoryIndex]);
     }
@@ -97,7 +103,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
       setState(() {
         _isContentLoaded = true;
       });
-      final currentUser = widget.stories[_currentUserIndex];
+      final currentUser = _localStories[_currentUserIndex];
       if (currentUser.stories.isNotEmpty) {
         _startTimer(currentUser.stories[_currentStoryIndex]);
       }
@@ -113,7 +119,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
           setState(() {
             _isContentLoaded = true;
           });
-          final currentUser = widget.stories[_currentUserIndex];
+          final currentUser = _localStories[_currentUserIndex];
           if (currentUser.stories.isNotEmpty) {
             _startTimer(currentUser.stories[_currentStoryIndex]);
           }
@@ -124,7 +130,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
           setState(() {
             _isContentLoaded = true;
           });
-          final currentUser = widget.stories[_currentUserIndex];
+          final currentUser = _localStories[_currentUserIndex];
           if (currentUser.stories.isNotEmpty) {
             _startTimer(currentUser.stories[_currentStoryIndex]);
           }
@@ -138,7 +144,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
       setState(() {
         _isContentLoaded = true;
       });
-      final currentUser = widget.stories[_currentUserIndex];
+      final currentUser = _localStories[_currentUserIndex];
       if (currentUser.stories.isNotEmpty) {
         _startTimer(currentUser.stories[_currentStoryIndex]);
       }
@@ -159,7 +165,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
         _videoController!.addListener(_videoProgressListener);
         
         await _videoController!.play();
-        final currentUser = widget.stories[_currentUserIndex];
+        final currentUser = _localStories[_currentUserIndex];
         if (currentUser.stories.isNotEmpty) {
           _startTimer(currentUser.stories[_currentStoryIndex]);
         }
@@ -169,7 +175,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
         setState(() {
           _isContentLoaded = true;
         });
-        final currentUser = widget.stories[_currentUserIndex];
+        final currentUser = _localStories[_currentUserIndex];
         if (currentUser.stories.isNotEmpty) {
           _startTimer(currentUser.stories[_currentStoryIndex]);
         }
@@ -227,7 +233,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     _videoController?.pause();
     _isVideoProgressTracking = false;
     
-    final currentUser = widget.stories[_currentUserIndex];
+    final currentUser = _localStories[_currentUserIndex];
     
     if (_currentStoryIndex < currentUser.stories.length - 1) {
       // Next story in current user
@@ -253,7 +259,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
         _currentStoryIndex--;
         _isContentLoaded = false;
       });
-      final currentUser = widget.stories[_currentUserIndex];
+      final currentUser = _localStories[_currentUserIndex];
       _loadContent(currentUser.stories[_currentStoryIndex]);
     } else {
       // Previous user
@@ -294,12 +300,61 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   }
 
   void _markCurrentUserAsViewed() {
-    final currentUser = widget.stories[_currentUserIndex];
+    final currentUser = _localStories[_currentUserIndex];
     widget.onStoryViewed(currentUser.id);
+  }
+
+  void _toggleLike() {
+    final currentUser = _localStories[_currentUserIndex];
+    if (currentUser.stories.isNotEmpty) {
+      final currentStory = currentUser.stories[_currentStoryIndex];
+      
+      // Update local state immediately
+      setState(() {
+        final updatedStories = currentUser.stories.map((story) {
+          if (story.id == currentStory.id) {
+            final newIsLiked = !story.isLiked;
+            final newLikes = newIsLiked ? story.likes + 1 : story.likes - 1;
+            return story.copyWith(
+              isLiked: newIsLiked,
+              likes: newLikes,
+            );
+          }
+          return story;
+        }).toList();
+        
+        final updatedUser = currentUser.copyWith(stories: updatedStories);
+        _localStories[_currentUserIndex] = updatedUser;
+      });
+      
+      // Notify parent component
+      widget.onStoryLiked?.call(currentStory.id);
+    }
+  }
+
+  void _submitComment() {
+    final comment = _commentController.text.trim();
+    if (comment.isNotEmpty) {
+      // TODO: Implement comment submission to API
+      print('Submitting comment: $comment');
+      _commentController.clear();
+      _commentFocus.unfocus();
+      
+      // Show feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Comment added!'),
+          duration: Duration(seconds: 1),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+    }
   }
 
   @override
   void dispose() {
+    _commentController.dispose();
+    _commentFocus.dispose();
     _videoController?.removeListener(_videoProgressListener);
     _progressController?.dispose();
     _videoController?.dispose();
@@ -313,17 +368,18 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
       backgroundColor: Colors.black,
       body: PageView.builder(
         controller: _pageController,
-        itemCount: widget.stories.length,
+        itemCount: _localStories.length,
         onPageChanged: (index) {
           _progressController?.reset();
           _isVideoProgressTracking = false;
+          _commentFocus.unfocus();
           setState(() {
             _currentUserIndex = index;
           });
           _startCurrentStory();
         },
         itemBuilder: (context, index) {
-          final user = widget.stories[index];
+          final user = _localStories[index];
           if (user.stories.isEmpty) {
             return const Center(
               child: Text(
@@ -337,6 +393,10 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
           
           return GestureDetector(
             onTapUp: (details) {
+              // Don't navigate if tapping on comment area
+              final screenHeight = MediaQuery.of(context).size.height;
+              if (details.globalPosition.dy > screenHeight - 120) return;
+              
               final screenWidth = MediaQuery.of(context).size.width;
               if (details.globalPosition.dx < screenWidth * 0.3) {
                 _previousStory();
@@ -472,6 +532,131 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                       Icons.close,
                       color: Colors.white,
                       size: 28,
+                    ),
+                  ),
+                ),
+                
+                // Bottom Actions (Send message, Like, Share)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.8),
+                        ],
+                      ),
+                    ),
+                    padding: EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      bottom: MediaQuery.of(context).padding.bottom + 20,
+                      top: 30,
+                    ),
+                    child: Row(
+                      children: [
+                        // Send Message Input
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _commentController,
+                              focusNode: _commentFocus,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                              decoration: const InputDecoration(
+                                hintText: 'Send message',
+                                hintStyle: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 16,
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 16,
+                                ),
+                              ),
+                              maxLines: 1,
+                              onSubmitted: (_) => _submitComment(),
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(width: 16),
+                        
+                        // Like Button
+                        GestureDetector(
+                          onTap: _toggleLike,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: currentStory.isLiked 
+                                  ? Colors.red.withOpacity(0.2)
+                                  : Colors.white.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: currentStory.isLiked 
+                                    ? Colors.red
+                                    : Colors.white.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              child: Icon(
+                                currentStory.isLiked 
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                key: ValueKey(currentStory.isLiked),
+                                color: currentStory.isLiked 
+                                    ? Colors.red
+                                    : Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(width: 12),
+                        
+                        // Send/Share Button
+                        GestureDetector(
+                          onTap: _submitComment,
+                          child: Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.send,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

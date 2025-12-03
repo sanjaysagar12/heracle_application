@@ -36,6 +36,9 @@ class StoriesService {
           final mediaType = (story['mediaType'] as String? ?? 'IMAGE').toUpperCase();
           final imageUrl = story['imageUrl'] as String? ?? '';
           final caption = story['caption'] as String? ?? '';
+          final isLiked = story['isLiked'] as bool? ?? false;
+          final likes = story['likes'] as int? ?? 0;
+          final views = story['views'] as int? ?? 0;
           
           return {
             'id': id,
@@ -43,7 +46,9 @@ class StoriesService {
             'imageUrl': imageUrl,
             'text': caption,
             'duration': 5,
-            'isLiked': false,
+            'isLiked': isLiked,
+            'likes': likes,
+            'views': views,
             'likedBy': <Map<String, dynamic>>[], // Can be extended later
           };
         }).toList();

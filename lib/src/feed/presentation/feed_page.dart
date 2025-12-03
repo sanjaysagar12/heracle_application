@@ -96,10 +96,33 @@ class _FeedPageState extends State<FeedPage> {
             stories: _stories,
             initialIndex: index,
             onStoryViewed: _markStoryAsViewed,
+            onStoryLiked: _handleStoryLike,
           ),
         ),
       );
     }
+  }
+
+  void _handleStoryLike(String storyId) {
+    setState(() {
+      _stories = _storiesRepository.toggleStoryLike(_stories, storyId);
+    });
+    
+    // Optional: Show like feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: const [
+            Icon(Icons.favorite, color: Colors.red, size: 20),
+            SizedBox(width: 8),
+            Text('Story liked!'),
+          ],
+        ),
+        duration: const Duration(milliseconds: 800),
+        backgroundColor: Colors.black87,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _markStoryAsViewed(String storyId) {
