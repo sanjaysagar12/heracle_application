@@ -672,35 +672,40 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     switch (story.type) {
       case 'image':
         return _isValidUrl(story.imageUrl)
-            ? Image.network(
-                story.imageUrl!,
-                fit: BoxFit.cover,
+            ? Container(
                 width: double.infinity,
                 height: double.infinity,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[800],
-                    child: const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error, color: Colors.white, size: 50),
-                          SizedBox(height: 16),
-                          Text(
-                            'Failed to load image',
-                            style: TextStyle(color: Colors.white),
+                color: Colors.black,
+                child: Center(
+                  child: Image.network(
+                    story.imageUrl!,
+                    fit: BoxFit.contain, // Changed from BoxFit.cover to BoxFit.contain
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(color: AppColors.primary),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[800],
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error, color: Colors.white, size: 50),
+                              SizedBox(height: 16),
+                              Text(
+                                'Failed to load image',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+                        ),
+                      );
+                    },
+                  ),
+                ),
               )
             : Container(
                 color: Colors.grey[800],
@@ -740,20 +745,26 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
         }
         
         return _videoController != null && _videoController!.value.isInitialized
-            ? Stack(
-                children: [
-                  AspectRatio(
-                    aspectRatio: _videoController!.value.aspectRatio,
-                    child: VideoPlayer(_videoController!),
-                  ),
-                  // Show buffering indicator when video is buffering
-                  if (_videoController!.value.isBuffering)
-                    const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primary,
+            ? Container(
+                width: double.infinity,
+                height: double.infinity,
+                color: Colors.black,
+                child: Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      AspectRatio(
+                        aspectRatio: _videoController!.value.aspectRatio,
+                        child: VideoPlayer(_videoController!),
                       ),
-                    ),
-                ],
+                      // Show buffering indicator when video is buffering
+                      if (_videoController!.value.isBuffering)
+                        const CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                    ],
+                  ),
+                ),
               )
             : Container(
                 color: Colors.grey[800],
