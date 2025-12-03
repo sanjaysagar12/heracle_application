@@ -556,39 +556,39 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                     padding: EdgeInsets.only(
                       left: 20,
                       right: 20,
-                      bottom: MediaQuery.of(context).padding.bottom + 20,
-                      top: 30,
+                      bottom: MediaQuery.of(context).padding.bottom + 16,
+                      top: 20, // reduced top padding
                     ),
                     child: Row(
                       children: [
-                        // Send Message Input
+                        // Send Message Input (keeps Expanded so it grows)
                         Expanded(
                           child: Container(
+                            height: 48,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(30),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 1,
-                              ),
+                              color: Colors.white.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(24),
                             ),
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.only(left: 14, right: 14),
                             child: TextField(
                               controller: _commentController,
                               focusNode: _commentFocus,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
+                                fontSize: 15,
                               ),
                               decoration: const InputDecoration(
                                 hintText: 'Send message',
                                 hintStyle: TextStyle(
                                   color: Colors.white70,
-                                  fontSize: 16,
+                                  fontSize: 15,
                                 ),
                                 border: InputBorder.none,
+                                isDense: true,
                                 contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 16,
+                                  horizontal: 8,
+                                  vertical: 0,
                                 ),
                               ),
                               maxLines: 1,
@@ -597,9 +597,9 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                           ),
                         ),
                         
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12), // reduced gap so input is longer
                         
-                        // Like Button
+                        // Like Button (smaller)
                         GestureDetector(
                           onTap: _toggleLike,
                           child: AnimatedContainer(
@@ -607,38 +607,28 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                             width: 52,
                             height: 52,
                             decoration: BoxDecoration(
-                              // Use currentStory.isLiked to determine initial color
-                              color: currentStory.isLiked 
+                              color: currentStory.isLiked
                                   ? Colors.red.withOpacity(0.2)
                                   : Colors.white.withOpacity(0.15),
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: currentStory.isLiked 
-                                    ? Colors.red
-                                    : Colors.white.withOpacity(0.3),
-                                width: 1,
-                              ),
                             ),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: Icon(
-                                // Use currentStory.isLiked to determine initial icon
-                                currentStory.isLiked 
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                key: ValueKey(currentStory.isLiked),
-                                color: currentStory.isLiked 
-                                    ? Colors.red
-                                    : Colors.white,
-                                size: 24,
+                            child: Center(
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: Icon(
+                                  currentStory.isLiked ? Icons.favorite : Icons.favorite_border,
+                                  key: ValueKey(currentStory.isLiked),
+                                  color: currentStory.isLiked ? Colors.red : Colors.white,
+                                  size: 22, // reduced icon size
+                                ),
                               ),
                             ),
                           ),
                         ),
                         
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8), // tighten spacing between buttons
                         
-                        // Send/Share Button
+                        // Send/Share Button (smaller)
                         GestureDetector(
                           onTap: _submitComment,
                           child: Container(
@@ -647,15 +637,13 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.15),
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 1,
-                              ),
                             ),
-                            child: const Icon(
-                              Icons.send,
-                              color: Colors.white,
-                              size: 22,
+                            child: const Center(
+                              child: Icon(
+                                Icons.send,
+                                color: Colors.white,
+                                size: 22, // reduced icon size
+                              ),
                             ),
                           ),
                         ),
