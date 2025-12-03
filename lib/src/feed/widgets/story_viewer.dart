@@ -262,6 +262,9 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   }
 
   void _nextUser() {
+    // Always mark current user as viewed first
+    _markCurrentUserAsViewed();
+    
     if (_currentUserIndex < widget.stories.length - 1) {
       setState(() {
         _currentUserIndex++;
@@ -270,11 +273,9 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
-      _markCurrentUserAsViewed();
       _startCurrentStory();
     } else {
-      // End of stories
-      _markCurrentUserAsViewed();
+      // End of stories - exit viewer
       Navigator.of(context).pop();
     }
   }
