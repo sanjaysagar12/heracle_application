@@ -270,14 +270,29 @@ class Comment {
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
+    String username = '';
+    String handle = '';
+    String profileImage = '';
+
+    if (json.containsKey('user')) {
+      final user = json['user'] as Map<String, dynamic>;
+      username = (user['username'] as String?) ?? (user['name'] as String?) ?? '';
+      handle = (user['handle'] as String?) ?? username;
+      profileImage = (user['profileImage'] as String?) ?? (user['avatarUrl'] as String?) ?? '';
+    } else {
+      username = (json['username'] as String?) ?? (json['name'] as String?) ?? '';
+      handle = (json['handle'] as String?) ?? '';
+      profileImage = (json['profileImage'] as String?) ?? (json['avatarUrl'] as String?) ?? '';
+    }
+
     return Comment(
-      id: json['id'] as String,
-      username: json['username'] as String,
-      handle: json['handle'] as String,
-      profileImage: json['profileImage'] as String,
-      timeAgo: json['timeAgo'] as String,
-      content: json['content'] as String,
-      replies: (json['replies'] as List)
+      id: json['id']?.toString() ?? '',
+      username: username,
+      handle: handle,
+      profileImage: profileImage,
+      timeAgo: (json['timeAgo'] as String?) ?? (json['createdAt'] as String?) ?? '',
+      content: (json['content'] as String?) ?? (json['text'] as String?) ?? '',
+      replies: (json['replies'] as List? ?? [])
           .map((reply) => Comment.fromJson(reply))
           .toList(),
     );
@@ -328,8 +343,6 @@ class MutualFeedRepository {
   }
 
   Future<List<Comment>> getPostComments(String postId) async {
-    // Add delay for testing skeleton loading
-    await Future.delayed(const Duration(seconds: 2));
     try {
       final data = await _service.getPostComments(postId);
       return data.map((json) => Comment.fromJson(json)).toList();
@@ -339,8 +352,6 @@ class MutualFeedRepository {
   }
 
   Future<Comment> addComment(String postId, String content) async {
-    // Add delay for testing skeleton loading
-    await Future.delayed(const Duration(milliseconds: 1500));
     try {
       final data = await _service.addComment(postId, content);
       return Comment.fromJson(data);
@@ -350,8 +361,6 @@ class MutualFeedRepository {
   }
 
   Future<Comment> addReply(String postId, String commentId, String content) async {
-    // Add delay for testing skeleton loading
-    await Future.delayed(const Duration(milliseconds: 1500));
     try {
       final data = await _service.addReply(postId, commentId, content);
       return Comment.fromJson(data);

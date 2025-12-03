@@ -13,4 +13,9 @@ class AuthRepository {
     final jwt = await _authService.signInWithGoogle();
     LocalStorageService().saveAuthToken(jwt);
   }
+
+  Future<void> devAuth(String email) async {
+    final jwt = await _authService.devAuth(email);
+    LocalStorageService().saveAuthToken(jwt);
+  }
 }

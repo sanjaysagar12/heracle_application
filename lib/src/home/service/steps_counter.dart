@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:pedometer/pedometer.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:pedometer/pedometer.dart' as ped;
+import 'package:permission_handler/permission_handler.dart' as perm;
 import '../storage/steps_storage.dart';
 
 class StepsCounter {
@@ -8,7 +8,7 @@ class StepsCounter {
   factory StepsCounter() => _instance;
   StepsCounter._internal();
 
-  StreamSubscription<StepCount>? _stepCountSubscription;
+  StreamSubscription<ped.StepCount>? _stepCountSubscription;
   final StepsStorage _storage = StepsStorage();
   
   int _currentSteps = 0;
@@ -23,7 +23,7 @@ class StepsCounter {
 
   Future<bool> requestPermissions() async {
     try {
-      final status = await Permission.activityRecognition.request();
+      final status = await perm.Permission.activityRecognition.request();
       
       if (status.isDenied) {
         print('StepsCounter: Activity recognition permission denied');
@@ -32,7 +32,7 @@ class StepsCounter {
       
       if (status.isPermanentlyDenied) {
         print('StepsCounter: Activity recognition permission permanently denied');
-        await openAppSettings();
+        await perm.openAppSettings();
         return false;
       }
       
@@ -61,7 +61,7 @@ class StepsCounter {
       await _loadTodaySteps();
 
       // Start listening to step count
-      _stepCountSubscription = Pedometer.stepCountStream.listen(
+      _stepCountSubscription = ped.Pedometer.stepCountStream.listen(
         _onStepCount,
         onError: _onStepCountError,
         cancelOnError: false,
@@ -81,7 +81,7 @@ class StepsCounter {
     print('StepsCounter: Stopped listening to step count');
   }
 
-  void _onStepCount(StepCount event) async {
+  void _onStepCount(ped.StepCount event) async {
     try {
       final todaySteps = await _calculateTodaySteps(event.steps);
       _currentSteps = todaySteps;

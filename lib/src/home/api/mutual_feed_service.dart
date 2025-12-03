@@ -1,133 +1,43 @@
 import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
-import 'dart:developer' as developer;
 
 class MutualFeedService {
-  final DioClient _dioClient = DioClient();
+  final Dio _dio = DioClient().dio;
 
   Future<List<Map<String, dynamic>>> getMutualFeed() async {
     try {
-      final response = await _dioClient.dio.get('/api/post/feed/all?page=1&limit=20');
-      
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        return data.cast<Map<String, dynamic>>();
-      } else {
-        throw Exception('Failed to load feed');
-      }
+      final response = await _dio.get('/api/post/feed/all');
+      return List<Map<String, dynamic>>.from(response.data);
     } catch (e) {
-      print('Error fetching feed: $e');
-      // Return empty list or rethrow based on preference. 
-      // Returning empty list to avoid crashing UI if API fails initially
-      return [];
-    }
-  }
-
-  Future<void> likePost(String postId) async {
-    final stopwatch = Stopwatch()..start();
-    print('MutualFeedService: Starting likePost for postId=$postId');
-    try {
-      final response = await _dioClient.dio.post('/api/post/$postId/like');
-      
-      stopwatch.stop();
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        print('MutualFeedService: likePost succeeded for postId=$postId '
-              'status=${response.statusCode} '
-              'duration=${stopwatch.elapsedMilliseconds}ms '
-              'response=${response.data}');
-      } else {
-        print('MutualFeedService: likePost failed for postId=$postId '
-              'status=${response.statusCode} '
-              'duration=${stopwatch.elapsedMilliseconds}ms '
-              'response=${response.data}');
-        throw Exception('Failed to like post: ${response.statusCode}');
-      }
-    } catch (e, st) {
-      stopwatch.stop();
-      print('MutualFeedService: Error liking postId=$postId after ${stopwatch.elapsedMilliseconds}ms '
-            'error=$e\n$st');
-      rethrow;
+      throw Exception('Failed to load mutual feed: $e');
     }
   }
 
   Future<List<Map<String, dynamic>>> getPostComments(String postId) async {
-    // Simulate API delay for testing
-    await Future.delayed(const Duration(seconds: 2));
-    
-    // Return mock comments based on post ID
-    if (postId == '1') {
-      return [
-        {
-          'id': 'c1',
-          'username': 'john_doe',
-          'handle': '@john_fitness',
-          'profileImage': 'https://i.pravatar.cc/150?img=12',
-          'timeAgo': '1 day ago',
-          'content': 'Great workout bro! Keep it up 💪',
-          'replies': [
-            {
-              'id': 'r1',
-              'username': 'zhambo',
-              'handle': '@miyura_9812',
-              'profileImage': 'https://i.pravatar.cc/150?img=33',
-              'timeAgo': '1 day ago',
-              'content': 'Thanks man! Appreciate it',
-              'replies': [
-                {
-                  'id': 'r2',
-                  'username': 'jane_smith',
-                  'handle': '@jane_fit',
-                  'profileImage': 'https://i.pravatar.cc/150?img=45',
-                  'timeAgo': '20 hours ago',
-                  'content': 'You guys are awesome!',
-                  'replies': [],
-                },
-              ],
-            },
-          ],
-        },
-        {
-          'id': 'c2',
-          'username': 'mike_fitness',
-          'handle': '@mike_lifts',
-          'profileImage': 'https://i.pravatar.cc/150?img=15',
-          'timeAgo': '2 days ago',
-          'content': 'What was your PR?',
-          'replies': [],
-        },
-      ];
-    } else if (postId == '2') {
-      return [
-        {
-          'id': 'c3',
-          'username': 'healthy_eater',
-          'handle': '@health_guru',
-          'profileImage': 'https://i.pravatar.cc/150?img=20',
-          'timeAgo': '5 hours ago',
-          'content': 'That looks delicious! Recipe please?',
-          'replies': [],
-        },
-      ];
+    try {
+      final response = await _dio.get('/api/post/$postId/comments');
+      
+      if (response.data is Map<String, dynamic> && response.data.containsKey('comments')) {
+        return List<Map<String, dynamic>>.from(response.data['comments']);
+      }
+      
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      print('DEBUG: getPostComments error: $e');
+      throw Exception('Failed to load comments: $e');
     }
-
-    return [];
   }
 
   Future<Map<String, dynamic>> addComment(String postId, String content) async {
-    // Simulate API delay for testing
-    await Future.delayed(const Duration(milliseconds: 1500));
-    
-    // Return mock comment
-    return {
-      'id': 'c${DateTime.now().millisecondsSinceEpoch}',
-      'username': 'Eren Yeager',
-      'handle': '@eren_yeager',
-      'profileImage':
-          'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
-      'timeAgo': 'Just now',
-      'content': content,
-      'replies': [],
-    };
+    try {
+      final response = await _dio.post(
+        '/api/post/$postId/comment',
+        data: {'text': content},
+      );
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to add comment: $e');
+    }
   }
 
   Future<Map<String, dynamic>> addReply(
@@ -135,73 +45,38 @@ class MutualFeedService {
     String commentId,
     String content,
   ) async {
-    // Simulate API delay for testing
-    await Future.delayed(const Duration(milliseconds: 1500));
-    
-    // Return mock reply
-    return {
-      'id': 'r${DateTime.now().millisecondsSinceEpoch}',
-      'username': 'Eren Yeager',
-      'handle': '@eren_yeager',
-      'profileImage':
-          'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
-      'timeAgo': 'Just now',
-      'content': content,
-      'replies': [],
-    };
-  }
-
-  Future<Map<String, dynamic>> getPostLikes(String postId) async {
-    final stopwatch = Stopwatch()..start();
-    print('MutualFeedService: Starting getPostLikes for postId=$postId');
     try {
-      final response = await _dioClient.dio.get('/api/post/$postId/likes');
-
-      stopwatch.stop();
-      if (response.statusCode == 200) {
-        print('MutualFeedService: getPostLikes succeeded for postId=$postId '
-              'duration=${stopwatch.elapsedMilliseconds}ms '
-              'response=${response.data}');
-        return response.data as Map<String, dynamic>;
-      } else {
-        print('MutualFeedService: getPostLikes failed for postId=$postId '
-              'status=${response.statusCode} '
-              'duration=${stopwatch.elapsedMilliseconds}ms');
-        throw Exception('Failed to load post likes: ${response.statusCode}');
-      }
-    } catch (e, st) {
-      stopwatch.stop();
-      print('MutualFeedService: Error getPostLikes postId=$postId after ${stopwatch.elapsedMilliseconds}ms '
-            'error=$e\n$st');
-      rethrow;
+      final response = await _dio.post(
+        '/api/post/comment/$commentId/reply',
+        data: {'text': content},
+      );
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to add reply: $e');
+    }
+  }
+  Future<void> likePost(String postId) async {
+    try {
+      await _dio.post('/api/post/$postId/like');
+    } catch (e) {
+      throw Exception('Failed to like post: $e');
     }
   }
 
-  Future<Map<String, dynamic>?> followUser(String username) async {
-    final stopwatch = Stopwatch()..start();
-    print('MutualFeedService: Starting followUser for username=$username');
+  Future<Map<String, dynamic>> getPostLikes(String postId) async {
     try {
-      // Sending empty body as per curl example
-      final response = await _dioClient.dio.post('/api/social/follow/$username', data: {});
+      final response = await _dio.get('/api/post/$postId/likes');
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to load post likes: $e');
+    }
+  }
 
-      stopwatch.stop();
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        print('MutualFeedService: followUser succeeded for username=$username '
-              'status=${response.statusCode} duration=${stopwatch.elapsedMilliseconds}ms '
-              'response=${response.data}');
-        // return parsed response if needed
-        return response.data as Map<String, dynamic>?;
-      } else {
-        print('MutualFeedService: followUser failed for username=$username '
-              'status=${response.statusCode} duration=${stopwatch.elapsedMilliseconds}ms '
-              'response=${response.data}');
-        throw Exception('Failed to follow user: ${response.statusCode}');
-      }
-    } catch (e, st) {
-      stopwatch.stop();
-      print('MutualFeedService: Error followUser username=$username after ${stopwatch.elapsedMilliseconds}ms '
-            'error=$e\n$st');
-      rethrow;
+  Future<void> followUser(String username) async {
+    try {
+      await _dio.post('/api/social/follow/$username', data: {});
+    } catch (e) {
+      throw Exception('Failed to follow user: $e');
     }
   }
 }
