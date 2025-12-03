@@ -6,81 +6,58 @@ import '../../../../core/network/dio_client.dart';
 class StoriesService {
   final DioClient _dioClient = DioClient();
 
-  /// Fetch stories users list and each user's stories from backend.
+  /// Fetch stories carousel from backend using the new API endpoint.
   /// Falls back to mock data if any network error occurs.
   Future<List<Map<String, dynamic>>> getStories() async {
     try {
-      // 1) Get story users list
-      final listResp = await _dioClient.dio.get('/api/story/list');
-      if (listResp.statusCode != 200) {
-        throw Exception('Failed to fetch story list: ${listResp.statusCode}');
+      // Get stories carousel with Bearer token
+      final response = await _dioClient.dio.get(
+        '/api/story/carousel'
+      );
+      
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch story carousel: ${response.statusCode}');
       }
-      final List<dynamic> users = listResp.data as List<dynamic>;
 
-      // 2) For each user fetch their stories
-      final futures = users.map((u) async {
-        final username = (u['username'] as String?) ?? '';
-        // safe fields from list response
-        final name = (u['name'] as String?) ?? username;
-        final avatarUrl = (u['avatarUrl'] as String?) ?? '';
-        final isViewed = (u['isViewed'] as bool?) ?? false;
+      final responseData = response.data as Map<String, dynamic>;
+      final List<dynamic> items = responseData['items'] as List<dynamic>;
 
-        // Fetch user's stories
-        try {
-          final userResp = await _dioClient.dio.get('/api/story/user/$username');
-          if (userResp.statusCode == 200) {
-            final List<dynamic> storiesData = userResp.data as List<dynamic>;
-            // Map backend story entries to legacy format used in UI
-            final stories = storiesData.map((s) {
-              final id = s['id'] as String? ?? '';
-              final mediaType = (s['mediaType'] as String? ?? 'IMAGE').toUpperCase();
-              final imageUrl = s['imageUrl'] as String? ?? '';
-              final caption = s['caption'] as String? ?? '';
-              return {
-                'id': id,
-                'type': mediaType == 'IMAGE' ? 'image' : (mediaType == 'VIDEO' ? 'video' : 'image'),
-                'imageUrl': imageUrl,
-                'text': caption,
-                'duration': 5,
-                'isLiked': s['isLiked'] as bool? ?? false,
-                'likedBy': <Map<String, dynamic>>[], // backend may provide likes separately
-              };
-            }).toList();
+      // Transform API response to match UI expectations
+      return items.map((item) {
+        final username = (item['username'] as String?) ?? '';
+        final name = (item['name'] as String?) ?? username;
+        final avatarUrl = (item['avatarUrl'] as String?) ?? '';
+        final isViewed = (item['isViewed'] as bool?) ?? false;
+        final storiesData = (item['stories'] as List<dynamic>?) ?? [];
 
-            return {
-              'id': username,
-              'username': name,
-              'profileImage': avatarUrl,
-              'hasStory': stories.isNotEmpty,
-              'isViewed': isViewed,
-              'stories': stories,
-            };
-          } else {
-            // If user stories fetch failed, return minimal entry
-            return {
-              'id': username,
-              'username': name,
-              'profileImage': avatarUrl,
-              'hasStory': false,
-              'isViewed': isViewed,
-              'stories': [],
-            };
-          }
-        } catch (e) {
-          developer.log('Error fetching stories for $username: $e');
+        // Map stories to legacy format
+        final stories = storiesData.map((story) {
+          final id = story['id'] as String? ?? '';
+          final mediaType = (story['mediaType'] as String? ?? 'IMAGE').toUpperCase();
+          final imageUrl = story['imageUrl'] as String? ?? '';
+          final caption = story['caption'] as String? ?? '';
+          
           return {
-            'id': username,
-            'username': name,
-            'profileImage': avatarUrl,
-            'hasStory': false,
-            'isViewed': isViewed,
-            'stories': [],
+            'id': id,
+            'type': mediaType == 'IMAGE' ? 'image' : (mediaType == 'VIDEO' ? 'video' : 'image'),
+            'imageUrl': imageUrl,
+            'text': caption,
+            'duration': 5,
+            'isLiked': false,
+            'likedBy': <Map<String, dynamic>>[], // Can be extended later
           };
-        }
-      }).toList();
+        }).toList();
 
-      final results = await Future.wait(futures);
-      return results.cast<Map<String, dynamic>>();
+        return {
+          'id': username,
+          'username': name,
+          'profileImage': avatarUrl ?? '',
+          'hasStory': stories.isNotEmpty,
+          'isViewed': isViewed,
+          'stories': stories,
+        };
+      }).toList().cast<Map<String, dynamic>>();
+
     } catch (e, st) {
       developer.log('StoriesService.getStories API failed, falling back to mock data: $e\n$st');
       // Fallback: original mock data (keeps UI working)
