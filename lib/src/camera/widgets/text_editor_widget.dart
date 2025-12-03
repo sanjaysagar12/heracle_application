@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heracle/src/camera/domain/text_overlay.dart';
-import 'package:uuid/uuid.dart';
+import 'package:uuid/uuid.dart' as uuid_pkg;
 
 class TextEditorWidget extends StatefulWidget {
   final Function(TextOverlay) onDone;
@@ -99,7 +99,7 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                     onTap: () {
                       if (_controller.text.isNotEmpty) {
                         final overlay = TextOverlay(
-                          id: widget.initialOverlay?.id ?? Uuid().v4(), // preserve id if editing
+                          id: widget.initialOverlay?.id ?? const uuid_pkg.Uuid().v4(), // preserve id if editing
                           text: _controller.text,
                           color: _selectedColor,
                           style: _selectedStyle.copyWith(color: _selectedColor),

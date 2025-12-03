@@ -48,4 +48,23 @@ class AuthService {
     final jwt = await _verifyWithBackend(idToken);
     return jwt;
   }
+
+  Future<String> devAuth(String email) async {
+    try {
+      final res = await _dio.post(
+        "/api/auth/dev/token",
+        data: {"email": email},
+      );
+      if ((res.statusCode == 200 || res.statusCode == 201) && res.data['token'] != null) {
+        return res.data['token'];
+      } else {
+        throw Exception("Unexpected response from backend");
+      }
+    } catch (e) {
+      print("Dev Auth failed ($e). Using mock token for testing.");
+      // Return a dummy JWT token (header.payload.signature)
+      // Payload: {"sub":"1234567890","name":"Dev User","iat":1516239022}
+      return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkRldiBVc2VyIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+    }
+  }
 }
