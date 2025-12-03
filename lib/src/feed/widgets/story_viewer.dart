@@ -38,7 +38,8 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    _localStories = List.from(widget.stories); // Create local copy
+    // Initialize local stories with the data passed from parent, which includes isLiked status
+    _localStories = List.from(widget.stories); 
     _currentUserIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
     _setupProgressController();
@@ -606,6 +607,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                             width: 52,
                             height: 52,
                             decoration: BoxDecoration(
+                              // Use currentStory.isLiked to determine initial color
                               color: currentStory.isLiked 
                                   ? Colors.red.withOpacity(0.2)
                                   : Colors.white.withOpacity(0.15),
@@ -620,6 +622,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                             child: AnimatedSwitcher(
                               duration: const Duration(milliseconds: 200),
                               child: Icon(
+                                // Use currentStory.isLiked to determine initial icon
                                 currentStory.isLiked 
                                     ? Icons.favorite
                                     : Icons.favorite_border,

@@ -284,4 +284,18 @@ class StoriesService {
       },
     ];
   }
+
+  /// Send like request for a story
+  Future<void> likeStory(String storyId) async {
+    try {
+      final response = await _dioClient.dio.post('/api/story/$storyId/like');
+      
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to like story: ${response.statusCode}');
+      }
+    } catch (e) {
+      developer.log('Error liking story: $e');
+      rethrow;
+    }
+  }
 }

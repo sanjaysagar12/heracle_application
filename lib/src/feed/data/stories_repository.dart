@@ -239,6 +239,10 @@ class StoriesRepository {
     }
   }
 
+  Future<void> likeStory(String storyId) async {
+    await _storiesService.likeStory(storyId);
+  }
+
   // Mark story as viewed and reorder
   List<StoryUser> markStoryAsViewed(List<StoryUser> stories, String storyId) {
     final updatedStories = <StoryUser>[];

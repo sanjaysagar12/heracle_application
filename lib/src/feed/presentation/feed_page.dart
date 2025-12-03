@@ -104,25 +104,19 @@ class _FeedPageState extends State<FeedPage> {
   }
 
   void _handleStoryLike(String storyId) {
+    // Optimistic update in UI
     setState(() {
       _stories = _storiesRepository.toggleStoryLike(_stories, storyId);
     });
     
-    // Optional: Show like feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: const [
-            Icon(Icons.favorite, color: Colors.red, size: 20),
-            SizedBox(width: 8),
-            Text('Story liked!'),
-          ],
-        ),
-        duration: const Duration(milliseconds: 800),
-        backgroundColor: Colors.black87,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    // Send request to backend
+    _storiesRepository.likeStory(storyId).catchError((e) {
+      // Revert state if request fails
+      setState(() {
+        _stories = _storiesRepository.toggleStoryLike(_stories, storyId);
+      });
+      print('Error liking story: $e');
+    });
   }
 
   void _markStoryAsViewed(String storyId) {
