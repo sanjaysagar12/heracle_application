@@ -1,137 +1,219 @@
-class StoriesService {
-  Future<List<Map<String, dynamic>>> getStories() async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 500));
+import 'package:dio/dio.dart';
+import 'dart:developer' as developer;
 
-    return [
-      {
-        'id': '1',
-        'username': 'Kendra Jane',
-        'profileImage': 'https://i.pravatar.cc/150?img=45',
-        'hasStory': true,
-        'isViewed': false,
-        'stories': [
-          {
-            'id': '1_1',
-            'type': 'image',
-            'imageUrl': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
-            'text': 'Leg day completed! 💪',
-            'duration': 5,
-            'isLiked': false,
-            'likedBy': [
-              {'name': 'Sarah Miller', 'profileImage': 'https://i.pravatar.cc/150?img=47', 'isFollowing': false},
-              {'name': 'Johnny Bhai', 'profileImage': 'https://i.pravatar.cc/150?img=12', 'isFollowing': true},
-            ],
-          },
-          {
-            'id': '1_2',
-            'type': 'image',
-            'imageUrl': 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800',
-            'text': 'New PR on squats! 🏋️',
-            'duration': 5,
-          },
-          {
-            'id': '1_3',
-            'type': 'text',
-            'text': 'Gym motivation:\n\n"The pain you feel today will be the strength you feel tomorrow"',
-            'backgroundColor': '#D4FC79',
-            'duration': 4,
-          },
-        ],
-      },
-      {
-        'id': '2',
-        'username': 'Johnny Bhai',
-        'profileImage': 'https://i.pravatar.cc/150?img=12',
-        'hasStory': true,
-        'isViewed': false,
-        'stories': [
-          {
-            'id': '2_1',
-            'type': 'image',
-            'imageUrl': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800',
-            'text': 'Cardio session 🏃‍♂️',
-            'duration': 5,
-          },
-          {
-            'id': '2_2',
-            'type': 'image',
-            'imageUrl': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800',
-            'text': 'Morning grind 🌅',
-            'duration': 5,
-          },
-        ],
-      },
-      {
-        'id': '3',
-        'username': 'Joseph Ismati',
-        'profileImage': 'https://i.pravatar.cc/150?img=33',
-        'hasStory': true,
-        'isViewed': false,
-        'stories': [
-          {
-            'id': '3_1',
-            'type': 'image',
-            'imageUrl': 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800',
-            'text': 'Chest and back today',
-            'duration': 5,
-          },
-          {
-            'id': '3_2',
-            'type': 'text',
-            'text': 'Protein shake recipe:\n\n- 2 scoops protein\n- 1 banana\n- Almond milk\n- Peanut butter',
-            'backgroundColor': '#FF6B6B',
-            'duration': 6,
-          },
-          {
-            'id': '3_3',
-            'type': 'image',
-            'imageUrl': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800',
-            'text': 'Post workout meal 🍗',
-            'duration': 5,
-          },
-        ],
-      },
-      {
-        'id': '4',
-        'username': 'Ronnie Herr',
-        'profileImage': 'https://i.pravatar.cc/150?img=56',
-        'hasStory': true,
-        'isViewed': false,
-        'stories': [
-          {
-            'id': '4_1',
-            'type': 'image',
-            'imageUrl': 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800',
-            'text': 'Arm day 💪',
-            'duration': 5,
-          },
-        ],
-      },
-      {
-        'id': '5',
-        'username': 'Sarah Miller',
-        'profileImage': 'https://i.pravatar.cc/150?img=47',
-        'hasStory': true,
-        'isViewed': false,
-        'stories': [
-          {
-            'id': '5_1',
-            'type': 'image',
-            'imageUrl': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800',
-            'text': 'Yoga flow 🧘‍♀️',
-            'duration': 5,
-          },
-          {
-            'id': '5_2',
-            'type': 'image',
-            'imageUrl': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800',
-            'text': 'Stretching is important!',
-            'duration': 5,
-          },
-        ],
-      },
-    ];
+import '../../../../core/network/dio_client.dart';
+
+class StoriesService {
+  final DioClient _dioClient = DioClient();
+
+  /// Fetch stories users list and each user's stories from backend.
+  /// Falls back to mock data if any network error occurs.
+  Future<List<Map<String, dynamic>>> getStories() async {
+    try {
+      // 1) Get story users list
+      final listResp = await _dioClient.dio.get('/api/story/list');
+      if (listResp.statusCode != 200) {
+        throw Exception('Failed to fetch story list: ${listResp.statusCode}');
+      }
+      final List<dynamic> users = listResp.data as List<dynamic>;
+
+      // 2) For each user fetch their stories
+      final futures = users.map((u) async {
+        final username = (u['username'] as String?) ?? '';
+        // safe fields from list response
+        final name = (u['name'] as String?) ?? username;
+        final avatarUrl = (u['avatarUrl'] as String?) ?? '';
+        final isViewed = (u['isViewed'] as bool?) ?? false;
+
+        // Fetch user's stories
+        try {
+          final userResp = await _dioClient.dio.get('/api/story/user/$username');
+          if (userResp.statusCode == 200) {
+            final List<dynamic> storiesData = userResp.data as List<dynamic>;
+            // Map backend story entries to legacy format used in UI
+            final stories = storiesData.map((s) {
+              final id = s['id'] as String? ?? '';
+              final mediaType = (s['mediaType'] as String? ?? 'IMAGE').toUpperCase();
+              final imageUrl = s['imageUrl'] as String? ?? '';
+              final caption = s['caption'] as String? ?? '';
+              return {
+                'id': id,
+                'type': mediaType == 'IMAGE' ? 'image' : (mediaType == 'VIDEO' ? 'video' : 'image'),
+                'imageUrl': imageUrl,
+                'text': caption,
+                'duration': 5,
+                'isLiked': s['isLiked'] as bool? ?? false,
+                'likedBy': <Map<String, dynamic>>[], // backend may provide likes separately
+              };
+            }).toList();
+
+            return {
+              'id': username,
+              'username': name,
+              'profileImage': avatarUrl,
+              'hasStory': stories.isNotEmpty,
+              'isViewed': isViewed,
+              'stories': stories,
+            };
+          } else {
+            // If user stories fetch failed, return minimal entry
+            return {
+              'id': username,
+              'username': name,
+              'profileImage': avatarUrl,
+              'hasStory': false,
+              'isViewed': isViewed,
+              'stories': [],
+            };
+          }
+        } catch (e) {
+          developer.log('Error fetching stories for $username: $e');
+          return {
+            'id': username,
+            'username': name,
+            'profileImage': avatarUrl,
+            'hasStory': false,
+            'isViewed': isViewed,
+            'stories': [],
+          };
+        }
+      }).toList();
+
+      final results = await Future.wait(futures);
+      return results.cast<Map<String, dynamic>>();
+    } catch (e, st) {
+      developer.log('StoriesService.getStories API failed, falling back to mock data: $e\n$st');
+      // Fallback: original mock data (keeps UI working)
+      return [
+        {
+          'id': '1',
+          'username': 'Kendra Jane',
+          'profileImage': 'https://i.pravatar.cc/150?img=45',
+          'hasStory': true,
+          'isViewed': false,
+          'stories': [
+            {
+              'id': '1_1',
+              'type': 'image',
+              'imageUrl': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
+              'text': 'Leg day completed! 💪',
+              'duration': 5,
+              'isLiked': false,
+              'likedBy': [
+                {'name': 'Sarah Miller', 'profileImage': 'https://i.pravatar.cc/150?img=47', 'isFollowing': false},
+                {'name': 'Johnny Bhai', 'profileImage': 'https://i.pravatar.cc/150?img=12', 'isFollowing': true},
+              ],
+            },
+            {
+              'id': '1_2',
+              'type': 'image',
+              'imageUrl': 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800',
+              'text': 'New PR on squats! 🏋️',
+              'duration': 5,
+            },
+            {
+              'id': '1_3',
+              'type': 'text',
+              'text': 'Gym motivation:\n\n"The pain you feel today will be the strength you feel tomorrow"',
+              'backgroundColor': '#D4FC79',
+              'duration': 4,
+            },
+          ],
+        },
+        {
+          'id': '2',
+          'username': 'Johnny Bhai',
+          'profileImage': 'https://i.pravatar.cc/150?img=12',
+          'hasStory': true,
+          'isViewed': false,
+          'stories': [
+            {
+              'id': '2_1',
+              'type': 'image',
+              'imageUrl': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800',
+              'text': 'Cardio session 🏃‍♂️',
+              'duration': 5,
+            },
+            {
+              'id': '2_2',
+              'type': 'image',
+              'imageUrl': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800',
+              'text': 'Morning grind 🌅',
+              'duration': 5,
+            },
+          ],
+        },
+        {
+          'id': '3',
+          'username': 'Joseph Ismati',
+          'profileImage': 'https://i.pravatar.cc/150?img=33',
+          'hasStory': true,
+          'isViewed': false,
+          'stories': [
+            {
+              'id': '3_1',
+              'type': 'image',
+              'imageUrl': 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800',
+              'text': 'Chest and back today',
+              'duration': 5,
+            },
+            {
+              'id': '3_2',
+              'type': 'text',
+              'text': 'Protein shake recipe:\n\n- 2 scoops protein\n- 1 banana\n- Almond milk\n- Peanut butter',
+              'backgroundColor': '#FF6B6B',
+              'duration': 6,
+            },
+            {
+              'id': '3_3',
+              'type': 'image',
+              'imageUrl': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800',
+              'text': 'Post workout meal 🍗',
+              'duration': 5,
+            },
+          ],
+        },
+        {
+          'id': '4',
+          'username': 'Ronnie Herr',
+          'profileImage': 'https://i.pravatar.cc/150?img=56',
+          'hasStory': true,
+          'isViewed': false,
+          'stories': [
+            {
+              'id': '4_1',
+              'type': 'image',
+              'imageUrl': 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800',
+              'text': 'Arm day 💪',
+              'duration': 5,
+            },
+          ],
+        },
+        {
+          'id': '5',
+          'username': 'Sarah Miller',
+          'profileImage': 'https://i.pravatar.cc/150?img=47',
+          'hasStory': true,
+          'isViewed': false,
+          'stories': [
+            {
+              'id': '5_1',
+              'type': 'image',
+              'imageUrl': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800',
+              'text': 'Yoga flow 🧘‍♀️',
+              'duration': 5,
+            },
+            {
+              'id': '5_2',
+              'type': 'image',
+              'imageUrl': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800',
+              'text': 'Stretching is important!',
+              'duration': 5,
+            },
+          ],
+        },
+      ];
+    }
   }
 
   Future<List<Map<String, dynamic>>> getDiscoverStories() async {
