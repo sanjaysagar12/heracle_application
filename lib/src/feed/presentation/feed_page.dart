@@ -4,7 +4,7 @@ import '../data/stories_repository.dart';
 import '../widgets/stories_section.dart';
 import '../widgets/discover_stories_grid.dart';
 import '../widgets/feed_skeleton_loading.dart';
-import '../widgets/story_viewer.dart';
+import 'tab/story_viewer_tab.dart';
 import 'tab/reels_tab.dart';
 
 /// Feed Page - Main stories and discover feed
@@ -96,10 +96,27 @@ class _FeedPageState extends State<FeedPage> {
             stories: _stories,
             initialIndex: index,
             onStoryViewed: _markStoryAsViewed,
+            onStoryLiked: _handleStoryLike,
           ),
         ),
       );
     }
+  }
+
+  void _handleStoryLike(String storyId) {
+    // Optimistic update in UI
+    setState(() {
+      _stories = _storiesRepository.toggleStoryLike(_stories, storyId);
+    });
+    
+    // Send request to backend
+    _storiesRepository.likeStory(storyId).catchError((e) {
+      // Revert state if request fails
+      setState(() {
+        _stories = _storiesRepository.toggleStoryLike(_stories, storyId);
+      });
+      print('Error liking story: $e');
+    });
   }
 
   void _markStoryAsViewed(String storyId) {
