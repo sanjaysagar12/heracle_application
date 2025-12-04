@@ -33,8 +33,24 @@ class DiscoverStoryCard extends StatelessWidget {
                   child: Image.network(
                     story.imageUrl ?? '',
                     fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[900],
+                        child: const Center(
+                          child: Icon(Icons.video_library, color: Colors.white24, size: 30),
+                        ),
+                      );
+                    },
                   ),
                 ),
+                if (story.mediaType == 'VIDEO')
+                  const Center(
+                    child: Icon(
+                      Icons.play_circle_fill,
+                      color: Colors.white70,
+                      size: 40,
+                    ),
+                  ),
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),

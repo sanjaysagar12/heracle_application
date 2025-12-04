@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../home/widgets/comments_bottom_sheet.dart';
@@ -484,11 +485,14 @@ class _ReelsTabState extends State<ReelsTab> {
                   }
                   
                   // CRITICAL: Don't use cached child - rebuild with fresh story data on every frame
+                  final isPlaying = userIndex == _currentUserIndex && 
+                      storyIndex == (_pageController.hasClients ? (_pageController.page?.round() ?? 0) : 0);
+                  
                   return Transform.scale(
                     scale: value,
                     child: Opacity(
                       opacity: opacity,
-                      child: _buildReelItem(story, isCurrentUser: userIndex == _currentUserIndex),
+                      child: _buildReelItem(story, isCurrentUser: userIndex == _currentUserIndex, isPlaying: isPlaying),
                     ),
                   );
                 },
@@ -555,7 +559,7 @@ class _ReelsTabState extends State<ReelsTab> {
     }
   }
 
-  Widget _buildReelItem(DiscoverStory story, {bool isCurrentUser = true}) {
+  Widget _buildReelItem(DiscoverStory story, {bool isCurrentUser = true, bool isPlaying = false}) {
     return GestureDetector(
       onDoubleTap: () => _handleDoubleTap(story.id, story.isLiked),
       child: Stack(
@@ -587,16 +591,21 @@ class _ReelsTabState extends State<ReelsTab> {
                 child: Container(color: Colors.transparent),
               ),
             ),
-          // Background Image with black letterboxing
+          // Background Media (Image or Video)
           Container(
             color: Colors.black,
             child: Center(
-              child: Image.network(
-                story.imageUrl ?? '',
-                fit: BoxFit.contain,
-                width: double.infinity,
-                height: double.infinity,
-              ),
+              child: story.mediaType == 'VIDEO'
+                  ? ReelVideoPlayer(
+                      videoUrl: story.imageUrl ?? '',
+                      isPlaying: isPlaying,
+                    )
+                  : Image.network(
+                      story.imageUrl ?? '',
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
             ),
           ),
 
@@ -1262,5 +1271,78 @@ class _ReelsTabState extends State<ReelsTab> {
       }
     }
     return buffer.toString();
+  }
+}
+
+class ReelVideoPlayer extends StatefulWidget {
+  final String videoUrl;
+  final bool isPlaying;
+
+  const ReelVideoPlayer({
+    super.key,
+    required this.videoUrl,
+    required this.isPlaying,
+  });
+
+  @override
+  State<ReelVideoPlayer> createState() => _ReelVideoPlayerState();
+}
+
+class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
+  late VideoPlayerController _controller;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+      ..initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _initialized = true;
+          });
+          if (widget.isPlaying) {
+            _controller.play();
+            _controller.setLooping(true);
+          }
+        }
+      });
+  }
+
+  @override
+  void didUpdateWidget(ReelVideoPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isPlaying != oldWidget.isPlaying && _initialized) {
+      if (widget.isPlaying) {
+        _controller.play();
+      } else {
+        _controller.pause();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFD4FC79)),
+      );
+    }
+    return SizedBox.expand(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: _controller.value.size.width,
+          height: _controller.value.size.height,
+          child: VideoPlayer(_controller),
+        ),
+      ),
+    );
   }
 }

@@ -152,11 +152,19 @@ class _FeedPageState extends State<FeedPage> {
           stories: _discoverStories,
           initialIndex: storyIndex,
           onLike: (storyId) {
+            // Optimistic update
+            final updatedStories = _storiesRepository.toggleLike(_discoverStories, storyId);
             setState(() {
-              _discoverStories = _storiesRepository.toggleLike(_discoverStories, storyId);
+              _discoverStories = updatedStories;
             });
+            
+            // API call to backend
+            _storiesRepository.likeDiscoverStory(storyId).catchError((e) {
+              print('Error liking discover story: $e');
+            });
+
             // Return the updated story list
-            return _discoverStories;
+            return updatedStories;
           },
           onStoryViewed: (storyId) {
             setState(() {
@@ -170,6 +178,7 @@ class _FeedPageState extends State<FeedPage> {
       setState(() {});
     });
   }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {

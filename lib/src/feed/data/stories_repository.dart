@@ -138,6 +138,7 @@ class DiscoverStory {
   final int likesCount;
   final List<LikedByUser> likedBy;
   final bool isViewed;
+  final String mediaType; // 'IMAGE' or 'VIDEO'
 
   DiscoverStory({
     required this.id,
@@ -154,6 +155,7 @@ class DiscoverStory {
     this.likesCount = 0,
     this.likedBy = const [],
     this.isViewed = false,
+    this.mediaType = 'IMAGE',
   });
 
   factory DiscoverStory.fromJson(Map<String, dynamic> json) {
@@ -177,6 +179,7 @@ class DiscoverStory {
               ?.map((e) => LikedByUser.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      mediaType: json['mediaType'] as String? ?? 'IMAGE',
     );
   }
 
@@ -195,6 +198,7 @@ class DiscoverStory {
     int? likesCount,
     List<LikedByUser>? likedBy,
     bool? isViewed,
+    String? mediaType,
   }) {
     return DiscoverStory(
       id: id ?? this.id,
@@ -211,6 +215,7 @@ class DiscoverStory {
       likesCount: likesCount ?? this.likesCount,
       likedBy: likedBy ?? this.likedBy,
       isViewed: isViewed ?? this.isViewed,
+      mediaType: mediaType ?? this.mediaType,
     );
   }
 }
@@ -241,6 +246,10 @@ class StoriesRepository {
 
   Future<void> likeStory(String storyId) async {
     await _storiesService.likeStory(storyId);
+  }
+
+  Future<void> likeDiscoverStory(String storyId) async {
+    await _storiesService.likeDiscoverStory(storyId);
   }
 
   // Mark story as viewed and reorder
