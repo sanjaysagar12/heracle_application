@@ -199,9 +199,92 @@ class StoriesService {
   }
 
   Future<List<Map<String, dynamic>>> getDiscoverStories() async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      // Fetch discover stories from backend
+      final response = await _dioClient.dio.get(
+        '/api/feed',
+        queryParameters: {
+          'page': 1,
+          'limit': 10,
+        },
+      );
 
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch discover stories: ${response.statusCode}');
+      }
+
+      final responseData = response.data as Map<String, dynamic>;
+      final List<dynamic> items = responseData['items'] as List<dynamic>;
+
+      return items.map((item) {
+        final user = item['user'] as Map<String, dynamic>;
+        final createdAt = item['createdAt'] as String;
+        
+        return {
+          'id': item['id'],
+          'username': user['username'] ?? '',
+          'profileImage': user['avatarUrl'] ?? '',
+          'content': item['caption'] ?? '',
+          'hashtags': _extractHashtags(item['caption'] ?? ''),
+          'imageUrl': item['mediaUrl'] ?? '',
+          'mediaType': item['mediaType'] ?? 'IMAGE',
+          'platform': 'Heracle', // Default platform for internal feed
+          'platformHandle': '@${user['username'] ?? ''}',
+          'label': '',
+          'timeAgo': _calculateTimeAgo(createdAt),
+          'isLiked': item['isLiked'] ?? false,
+          'likesCount': item['likeCount'] ?? 0,
+          'likedBy': <Map<String, dynamic>>[], // API doesn't return likedBy list
+        };
+      }).toList().cast<Map<String, dynamic>>();
+
+    } catch (e, st) {
+      developer.log('StoriesService.getDiscoverStories API failed, falling back to mock data: $e\n$st');
+      return _getMockDiscoverStories();
+    }
+  }
+
+  /// Send like request for a discover story
+  Future<void> likeDiscoverStory(String storyId) async {
+    try {
+      final response = await _dioClient.dio.post('/api/feed/$storyId/like');
+      
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to like discover story: ${response.statusCode}');
+      }
+    } catch (e) {
+      developer.log('Error liking discover story: $e');
+      rethrow;
+    }
+  }
+
+  List<String> _extractHashtags(String text) {
+    final RegExp hashtagRegex = RegExp(r'#(\w+)');
+    final matches = hashtagRegex.allMatches(text);
+    return matches.map((m) => m.group(1)!).toList();
+  }
+
+  String _calculateTimeAgo(String createdAt) {
+    try {
+      final date = DateTime.parse(createdAt);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Recently';
+    }
+  }
+
+  List<Map<String, dynamic>> _getMockDiscoverStories() {
     return [
       {
         'id': '1',
