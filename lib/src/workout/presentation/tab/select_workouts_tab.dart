@@ -143,7 +143,7 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
           ),
           Expanded(
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: EdgeInsets.fromLTRB(8, 0, 8, _selectedIds.isEmpty ? 16 : 96), // dynamic bottom padding
               itemCount: _filteredItems.length,
               separatorBuilder: (_, __) => const Divider(color: AppColors.greyDark, height: 1),
               itemBuilder: (context, index) {
@@ -175,50 +175,60 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
           ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SizedBox(
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _selectedIds.isEmpty ? null : () {
-                final selectedItems = _items.where((it) => _selectedIds.contains(it['id'])).toList();
-                
-                // if mode is 'add', return selected exercises to caller
-                if (isAddMode) {
-                  Navigator.pop(context, selectedItems);
-                  return;
-                }
+      // show floating action button only when at least one item is selected
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: AnimatedSlide(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        offset: _selectedIds.isEmpty ? const Offset(0, 1.5) : Offset.zero,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          opacity: _selectedIds.isEmpty ? 0.0 : 1.0,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: FloatingActionButton.extended(
+                onPressed: _selectedIds.isEmpty ? null : () {
+                  final selectedItems = _items.where((it) => _selectedIds.contains(it['id'])).toList();
+                  
+                  // if mode is 'add', return selected exercises to caller
+                  if (isAddMode) {
+                    Navigator.pop(context, selectedItems);
+                    return;
+                  }
 
-                if (widget.mode == 'create') {
-                  // Navigate to CreateSessionTab
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => CreateSessionTab(exercises: selectedItems)),
-                  );
-                } else {
-                  // Navigate to LogWorkoutTab
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => LogWorkoutTab(
-                        mode: widget.mode,
-                        exercises: selectedItems.map((e) => <String, dynamic>{
-                          'id': e['id'],
-                          'name': e['name'],
-                          'desc': e['desc'],
-                          'image': e['image'],
-                        }).toList(),
+                  if (widget.mode == 'create') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => CreateSessionTab(exercises: selectedItems)),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LogWorkoutTab(
+                          mode: widget.mode,
+                          exercises: selectedItems.map((e) => <String, dynamic>{
+                            'id': e['id'],
+                            'name': e['name'],
+                            'desc': e['desc'],
+                            'image': e['image'],
+                          }).toList(),
+                        ),
                       ),
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
+                    );
+                  }
+                },
                 backgroundColor: AppColors.primary,
+                label: Text(buttonLabel, style: const TextStyle(color: AppColors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+                icon: const SizedBox.shrink(),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                elevation: 4,
+                isExtended: true,
               ),
-              child: Text(buttonLabel, style: const TextStyle(color: AppColors.black, fontSize: 16, fontWeight: FontWeight.w700)),
             ),
           ),
         ),
