@@ -8,7 +8,7 @@ class DioClient {
 
   late Dio dio;
 
-  final String baseUrl = dotenv.env['BACKEND_URL'] ?? '';
+  final String baseUrl = dotenv.env['BACKEND_URL'] ?? 'http://loq-heracle.portos.cloud/';
 
   DioClient._internal() {
     dio = Dio(

@@ -20,32 +20,10 @@ class _AuthScreenState extends State<AuthScreen> {
     });
 
     try {
-      final dio = Dio();
-      final response = await dio.post(
-        'https://leno-api-heracle.portos.cloud/api/auth/dev/token',
-        options: Options(
-          headers: {
-            'accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        ),
-        data: {
-          'email': 'sanjaysagar.main@gmail.com',
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final token = response.data['token'];
-        if (token != null) {
-          await LocalStorageService().saveAuthToken(token);
-          if (mounted) {
-            Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
-          }
-        } else {
-          throw Exception('Token not found in response');
-        }
-      } else {
-        throw Exception('Failed to get token: ${response.statusCode}');
+      await AuthRepository().devAuth('sanjaysagar.main@gmail.com');
+      
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
       }
     } catch (e) {
       if (mounted) {

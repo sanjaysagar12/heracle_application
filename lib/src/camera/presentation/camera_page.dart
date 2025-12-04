@@ -9,7 +9,7 @@ import 'package:heracle/src/camera/presentation/camera_nav_bar.dart';
 import 'package:heracle/src/camera/domain/text_overlay.dart';
 import 'package:heracle/src/camera/widgets/text_editor_widget.dart';
 import 'package:heracle/src/story/data/story_repository.dart'; // Added
-import 'package:camerawesome/camerawesome_plugin.dart';
+import 'package:camerawesome/camerawesome_plugin.dart' as cawesome;
 import 'package:flutter/material.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:image_picker/image_picker.dart';
@@ -31,7 +31,7 @@ class _CameraPageState extends State<CameraPage>
   VideoPlayerController? _videoController;
   late AnimationController _fadeController;
   bool get isPreviewMode => _previewFile != null;
-  CaptureMode _captureMode = CaptureMode.photo;
+  cawesome.CaptureMode _captureMode = cawesome.CaptureMode.photo;
   bool _postSwitchRecord = false;
   int _currentIndex = 1;
 
@@ -47,18 +47,18 @@ class _CameraPageState extends State<CameraPage>
   final GlobalKey _captureKey = GlobalKey(); // Added for capturing
 
   /// Helper to generate a path for the captured file
-  Future<CaptureRequest> _path(List<Sensor> sensors, CaptureMode mode) async {
+  Future<cawesome.CaptureRequest> _path(List<cawesome.Sensor> sensors, cawesome.CaptureMode mode) async {
     final Directory extDir = await getTemporaryDirectory();
     final testDir = await Directory(
       '${extDir.path}/camerawesome',
     ).create(recursive: true);
-    final String fileExtension = mode == CaptureMode.photo ? 'jpg' : 'mp4';
+    final String fileExtension = mode == cawesome.CaptureMode.photo ? 'jpg' : 'mp4';
     final String filePath =
         '${testDir.path}/${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
-    if (mode == CaptureMode.video) {
+    if (mode == cawesome.CaptureMode.video) {
       _currentVideoPath = filePath;
     }
-    return SingleCaptureRequest(filePath, sensors.first);
+    return cawesome.SingleCaptureRequest(filePath, sensors.first);
   }
 
   Future<void> _pickGallery() async {
@@ -332,19 +332,19 @@ class _CameraPageState extends State<CameraPage>
           /// CAMERA VIEW
           if (!isPreviewMode)
             // ...existing code...
-            CameraAwesomeBuilder.custom(
-              saveConfig: SaveConfig.photoAndVideo(
+            cawesome.CameraAwesomeBuilder.custom(
+              saveConfig: cawesome.SaveConfig.photoAndVideo(
                 photoPathBuilder: (sensors) =>
-                    _path(sensors, CaptureMode.photo),
+                    _path(sensors, cawesome.CaptureMode.photo),
                 videoPathBuilder: (sensors) =>
-                    _path(sensors, CaptureMode.video),
+                    _path(sensors, cawesome.CaptureMode.video),
                 initialCaptureMode: _captureMode,
               ),
-              sensorConfig: SensorConfig.single(
-                sensor: Sensor.position(SensorPosition.back),
-                aspectRatio: CameraAspectRatios.ratio_4_3,
+              sensorConfig: cawesome.SensorConfig.single(
+                sensor: cawesome.Sensor.position(cawesome.SensorPosition.back),
+                aspectRatio: cawesome.CameraAspectRatios.ratio_4_3,
               ),
-              builder: (CameraState state, AnalysisPreview preview) {
+              builder: (cawesome.CameraState state, cawesome.AnalysisPreview preview) {
                 // ...existing code...
                 if (_postSwitchRecord) {
                   state.when(
@@ -402,12 +402,12 @@ class _CameraPageState extends State<CameraPage>
                             onSwitchToRecordingMode: () {
                               setState(() {
                                 _postSwitchRecord = true;
-                                _captureMode = CaptureMode.video;
+                                _captureMode = cawesome.CaptureMode.video;
                               });
                               // Trigger the switch
                               state.when(
                                 onPhotoMode: (photoState) {
-                                  photoState.setState(CaptureMode.video);
+                                  photoState.setState(cawesome.CaptureMode.video);
                                 },
                                 onVideoMode: (v) {},
                                 onVideoRecordingMode: (v) {},
@@ -764,10 +764,10 @@ class _CameraPageState extends State<CameraPage>
 
 /// Custom Button to handle both Photo (Tap) and Video (Long Press) with Animation and Lock
 class AwesomeCaptureButton extends StatefulWidget {
-  final CameraState state;
+  final cawesome.CameraState state;
   final Function(String) onMediaCapture;
   final String? Function() getCurrentVideoPath;
-  final Function(CaptureMode) onModeChange;
+  final Function(cawesome.CaptureMode) onModeChange;
   final VoidCallback? onSwitchToRecordingMode;
 
   const AwesomeCaptureButton({
@@ -814,14 +814,14 @@ class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton>
   void didUpdateWidget(AwesomeCaptureButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Sync local state with actual camera state
-    if (widget.state is VideoRecordingCameraState) {
+    if (widget.state is cawesome.VideoRecordingCameraState) {
       if (!_isRecording) {
         setState(() {
           _isRecording = true;
         });
         _pulseController.forward();
       }
-    } else if (widget.state is! VideoRecordingCameraState && _isRecording) {
+    } else if (widget.state is! cawesome.VideoRecordingCameraState && _isRecording) {
       // Only reset if we are not in the middle of a switch-and-record flow
       // But actually, if state is NOT recording, we should probably stop UI recording unless we are waiting for the switch.
       // However, the parent handles the switch logic.
@@ -907,7 +907,7 @@ class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton>
         // Switch to photo? Or just ignore?
         // Usually tap in video mode might take a snapshot or do nothing.
         // For now, let's assume we want to take a photo, so switch mode.
-        videoState.setState(CaptureMode.photo);
+        videoState.setState(cawesome.CaptureMode.photo);
       },
       onVideoRecordingMode: (videoRec) async {
         // Maybe take a snapshot during recording?

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart' as img_picker;
 import '../../../../core/theme/app_colors.dart';
 import '../../data/post_workout_repository.dart';
 
@@ -29,8 +29,8 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
   bool _isPublic = true;
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final picker = img_picker.ImagePicker();
+    final pickedFile = await picker.pickImage(source: img_picker.ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
