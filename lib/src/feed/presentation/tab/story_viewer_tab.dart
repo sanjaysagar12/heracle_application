@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import '../../../core/theme/app_colors.dart';
-import '../data/stories_repository.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../data/stories_repository.dart';
 
 class StoryViewer extends StatefulWidget {
   final List<StoryUser> stories;
