@@ -164,10 +164,10 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
                         : null,
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Your Story',
-                      style: TextStyle(
+                      widget.myStory.username,
+                      style: const TextStyle(
                         color: AppColors.pureWhite,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
