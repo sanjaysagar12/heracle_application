@@ -80,6 +80,7 @@ class StoryUser {
   final bool hasStory;
   final bool isViewed;
   final List<StoryContent> stories;
+  final bool isMyStory; // New field to indicate if this is user's own story
 
   StoryUser({
     required this.id,
@@ -88,6 +89,7 @@ class StoryUser {
     required this.hasStory,
     required this.isViewed,
     this.stories = const [],
+    this.isMyStory = false,
   });
 
   factory StoryUser.fromJson(Map<String, dynamic> json) {
@@ -101,6 +103,7 @@ class StoryUser {
               ?.map((e) => StoryContent.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      isMyStory: json['isMyStory'] as bool? ?? false,
     );
   }
 
@@ -111,6 +114,7 @@ class StoryUser {
     bool? hasStory,
     bool? isViewed,
     List<StoryContent>? stories,
+    bool? isMyStory,
   }) {
     return StoryUser(
       id: id ?? this.id,
@@ -119,6 +123,7 @@ class StoryUser {
       hasStory: hasStory ?? this.hasStory,
       isViewed: isViewed ?? this.isViewed,
       stories: stories ?? this.stories,
+      isMyStory: isMyStory ?? this.isMyStory,
     );
   }
 }
@@ -232,6 +237,15 @@ class StoriesRepository {
       return data.map((json) => StoryUser.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to load stories: $e');
+    }
+  }
+
+  Future<StoryUser> getMyStories() async {
+    try {
+      final data = await _storiesService.getMyStories();
+      return StoryUser.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to load my stories: $e');
     }
   }
 

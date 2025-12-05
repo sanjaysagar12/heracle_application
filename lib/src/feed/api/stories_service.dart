@@ -258,6 +258,79 @@ class StoriesService {
     }
   }
 
+  /// Fetch user's own stories
+  Future<Map<String, dynamic>> getMyStories() async {
+    try {
+      final response = await _dioClient.dio.get('/api/story/my');
+      
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch my stories: ${response.statusCode}');
+      }
+
+      final responseData = response.data as Map<String, dynamic>;
+      final user = responseData['user'] as Map<String, dynamic>;
+      final storiesData = responseData['stories'] as List<dynamic>;
+
+      final stories = storiesData.map((story) {
+        final id = story['id'] as String? ?? '';
+        final mediaType = (story['mediaType'] as String? ?? 'IMAGE').toUpperCase();
+        final imageUrl = story['imageUrl'] as String? ?? '';
+        final caption = story['caption'] as String? ?? '';
+        final isLiked = story['isLiked'] as bool? ?? false;
+        final likes = story['likes'] as int? ?? 0;
+        final views = story['views'] as int? ?? 0;
+        
+        return {
+          'id': id,
+          'type': mediaType == 'IMAGE' ? 'image' : (mediaType == 'VIDEO' ? 'video' : 'image'),
+          'imageUrl': imageUrl,
+          'text': caption,
+          'duration': 5,
+          'isLiked': isLiked,
+          'likes': likes,
+          'views': views,
+          'likedBy': <Map<String, dynamic>>[],
+        };
+      }).toList();
+
+      return {
+        'id': user['id'] ?? 'me',
+        'username': user['name'] ?? user['username'] ?? 'You',
+        'profileImage': user['avatarUrl'] ?? '',
+        'hasStory': stories.isNotEmpty,
+        'isViewed': false,
+        'isMyStory': true, // Special flag to indicate this is user's own story
+        'stories': stories,
+      };
+    } catch (e) {
+      developer.log('Error fetching my stories: $e');
+      // Return empty story user if error
+      return {
+        'id': 'me',
+        'username': 'You',
+        'profileImage': '',
+        'hasStory': false,
+        'isViewed': false,
+        'isMyStory': true,
+        'stories': [],
+      };
+    }
+  }
+
+  /// Send like request for a story
+  Future<void> likeStory(String storyId) async {
+    try {
+      final response = await _dioClient.dio.post('/api/story/$storyId/like');
+      
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to like story: ${response.statusCode}');
+      }
+    } catch (e) {
+      developer.log('Error liking story: $e');
+      rethrow;
+    }
+  }
+
   List<String> _extractHashtags(String text) {
     final RegExp hashtagRegex = RegExp(r'#(\w+)');
     final matches = hashtagRegex.allMatches(text);
@@ -366,19 +439,5 @@ class StoriesService {
         ],
       },
     ];
-  }
-
-  /// Send like request for a story
-  Future<void> likeStory(String storyId) async {
-    try {
-      final response = await _dioClient.dio.post('/api/story/$storyId/like');
-      
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Failed to like story: ${response.statusCode}');
-      }
-    } catch (e) {
-      developer.log('Error liking story: $e');
-      rethrow;
-    }
   }
 }

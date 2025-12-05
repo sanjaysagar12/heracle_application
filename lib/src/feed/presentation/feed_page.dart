@@ -6,6 +6,7 @@ import '../widgets/discover_stories_grid.dart';
 import '../widgets/feed_skeleton_loading.dart';
 import 'tab/story_viewer_tab.dart';
 import 'tab/reels_tab.dart';
+import 'tab/my_story_viewer.dart';
 
 /// Feed Page - Main stories and discover feed
 /// 
@@ -37,6 +38,7 @@ class FeedPage extends StatefulWidget {
 class _FeedPageState extends State<FeedPage> {
   final StoriesRepository _storiesRepository = StoriesRepository();
   List<StoryUser> _stories = [];
+  StoryUser? _myStory;
   List<DiscoverStory> _discoverStories = [];
   bool _isLoading = true;
 
@@ -49,12 +51,16 @@ class _FeedPageState extends State<FeedPage> {
   Future<void> _loadData() async {
     try {
       final results = await Future.wait([
+        _storiesRepository.getMyStories(),
         _storiesRepository.getStories(),
         _storiesRepository.getDiscoverStories(),
       ]);
 
+      final myStory = results[0] as StoryUser;
+      final stories = results[1] as List<StoryUser>;
+
       // Preserve viewed AND liked state for discover stories
-      final newDiscoverStories = results[1] as List<DiscoverStory>;
+      final newDiscoverStories = results[2] as List<DiscoverStory>;
       final mergedDiscoverStories = newDiscoverStories.map((newStory) {
         // Check if this story was already viewed or liked
         final existingStory = _discoverStories.firstWhere(
@@ -73,9 +79,8 @@ class _FeedPageState extends State<FeedPage> {
       }).toList();
 
       setState(() {
-        _stories = _storiesRepository.sortStories(
-          results[0] as List<StoryUser>,
-        );
+        _myStory = myStory;
+        _stories = _storiesRepository.sortStories(stories);
         _discoverStories = mergedDiscoverStories;
         _isLoading = false;
       });
@@ -88,6 +93,16 @@ class _FeedPageState extends State<FeedPage> {
   }
 
   void _handleStoryTap(String storyId) {
+    // Check if this is user's own story
+    if (_myStory != null && storyId == _myStory!.id) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => MyStoryViewer(myStory: _myStory!),
+        ),
+      );
+      return;
+    }
+
     final index = _stories.indexWhere((story) => story.id == storyId);
     if (index != -1) {
       Navigator.of(context).push(
@@ -96,7 +111,6 @@ class _FeedPageState extends State<FeedPage> {
             stories: _stories,
             initialIndex: index,
             onStoryViewed: _markStoryAsViewed,
-            onStoryLiked: _handleStoryLike,
           ),
         ),
       );
@@ -201,10 +215,11 @@ class _FeedPageState extends State<FeedPage> {
               child: SizedBox(height: 60),
             ),
 
-            // Stories section
+            // Stories section - pass myStory and only other users' stories
             SliverToBoxAdapter(
               child: StoriesSection(
-                stories: _stories,
+                stories: _stories, // Don't include myStory here
+                myStory: _myStory,
                 onStoryTap: _handleStoryTap,
                 onAddStory: _handleAddStory,
               ),
