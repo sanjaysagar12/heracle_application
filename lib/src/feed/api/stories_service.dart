@@ -331,6 +331,23 @@ class StoriesService {
     }
   }
 
+  /// Send comment on a story
+  Future<void> commentOnStory(String storyId, String text) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/api/story/$storyId/comment',
+        data: {'text': text},
+      );
+      
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to comment on story: ${response.statusCode}');
+      }
+    } catch (e) {
+      developer.log('Error commenting on story: $e');
+      rethrow;
+    }
+  }
+
   List<String> _extractHashtags(String text) {
     final RegExp hashtagRegex = RegExp(r'#(\w+)');
     final matches = hashtagRegex.allMatches(text);

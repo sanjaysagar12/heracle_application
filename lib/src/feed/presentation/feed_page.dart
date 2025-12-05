@@ -4,7 +4,7 @@ import '../data/stories_repository.dart';
 import '../widgets/stories_section.dart';
 import '../widgets/discover_stories_grid.dart';
 import '../widgets/feed_skeleton_loading.dart';
-import 'tab/story_viewer_tab.dart';
+import '../widgets/story_viewer.dart'; // Updated import path
 import 'tab/reels_tab.dart';
 import 'tab/my_story_viewer.dart';
 
@@ -111,10 +111,24 @@ class _FeedPageState extends State<FeedPage> {
             stories: _stories,
             initialIndex: index,
             onStoryViewed: _markStoryAsViewed,
+            onStoryLiked: _handleStoryLike, // Ensure this is passed if needed
+            onStoryComment: _handleStoryComment,
           ),
         ),
       );
     }
+  }
+
+  void _handleStoryComment(String storyId, String text) {
+    _storiesRepository.commentOnStory(storyId, text).catchError((e) {
+      print('Error commenting on story: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to send comment'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    });
   }
 
   void _handleStoryLike(String storyId) {

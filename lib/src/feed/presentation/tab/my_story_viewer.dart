@@ -18,16 +18,61 @@ class MyStoryViewer extends StatefulWidget {
 class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProviderStateMixin {
   late AnimationController _progressController;
   int _currentStoryIndex = 0;
+  bool _isContentLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _progressController = AnimationController(vsync: this);
-    _startProgress();
+    _loadCurrentStory();
+  }
+
+  void _loadCurrentStory() {
+    if (widget.myStory.stories.isEmpty) return;
+
+    setState(() {
+      _isContentLoaded = false;
+    });
+
+    final currentStory = widget.myStory.stories[_currentStoryIndex];
+    
+    if (currentStory.type == 'image' && currentStory.imageUrl != null) {
+      _preloadImage(currentStory.imageUrl!);
+    } else {
+      // Text story - no loading needed
+      setState(() {
+        _isContentLoaded = true;
+      });
+      _startProgress();
+    }
+  }
+
+  void _preloadImage(String imageUrl) {
+    final ImageProvider imageProvider = NetworkImage(imageUrl);
+    final ImageStream stream = imageProvider.resolve(const ImageConfiguration());
+    
+    stream.addListener(ImageStreamListener(
+      (ImageInfo info, bool synchronousCall) {
+        if (mounted) {
+          setState(() {
+            _isContentLoaded = true;
+          });
+          _startProgress();
+        }
+      },
+      onError: (exception, stackTrace) {
+        if (mounted) {
+          setState(() {
+            _isContentLoaded = true;
+          });
+          _startProgress();
+        }
+      },
+    ));
   }
 
   void _startProgress() {
-    if (widget.myStory.stories.isEmpty) return;
+    if (widget.myStory.stories.isEmpty || !_isContentLoaded) return;
 
     final currentStory = widget.myStory.stories[_currentStoryIndex];
     _progressController.duration = currentStory.duration;
@@ -35,11 +80,22 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
     _progressController.forward().then((_) {
       if (_currentStoryIndex < widget.myStory.stories.length - 1) {
         setState(() => _currentStoryIndex++);
-        _startProgress();
+        _loadCurrentStory();
       } else {
         Navigator.pop(context);
       }
     });
+  }
+
+  void _pauseProgress() {
+    _progressController.stop();
+  }
+
+  void _resumeProgress() {
+    if (_progressController.status == AnimationStatus.forward) {
+      return;
+    }
+    _progressController.forward();
   }
 
   @override
@@ -80,35 +136,76 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
           if (details.globalPosition.dx < screenWidth / 2) {
             if (_currentStoryIndex > 0) {
               setState(() => _currentStoryIndex--);
-              _startProgress();
+              _loadCurrentStory();
             } else {
               Navigator.pop(context);
             }
           } else {
             if (_currentStoryIndex < widget.myStory.stories.length - 1) {
               setState(() => _currentStoryIndex++);
-              _startProgress();
+              _loadCurrentStory();
             } else {
               Navigator.pop(context);
             }
           }
         },
+        onLongPressStart: (_) => _pauseProgress(),
+        onLongPressEnd: (_) => _resumeProgress(),
         child: Stack(
           children: [
             // Story Content
             Center(
               child: currentStory.type == 'image' && currentStory.imageUrl != null
-                  ? Image.network(currentStory.imageUrl!, fit: BoxFit.contain)
+                  ? Image.network(
+                      currentStory.imageUrl!,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(
+                          child: CircularProgressIndicator(color: AppColors.primary),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: AppColors.greyDark,
+                          child: const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.error, color: AppColors.pureWhite, size: 50),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Failed to load image',
+                                  style: TextStyle(color: AppColors.pureWhite),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    )
                   : Container(
                       color: AppColors.primary,
                       child: Center(
-                        child: Text(
-                          currentStory.text ?? '',
-                          style: const TextStyle(fontSize: 24, color: AppColors.black),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Text(
+                            currentStory.text ?? '',
+                            style: const TextStyle(fontSize: 24, color: AppColors.black),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
                     ),
             ),
+
+            // Loading Indicator
+            if (!_isContentLoaded)
+              const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                ),
+              ),
 
             // Progress bars
             Positioned(
@@ -133,10 +230,14 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
                           } else {
                             value = 0.0;
                           }
-                          return LinearProgressIndicator(
-                            value: value,
-                            backgroundColor: AppColors.white40,
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.pureWhite),
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(1),
+                            child: LinearProgressIndicator(
+                              value: value,
+                              backgroundColor: AppColors.white40,
+                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.pureWhite),
+                              minHeight: 2,
+                            ),
                           );
                         },
                       ),

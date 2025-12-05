@@ -266,6 +266,10 @@ class StoriesRepository {
     await _storiesService.likeDiscoverStory(storyId);
   }
 
+  Future<void> commentOnStory(String storyId, String text) async {
+    await _storiesService.commentOnStory(storyId, text);
+  }
+
   // Mark story as viewed and reorder
   List<StoryUser> markStoryAsViewed(List<StoryUser> stories, String storyId) {
     final updatedStories = <StoryUser>[];
