@@ -43,8 +43,32 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     _localStories = List.from(widget.stories);
     _currentUserIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
+    
+    // Add listener to pause story when typing
+    _commentFocus.addListener(_onFocusChange);
+    
     _setupProgressController();
     _startCurrentStory();
+  }
+
+  void _onFocusChange() {
+    if (_commentFocus.hasFocus) {
+      // Pause playback when typing
+      if (_isVideoProgressTracking) {
+        _videoController?.pause();
+      } else {
+        _progressController?.stop();
+      }
+    } else {
+      // Resume playback when focus lost (keyboard dismissed or sent)
+      if (_isContentLoaded) {
+        if (_isVideoProgressTracking) {
+          _videoController?.play();
+        } else {
+          _progressController?.forward();
+        }
+      }
+    }
   }
 
   void _setupProgressController() {
@@ -351,6 +375,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
 
   @override
   void dispose() {
+    _commentFocus.removeListener(_onFocusChange);
     _commentController.dispose();
     _commentFocus.dispose();
     _videoController?.removeListener(_videoProgressListener);
