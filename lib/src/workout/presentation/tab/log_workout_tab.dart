@@ -221,22 +221,31 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
 
       if (mounted) {
         if (action == 'post') {
-          final apiExercises = _exerciseLogs.map((ex) {
-            return {
-              'exerciseId': ex.id,
-              'exercise': ex.name,
-              'sets': ex.sets.asMap().entries.map((entry) {
-                final index = entry.key;
-                final s = entry.value;
-                return {
-                  'setNumber': index + 1,
-                  'kg': int.tryParse(s.kg) ?? 0,
-                  'reps': int.tryParse(s.reps) ?? 0,
-                  'restSeconds': 0,
-                };
-              }).toList(),
-            };
-          }).toList();
+          final apiExercises = <Map<String, dynamic>>[];
+          for (var ex in _exerciseLogs) {
+            final validSets = <Map<String, dynamic>>[];
+            var setIndex = 1;
+            for (var s in ex.sets) {
+              final kg = int.tryParse(s.kg) ?? 0;
+              final reps = int.tryParse(s.reps) ?? 0;
+              if (kg == 0 && reps == 0) continue;
+
+              validSets.add({
+                'setNumber': setIndex++,
+                'kg': kg,
+                'reps': reps,
+                'restSeconds': 0,
+              });
+            }
+
+            if (validSets.isNotEmpty) {
+              apiExercises.add({
+                'exerciseId': ex.id,
+                'exercise': ex.name,
+                'sets': validSets,
+              });
+            }
+          }
 
            Navigator.push(
             context,
