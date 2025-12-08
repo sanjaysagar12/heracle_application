@@ -221,13 +221,30 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
 
       if (mounted) {
         if (action == 'post') {
+          final apiExercises = _exerciseLogs.map((ex) {
+            return {
+              'exerciseId': ex.id,
+              'exercise': ex.name,
+              'sets': ex.sets.asMap().entries.map((entry) {
+                final index = entry.key;
+                final s = entry.value;
+                return {
+                  'setNumber': index + 1,
+                  'kg': int.tryParse(s.kg) ?? 0,
+                  'reps': int.tryParse(s.reps) ?? 0,
+                  'restSeconds': 0,
+                };
+              }).toList(),
+            };
+          }).toList();
+
            Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => PostWorkoutScreen(
                 duration: duration,
                 volume: _totalVolume,
-                exercises: exercises,
+                exercises: apiExercises,
               ),
             ),
           );
