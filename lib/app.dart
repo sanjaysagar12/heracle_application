@@ -37,7 +37,7 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
     if (index == 2) {
       // Feed page with callback to navigate to camera
       return FeedPage(
-        onNavigateToCamera: () => _changeTab(1),
+        onNavigateToCamera: _openCamera,
       );
     }
     return pages[index];
@@ -112,6 +112,23 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
     _lastScrollPosition = currentScrollPosition;
   }
 
+  void _openCamera() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CameraPage()),
+    ).then((_) {
+      if (mounted) {
+        setState(() => _isNavBarVisible = true);
+        _navBarAnimationController.reverse();
+      }
+    });
+
+    if (mounted) {
+      setState(() => _isNavBarVisible = false);
+      _navBarAnimationController.forward();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,27 +151,14 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
         child: FloatingNavBar(
           currentIndex: _index,
           onTap: (i) {
-  if (i == 1) {
-    // CAMERA TAB PRESSED → OPEN CAMERA PAGE
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CameraPage()),
-    ).then((_) {
-      // SHOW NAV BAR AGAIN WHEN CAMERA PAGE CLOSES
-      setState(() => _isNavBarVisible = true);
-      _navBarAnimationController.reverse();
-    });
+            if (i == 1) {
+              _openCamera();
+              return;
+            }
 
-    // HIDE NAV BAR WHEN CAMERA OPENED
-    setState(() => _isNavBarVisible = false);
-    _navBarAnimationController.forward();
-
-    return; // DON'T SWITCH INDEX
-  }
-
-  setState(() => _index = i);
-  _lastScrollPosition = 0;
-}
+            setState(() => _index = i);
+            _lastScrollPosition = 0;
+          },
         ),
       ),
     );
