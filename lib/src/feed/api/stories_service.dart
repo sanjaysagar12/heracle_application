@@ -348,6 +348,23 @@ class StoriesService {
     }
   }
 
+  /// Reply to a comment
+  Future<void> replyToComment(String commentId, String text) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/api/story/comment/$commentId/reply',
+        data: {'text': text},
+      );
+      
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to reply to comment: ${response.statusCode}');
+      }
+    } catch (e) {
+      developer.log('Error replying to comment: $e');
+      rethrow;
+    }
+  }
+
   /// Get comments for a story
   Future<List<Map<String, dynamic>>> getStoryComments(String storyId) async {
     try {
@@ -363,6 +380,22 @@ class StoriesService {
       return comments.cast<Map<String, dynamic>>();
     } catch (e) {
       developer.log('Error fetching story comments: $e');
+      rethrow;
+    }
+  }
+
+  /// Get story details (views, likes)
+  Future<Map<String, dynamic>> getStoryDetails(String storyId) async {
+    try {
+      final response = await _dioClient.dio.get('/api/story/$storyId/details');
+      
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch story details: ${response.statusCode}');
+      }
+
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      developer.log('Error fetching story details: $e');
       rethrow;
     }
   }

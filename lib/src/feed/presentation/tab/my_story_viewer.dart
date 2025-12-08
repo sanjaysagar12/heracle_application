@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/stories_repository.dart';
+import '../../../home/data/mutual_feed_repository.dart'; // For Comment model
+import '../../../home/widgets/comments_bottom_sheet.dart';
 
 class MyStoryViewer extends StatefulWidget {
   final StoryUser myStory;
@@ -19,6 +21,7 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
   late AnimationController _progressController;
   int _currentStoryIndex = 0;
   bool _isContentLoaded = false;
+  final StoriesRepository _storiesRepository = StoriesRepository();
 
   @override
   void initState() {
@@ -98,6 +101,24 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
     _progressController.forward();
   }
 
+  void _showDetailsBottomSheet() {
+    _pauseProgress();
+    
+    final currentStory = widget.myStory.stories[_currentStoryIndex];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _MyStoryDetailsSheet(
+        storyId: currentStory.id,
+        repository: _storiesRepository,
+      ),
+    ).then((_) {
+      _resumeProgress();
+    });
+  }
+
   @override
   void dispose() {
     _progressController.dispose();
@@ -131,6 +152,11 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
     return Scaffold(
       backgroundColor: AppColors.black,
       body: GestureDetector(
+        onVerticalDragEnd: (details) {
+          if (details.primaryVelocity! < -500) { // Swipe Up
+            _showDetailsBottomSheet();
+          }
+        },
         onTapDown: (details) {
           final screenWidth = MediaQuery.of(context).size.width;
           if (details.globalPosition.dx < screenWidth / 2) {
@@ -288,11 +314,18 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
               bottom: 24,
               left: 16,
               right: 16,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              child: Column(
                 children: [
-                  _buildStatItem(Icons.visibility, '${currentStory.views} views'),
-                  _buildStatItem(Icons.favorite, '${currentStory.likes} likes'),
+                  const Icon(Icons.keyboard_arrow_up, color: AppColors.pureWhite),
+                  const Text('Swipe up for details', style: TextStyle(color: AppColors.pureWhite, fontSize: 12)),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatItem(Icons.visibility, '${currentStory.views} views'),
+                      _buildStatItem(Icons.favorite, '${currentStory.likes} likes'),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -317,5 +350,190 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
         ],
       ),
     );
+  }
+}
+
+class _MyStoryDetailsSheet extends StatefulWidget {
+  final String storyId;
+  final StoriesRepository repository;
+
+  const _MyStoryDetailsSheet({required this.storyId, required this.repository});
+
+  @override
+  State<_MyStoryDetailsSheet> createState() => _MyStoryDetailsSheetState();
+}
+
+class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet> with SingleTickerProviderStateMixin {
+  StoryDetails? _details;
+  List<Comment> _comments = [];
+  bool _isLoading = true;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _loadData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final results = await Future.wait([
+        widget.repository.getStoryDetails(widget.storyId),
+        widget.repository.getStoryComments(widget.storyId),
+      ]);
+      
+      if (mounted) {
+        setState(() {
+          _details = results[0] as StoryDetails;
+          _comments = results[1] as List<Comment>;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: const BoxDecoration(
+        color: AppColors.black100,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.greyLight,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TabBar(
+            controller: _tabController,
+            indicatorColor: AppColors.primary,
+            labelColor: AppColors.pureWhite,
+            unselectedLabelColor: AppColors.white60,
+            tabs: [
+              Tab(text: 'Views ${_details?.viewsCount ?? ''}'),
+              Tab(text: 'Likes ${_details?.likesCount ?? ''}'),
+              const Tab(text: 'Comments'),
+            ],
+          ),
+          Expanded(
+            child: _isLoading 
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildViewersList(),
+                    _buildLikesList(),
+                    CommentsBottomSheet(
+                      comments: _comments,
+                      isLoading: _isLoading,
+                      onAddComment: (text) async {
+                         await widget.repository.commentOnStory(widget.storyId, text);
+                      },
+                      onAddReply: (commentId, text) async {
+                        await widget.repository.replyToComment(commentId, text);
+                      },
+                      onOptimisticCommentAdd: (comment) {
+                        setState(() {
+                          _comments.add(comment);
+                        });
+                      },
+                      onOptimisticReplyAdd: (commentId, reply) {
+                        setState(() {
+                          _comments = _addReplyToCommentLocal(_comments, commentId, reply);
+                        });
+                      },
+                    ),
+                  ],
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Comment> _addReplyToCommentLocal(List<Comment> comments, String commentId, Comment newReply) {
+    return comments.map((comment) {
+      if (comment.id == commentId) {
+        return comment.copyWithReply(newReply);
+      }
+      if (comment.replies.isNotEmpty) {
+        return Comment(
+          id: comment.id,
+          username: comment.username,
+          handle: comment.handle,
+          profileImage: comment.profileImage,
+          timeAgo: comment.timeAgo,
+          content: comment.content,
+          replies: _addReplyToCommentLocal(comment.replies, commentId, newReply),
+        );
+      }
+      return comment;
+    }).toList();
+  }
+
+  Widget _buildViewersList() {
+    if (_details?.viewers.isEmpty ?? true) {
+      return const Center(child: Text('No views yet', style: TextStyle(color: AppColors.white60)));
+    }
+    return ListView.builder(
+      itemCount: _details!.viewers.length,
+      itemBuilder: (context, index) {
+        final viewer = _details!.viewers[index];
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundImage: viewer.avatarUrl != null ? NetworkImage(viewer.avatarUrl!) : null,
+            child: viewer.avatarUrl == null ? const Icon(Icons.person) : null,
+          ),
+          title: Text(viewer.username, style: const TextStyle(color: AppColors.pureWhite)),
+          subtitle: Text(_formatDate(viewer.viewedAt), style: const TextStyle(color: AppColors.white60, fontSize: 12)),
+        );
+      },
+    );
+  }
+
+  Widget _buildLikesList() {
+    if (_details?.likes.isEmpty ?? true) {
+      return const Center(child: Text('No likes yet', style: TextStyle(color: AppColors.white60)));
+    }
+    return ListView.builder(
+      itemCount: _details!.likes.length,
+      itemBuilder: (context, index) {
+        final liker = _details!.likes[index];
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundImage: liker.avatarUrl != null ? NetworkImage(liker.avatarUrl!) : null,
+            child: liker.avatarUrl == null ? const Icon(Icons.person) : null,
+          ),
+          title: Text(liker.username, style: const TextStyle(color: AppColors.pureWhite)),
+          trailing: const Icon(Icons.favorite, color: Colors.red, size: 20),
+        );
+      },
+    );
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return '';
+    }
   }
 }

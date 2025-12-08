@@ -903,8 +903,38 @@ class _StoryCommentsSheetWrapperState extends State<_StoryCommentsSheetWrapper> 
          await widget.repository.commentOnStory(widget.storyId, text);
       },
       onAddReply: (commentId, text) async {
-        // Reply implementation if needed
+        await widget.repository.replyToComment(commentId, text);
+      },
+      onOptimisticCommentAdd: (comment) {
+        setState(() {
+          _comments.add(comment);
+        });
+      },
+      onOptimisticReplyAdd: (commentId, reply) {
+        setState(() {
+          _comments = _addReplyToCommentLocal(_comments, commentId, reply);
+        });
       },
     );
+  }
+
+  List<Comment> _addReplyToCommentLocal(List<Comment> comments, String commentId, Comment newReply) {
+    return comments.map((comment) {
+      if (comment.id == commentId) {
+        return comment.copyWithReply(newReply);
+      }
+      if (comment.replies.isNotEmpty) {
+        return Comment(
+          id: comment.id,
+          username: comment.username,
+          handle: comment.handle,
+          profileImage: comment.profileImage,
+          timeAgo: comment.timeAgo,
+          content: comment.content,
+          replies: _addReplyToCommentLocal(comment.replies, commentId, newReply),
+        );
+      }
+      return comment;
+    }).toList();
   }
 }

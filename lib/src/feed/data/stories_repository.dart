@@ -1,6 +1,51 @@
 import '../api/stories_service.dart';
 import '../../home/data/mutual_feed_repository.dart';
 
+class StoryViewerInfo {
+  final String id;
+  final String username;
+  final String? avatarUrl;
+  final String viewedAt;
+
+  StoryViewerInfo({required this.id, required this.username, this.avatarUrl, required this.viewedAt});
+  
+  factory StoryViewerInfo.fromJson(Map<String, dynamic> json) {
+    return StoryViewerInfo(
+      id: json['id']?.toString() ?? '',
+      username: json['username']?.toString() ?? 'Unknown',
+      avatarUrl: json['avatarUrl']?.toString(),
+      viewedAt: json['createdAt']?.toString() ?? '',
+    );
+  }
+}
+
+class StoryLikerInfo {
+  final String id;
+  final String username;
+  final String? avatarUrl;
+  final String likedAt;
+
+  StoryLikerInfo({required this.id, required this.username, this.avatarUrl, required this.likedAt});
+
+  factory StoryLikerInfo.fromJson(Map<String, dynamic> json) {
+    return StoryLikerInfo(
+      id: json['id']?.toString() ?? '',
+      username: json['username']?.toString() ?? 'Unknown',
+      avatarUrl: json['avatarUrl']?.toString(),
+      likedAt: json['likedAt']?.toString() ?? '',
+    );
+  }
+}
+
+class StoryDetails {
+  final List<StoryViewerInfo> viewers;
+  final List<StoryLikerInfo> likes;
+  final int viewsCount;
+  final int likesCount;
+
+  StoryDetails({required this.viewers, required this.likes, required this.viewsCount, required this.likesCount});
+}
+
 class StoryContent {
   final String id;
   final String type; // 'image' or 'text'
@@ -270,12 +315,34 @@ class StoriesRepository {
     await _storiesService.commentOnStory(storyId, text);
   }
 
+  Future<void> replyToComment(String commentId, String text) async {
+    await _storiesService.replyToComment(commentId, text);
+  }
+
   Future<List<Comment>> getStoryComments(String storyId) async {
     try {
       final data = await _storiesService.getStoryComments(storyId);
       return data.map((json) => _mapToComment(json)).toList();
     } catch (e) {
       throw Exception('Failed to load story comments: $e');
+    }
+  }
+
+  Future<StoryDetails> getStoryDetails(String storyId) async {
+    try {
+      final data = await _storiesService.getStoryDetails(storyId);
+      final viewersList = (data['viewers'] as List?) ?? [];
+      final likesList = (data['likes'] as List?) ?? [];
+      final counts = data['counts'] as Map<String, dynamic>? ?? {};
+
+      return StoryDetails(
+        viewers: viewersList.map((e) => StoryViewerInfo.fromJson(e)).toList(),
+        likes: likesList.map((e) => StoryLikerInfo.fromJson(e)).toList(),
+        viewsCount: counts['views'] ?? 0,
+        likesCount: counts['likes'] ?? 0,
+      );
+    } catch (e) {
+      throw Exception('Failed to load story details: $e');
     }
   }
 
