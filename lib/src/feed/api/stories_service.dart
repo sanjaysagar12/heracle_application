@@ -365,6 +365,37 @@ class StoriesService {
     }
   }
 
+  /// Highlight a story
+  Future<void> highlightStory(String storyId, bool isHighlighted) async {
+    try {
+      final response = await _dioClient.dio.patch(
+        '/api/story/$storyId/highlight',
+        data: {'isHighlighted': isHighlighted},
+      );
+      
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to highlight story: ${response.statusCode}');
+      }
+    } catch (e) {
+      developer.log('Error highlighting story: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete a story
+  Future<void> deleteStory(String storyId) async {
+    try {
+      final response = await _dioClient.dio.delete('/api/story/$storyId');
+      
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete story: ${response.statusCode}');
+      }
+    } catch (e) {
+      developer.log('Error deleting story: $e');
+      rethrow;
+    }
+  }
+
   /// Record a view for a story
   Future<void> viewStory(String storyId) async {
     try {

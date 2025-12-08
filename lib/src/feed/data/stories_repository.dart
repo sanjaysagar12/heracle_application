@@ -319,6 +319,14 @@ class StoriesRepository {
     await _storiesService.replyToComment(commentId, text);
   }
 
+  Future<void> highlightStory(String storyId, bool isHighlighted) async {
+    await _storiesService.highlightStory(storyId, isHighlighted);
+  }
+
+  Future<void> deleteStory(String storyId) async {
+    await _storiesService.deleteStory(storyId);
+  }
+
   Future<void> viewStory(String storyId) async {
     await _storiesService.viewStory(storyId);
   }

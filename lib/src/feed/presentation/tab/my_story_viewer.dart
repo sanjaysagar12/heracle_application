@@ -22,22 +22,24 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
   int _currentStoryIndex = 0;
   bool _isContentLoaded = false;
   final StoriesRepository _storiesRepository = StoriesRepository();
+  late List<StoryContent> _stories;
 
   @override
   void initState() {
     super.initState();
+    _stories = List.from(widget.myStory.stories);
     _progressController = AnimationController(vsync: this);
     _loadCurrentStory();
   }
 
   void _loadCurrentStory() {
-    if (widget.myStory.stories.isEmpty) return;
+    if (_stories.isEmpty) return;
 
     setState(() {
       _isContentLoaded = false;
     });
 
-    final currentStory = widget.myStory.stories[_currentStoryIndex];
+    final currentStory = _stories[_currentStoryIndex];
     
     if (currentStory.type == 'image' && currentStory.imageUrl != null) {
       _preloadImage(currentStory.imageUrl!);
@@ -75,13 +77,13 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
   }
 
   void _startProgress() {
-    if (widget.myStory.stories.isEmpty || !_isContentLoaded) return;
+    if (_stories.isEmpty || !_isContentLoaded) return;
 
-    final currentStory = widget.myStory.stories[_currentStoryIndex];
+    final currentStory = _stories[_currentStoryIndex];
     _progressController.duration = currentStory.duration;
     _progressController.reset();
     _progressController.forward().then((_) {
-      if (_currentStoryIndex < widget.myStory.stories.length - 1) {
+      if (_currentStoryIndex < _stories.length - 1) {
         setState(() => _currentStoryIndex++);
         _loadCurrentStory();
       } else {
@@ -104,7 +106,7 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
   void _showDetailsBottomSheet() {
     _pauseProgress();
     
-    final currentStory = widget.myStory.stories[_currentStoryIndex];
+    final currentStory = _stories[_currentStoryIndex];
 
     showModalBottomSheet(
       context: context,
@@ -119,6 +121,78 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
     });
   }
 
+  Future<void> _handlePublic(StoryContent story) async {
+    try {
+      await _storiesRepository.highlightStory(story.id, true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Story highlighted successfully'),
+            backgroundColor: AppColors.primary,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to highlight story: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDelete(StoryContent story) async {
+    _pauseProgress();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.greyDark,
+        title: const Text('Delete Story?', style: TextStyle(color: AppColors.pureWhite)),
+        content: const Text('Are you sure you want to delete this story?', style: TextStyle(color: AppColors.white60)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.white60)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _storiesRepository.deleteStory(story.id);
+        if (mounted) {
+          setState(() {
+             _stories.removeAt(_currentStoryIndex);
+          });
+          
+          if (_stories.isEmpty) {
+             Navigator.pop(context);
+          } else {
+             if (_currentStoryIndex >= _stories.length) {
+               _currentStoryIndex = _stories.length - 1;
+             }
+             _loadCurrentStory();
+          }
+        }
+      } catch (e) {
+        _resumeProgress();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete story: $e')),
+          );
+        }
+      }
+    } else {
+      _resumeProgress();
+    }
+  }
+
   @override
   void dispose() {
     _progressController.dispose();
@@ -127,7 +201,7 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    if (widget.myStory.stories.isEmpty) {
+    if (_stories.isEmpty) {
       return Scaffold(
         backgroundColor: AppColors.black,
         appBar: AppBar(
@@ -147,7 +221,7 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
       );
     }
 
-    final currentStory = widget.myStory.stories[_currentStoryIndex];
+    final currentStory = _stories[_currentStoryIndex];
 
     return Scaffold(
       backgroundColor: AppColors.black,
@@ -167,7 +241,7 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
               Navigator.pop(context);
             }
           } else {
-            if (_currentStoryIndex < widget.myStory.stories.length - 1) {
+            if (_currentStoryIndex < _stories.length - 1) {
               setState(() => _currentStoryIndex++);
               _loadCurrentStory();
             } else {
@@ -240,7 +314,7 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
               right: 8,
               child: Row(
                 children: List.generate(
-                  widget.myStory.stories.length,
+                  _stories.length,
                   (index) => Expanded(
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -322,8 +396,10 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatItem(Icons.visibility, '${currentStory.views} views'),
-                      _buildStatItem(Icons.favorite, '${currentStory.likes} likes'),
+                      _buildStatItem(Icons.visibility, '${currentStory.views}'),
+                      _buildStatItem(Icons.favorite, '${currentStory.likes}'),
+                      _buildActionItem(Icons.public, 'Public', () => _handlePublic(currentStory)),
+                      _buildActionItem(Icons.delete, 'Delete', () => _handleDelete(currentStory)),
                     ],
                   ),
                 ],
@@ -337,17 +413,37 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
 
   Widget _buildStatItem(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.5),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.pureWhite, size: 20),
-          const SizedBox(width: 8),
-          Text(label, style: const TextStyle(color: AppColors.pureWhite)),
+          Icon(icon, color: AppColors.pureWhite, size: 16),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(color: AppColors.pureWhite, fontSize: 12)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionItem(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.pureWhite, size: 16),
+            const SizedBox(width: 6),
+            Text(label, style: const TextStyle(color: AppColors.pureWhite, fontSize: 12)),
+          ],
+        ),
       ),
     );
   }
