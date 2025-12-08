@@ -158,15 +158,18 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
     if (widget.images.isEmpty) return const SizedBox.shrink();
 
     if (widget.images.length == 1) {
-      return SizedBox(
-        height: 200,
-        width: double.infinity,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.network(
-            widget.images[0],
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
+      return GestureDetector(
+        onTap: () => _showImageCarousel(context, 0),
+        child: SizedBox(
+          height: 200,
+          width: double.infinity,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              widget.images[0],
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
+            ),
           ),
         ),
       );
@@ -177,11 +180,12 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              color: Colors.black,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Center(
+            child: GestureDetector(
+              onTap: () => _showImageCarousel(context, 0),
+              child: Container(
+                color: Colors.transparent,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
                   child: Image.network(
                     widget.images[0],
                     fit: BoxFit.cover,
@@ -194,25 +198,21 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Container(
-              color: Colors.black,
+            child: GestureDetector(
+              onTap: () => _showImageCarousel(context, 1),
               child: Stack(
+                fit: StackFit.expand,
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Center(
-                      child: Image.network(
-                        widget.images[1],
-                        fit: BoxFit.cover,
-                        height: double.infinity,
-                        width: double.infinity,
-                        errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
-                      ),
+                    child: Image.network(
+                      widget.images[1],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
                     ),
                   ),
-                if (widget.images.length > 2)
-                  Positioned.fill(
-                    child: Container(
+                  if (widget.images.length > 2)
+                    Container(
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.6),
                         borderRadius: BorderRadius.circular(12),
@@ -228,12 +228,22 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showImageCarousel(BuildContext context, int initialIndex) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => _ImageCarouselViewer(
+          images: widget.images,
+          initialIndex: initialIndex,
+        ),
       ),
     );
   }
@@ -427,6 +437,84 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _ImageCarouselViewer extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+
+  const _ImageCarouselViewer({
+    required this.images,
+    required this.initialIndex,
+  });
+
+  @override
+  State<_ImageCarouselViewer> createState() => _ImageCarouselViewerState();
+}
+
+class _ImageCarouselViewerState extends State<_ImageCarouselViewer> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
+          '${_currentIndex + 1}/${widget.images.length}',
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
+      body: PageView.builder(
+        controller: _pageController,
+        itemCount: widget.images.length,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        itemBuilder: (context, index) {
+          return InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 4.0,
+            child: Center(
+              child: Image.network(
+                widget.images[index],
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Icon(Icons.error, color: Colors.white, size: 50),
+                  );
+                },
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
