@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
 
-class WorkoutPostCard extends StatelessWidget {
+class WorkoutPostCard extends StatefulWidget {
   final String username;
   final String handle;
   final String profileImage;
@@ -46,6 +46,13 @@ class WorkoutPostCard extends StatelessWidget {
   });
 
   @override
+  State<WorkoutPostCard> createState() => _WorkoutPostCardState();
+}
+
+class _WorkoutPostCardState extends State<WorkoutPostCard> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -80,7 +87,7 @@ class WorkoutPostCard extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 24,
-          backgroundImage: NetworkImage(profileImage),
+          backgroundImage: NetworkImage(widget.profileImage),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -88,7 +95,7 @@ class WorkoutPostCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                username,
+                widget.username,
                 style: const TextStyle(
                   color: AppColors.pureWhite,
                   fontSize: 16,
@@ -96,7 +103,7 @@ class WorkoutPostCard extends StatelessWidget {
                 ),
               ),
               Text(
-                handle,
+                widget.handle,
                 style: const TextStyle(
                   color: AppColors.white60,
                   fontSize: 14,
@@ -106,7 +113,7 @@ class WorkoutPostCard extends StatelessWidget {
           ),
         ),
         Text(
-          timeAgo,
+          widget.timeAgo,
           style: const TextStyle(
             color: AppColors.white60,
             fontSize: 14,
@@ -118,7 +125,7 @@ class WorkoutPostCard extends StatelessWidget {
 
   Widget _buildContent() {
     return Text(
-      content,
+      widget.content,
       style: const TextStyle(
         color: AppColors.pureWhite,
         fontSize: 15,
@@ -130,7 +137,7 @@ class WorkoutPostCard extends StatelessWidget {
   Widget _buildTags() {
     return Wrap(
       spacing: 8,
-      children: tags.map((tag) => Container(
+      children: widget.tags.map((tag) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: AppColors.greyDark,
@@ -148,16 +155,16 @@ class WorkoutPostCard extends StatelessWidget {
   }
 
   Widget _buildImages() {
-    if (images.isEmpty) return const SizedBox.shrink();
+    if (widget.images.isEmpty) return const SizedBox.shrink();
 
-    if (images.length == 1) {
+    if (widget.images.length == 1) {
       return SizedBox(
         height: 200,
         width: double.infinity,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Image.network(
-            images[0],
+            widget.images[0],
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
           ),
@@ -176,7 +183,7 @@ class WorkoutPostCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 child: Center(
                   child: Image.network(
-                    images[0],
+                    widget.images[0],
                     fit: BoxFit.cover,
                     height: double.infinity,
                     errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
@@ -195,7 +202,7 @@ class WorkoutPostCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     child: Center(
                       child: Image.network(
-                        images[1],
+                        widget.images[1],
                         fit: BoxFit.cover,
                         height: double.infinity,
                         width: double.infinity,
@@ -203,7 +210,7 @@ class WorkoutPostCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (images.length > 2)
+                if (widget.images.length > 2)
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
@@ -212,7 +219,7 @@ class WorkoutPostCard extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          '+${images.length - 2}',
+                          '+${widget.images.length - 2}',
                           style: const TextStyle(
                             color: AppColors.pureWhite,
                             fontSize: 32,
@@ -234,11 +241,11 @@ class WorkoutPostCard extends StatelessWidget {
   Widget _buildStats() {
     return Row(
       children: [
-        _buildStatItem('Duration', duration),
+        _buildStatItem('Duration', widget.duration),
         const SizedBox(width: 24),
-        _buildStatItem('Volume', volume),
+        _buildStatItem('Volume', widget.volume),
         const SizedBox(width: 24),
-        _buildStatItem('Records', records),
+        _buildStatItem('Records', widget.records),
       ],
     );
   }
@@ -268,57 +275,66 @@ class WorkoutPostCard extends StatelessWidget {
   }
 
   Widget _buildExercises() {
+    final exercisesToShow = _isExpanded ? widget.exercises : widget.exercises.take(3).toList();
+    
     return Column(
       children: [
-        ...exercises.take(3).map((exercise) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.black,
-                ),
-                child: ClipOval(
-                  child: Image.network(
-                    exercise.imageUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: AppColors.greyDark,
-                        child: const Icon(
-                          Icons.fitness_center,
-                          color: AppColors.white60,
-                          size: 20,
-                        ),
-                      );
-                    },
+        for (var exercise in exercisesToShow)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black,
+                  ),
+                  child: ClipOval(
+                    child: Image.network(
+                      exercise.imageUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: AppColors.greyDark,
+                          child: const Icon(
+                            Icons.fitness_center,
+                            color: AppColors.white60,
+                            size: 20,
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  exercise.name,
-                  style: const TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 15,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    exercise.name,
+                    style: const TextStyle(
+                      color: AppColors.pureWhite,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        )),
-        if (exercises.length > 3)
+        if (widget.exercises.length > 3)
           TextButton(
-            onPressed: () {},
+            onPressed: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
-              'See ${exercises.length - 3} more exercises',
+              _isExpanded ? 'Show less' : 'See ${widget.exercises.length - 3} more exercises',
               style: const TextStyle(
                 color: AppColors.white60,
                 fontSize: 14,
@@ -337,18 +353,18 @@ class WorkoutPostCard extends StatelessWidget {
         Row(
           children: [
             GestureDetector(
-              onTap: onLike,
+              onTap: widget.onLike,
               child: Icon(
-                isLiked ? Icons.favorite : Icons.favorite_border,
-                color: isLiked ? Colors.red : AppColors.pureWhite,
+                widget.isLiked ? Icons.favorite : Icons.favorite_border,
+                color: widget.isLiked ? Colors.red : AppColors.pureWhite,
                 size: 24,
               ),
             ),
             const SizedBox(width: 8),
             GestureDetector(
-              onTap: onLikesClick,
+              onTap: widget.onLikesClick,
               child: Text(
-                '$likes',
+                '${widget.likes}',
                 style: const TextStyle(
                   color: AppColors.pureWhite,
                   fontSize: 16,
@@ -358,7 +374,7 @@ class WorkoutPostCard extends StatelessWidget {
             ),
             const SizedBox(width: 24),
             GestureDetector(
-              onTap: onComment,
+              onTap: widget.onComment,
               child: SvgPicture.asset(
                 'assets/icons/comment.svg',
                 width: 24,
@@ -367,9 +383,9 @@ class WorkoutPostCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             GestureDetector(
-              onTap: onComment,
+              onTap: widget.onComment,
               child: Text(
-                '$commentCount',
+                '${widget.commentCount}',
                 style: const TextStyle(
                   color: AppColors.pureWhite,
                   fontSize: 16,
@@ -386,12 +402,12 @@ class WorkoutPostCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        if (likedBy.isNotEmpty)
+        if (widget.likedBy.isNotEmpty)
           GestureDetector(
-            onTap: onLikesClick,
+            onTap: widget.onLikesClick,
             child: Row(
               children: [
-                ...likedBy.take(3).map((user) => Align(
+                ...widget.likedBy.take(3).map((user) => Align(
                   widthFactor: 0.7,
                   child: CircleAvatar(
                     radius: 12,
@@ -401,7 +417,7 @@ class WorkoutPostCard extends StatelessWidget {
                 )),
                 const SizedBox(width: 8),
                 Text(
-                  'Liked by ${likedBy[0].name} and others',
+                  'Liked by ${widget.likedBy[0].name} and others',
                   style: const TextStyle(
                     color: AppColors.white60,
                     fontSize: 13,
