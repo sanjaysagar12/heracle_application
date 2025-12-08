@@ -270,6 +270,50 @@ class StoriesRepository {
     await _storiesService.commentOnStory(storyId, text);
   }
 
+  Future<List<Comment>> getStoryComments(String storyId) async {
+    try {
+      final data = await _storiesService.getStoryComments(storyId);
+      return data.map((json) => _mapToComment(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to load story comments: $e');
+    }
+  }
+
+  Comment _mapToComment(Map<String, dynamic> json) {
+    final user = json['user'] as Map<String, dynamic>;
+    final replies = (json['replies'] as List<dynamic>?) ?? [];
+    
+    return Comment(
+      id: json['id'] as String,
+      username: user['name'] ?? user['username'] ?? 'Unknown',
+      handle: '@${user['username'] ?? 'unknown'}',
+      profileImage: user['avatarUrl'] ?? 'https://i.pravatar.cc/150?u=${user['username']}',
+      timeAgo: _calculateTimeAgo(json['createdAt'] as String),
+      content: json['text'] as String,
+      replies: replies.map((r) => _mapToComment(r as Map<String, dynamic>)).toList(),
+    );
+  }
+
+  String _calculateTimeAgo(String createdAt) {
+    try {
+      final date = DateTime.parse(createdAt);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Recently';
+    }
+  }
+
   // Mark story as viewed and reorder
   List<StoryUser> markStoryAsViewed(List<StoryUser> stories, String storyId) {
     final updatedStories = <StoryUser>[];

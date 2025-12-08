@@ -348,6 +348,25 @@ class StoriesService {
     }
   }
 
+  /// Get comments for a story
+  Future<List<Map<String, dynamic>>> getStoryComments(String storyId) async {
+    try {
+      final response = await _dioClient.dio.get('/api/story/$storyId/comments');
+      
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch story comments: ${response.statusCode}');
+      }
+
+      final responseData = response.data as Map<String, dynamic>;
+      final List<dynamic> comments = responseData['comments'] as List<dynamic>;
+      
+      return comments.cast<Map<String, dynamic>>();
+    } catch (e) {
+      developer.log('Error fetching story comments: $e');
+      rethrow;
+    }
+  }
+
   List<String> _extractHashtags(String text) {
     final RegExp hashtagRegex = RegExp(r'#(\w+)');
     final matches = hashtagRegex.allMatches(text);

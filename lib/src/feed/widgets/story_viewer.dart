@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/stories_repository.dart';
+import '../../home/widgets/comments_bottom_sheet.dart';
+import '../../home/data/mutual_feed_repository.dart';
 
 class StoryViewer extends StatefulWidget {
   final List<StoryUser> stories;
@@ -36,6 +38,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocus = FocusNode();
   List<StoryUser> _localStories = [];
+  final StoriesRepository _storiesRepository = StoriesRepository();
 
   @override
   void initState() {
@@ -69,6 +72,38 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
         }
       }
     }
+  }
+
+  void _showComments() {
+    final currentUser = _localStories[_currentUserIndex];
+    if (currentUser.stories.isEmpty) return;
+    final currentStory = currentUser.stories[_currentStoryIndex];
+
+    // Pause playback
+    if (_isVideoProgressTracking) {
+      _videoController?.pause();
+    } else {
+      _progressController?.stop();
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _StoryCommentsSheetWrapper(
+        storyId: currentStory.id,
+        repository: _storiesRepository,
+      ),
+    ).then((_) {
+      // Resume playback
+      if (_isContentLoaded) {
+        if (_isVideoProgressTracking) {
+          _videoController?.play();
+        } else {
+          _progressController?.forward();
+        }
+      }
+    });
   }
 
   void _setupProgressController() {
@@ -610,6 +645,27 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                         ),
                         
                         const SizedBox(width: 12),
+
+                        GestureDetector(
+                          onTap: _showComments,
+                          child: Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.chat_bubble_outline,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(width: 8),
                         
                         GestureDetector(
                           onTap: _toggleLike,
@@ -797,5 +853,58 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
           ),
         );
     }
+  }
+}
+
+class _StoryCommentsSheetWrapper extends StatefulWidget {
+  final String storyId;
+  final StoriesRepository repository;
+
+  const _StoryCommentsSheetWrapper({required this.storyId, required this.repository});
+
+  @override
+  State<_StoryCommentsSheetWrapper> createState() => _StoryCommentsSheetWrapperState();
+}
+
+class _StoryCommentsSheetWrapperState extends State<_StoryCommentsSheetWrapper> {
+  List<Comment> _comments = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComments();
+  }
+
+  Future<void> _loadComments() async {
+    try {
+      final comments = await widget.repository.getStoryComments(widget.storyId);
+      if (mounted) {
+        setState(() {
+          _comments = comments;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CommentsBottomSheet(
+      comments: _comments,
+      isLoading: _isLoading,
+      onAddComment: (text) async {
+         await widget.repository.commentOnStory(widget.storyId, text);
+      },
+      onAddReply: (commentId, text) async {
+        // Reply implementation if needed
+      },
+    );
   }
 }
