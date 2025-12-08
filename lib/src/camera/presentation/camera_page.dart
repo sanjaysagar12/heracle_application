@@ -322,9 +322,8 @@ class _CameraPageState extends State<CameraPage>
           : CameraNavBar(
               currentIndex: _currentIndex,
               onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
+                if (index == 1) return; // Stay on camera page
+                Navigator.pop(context, index);
               },
             ),
       body: Stack(

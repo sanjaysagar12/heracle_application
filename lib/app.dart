@@ -116,10 +116,14 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const CameraPage()),
-    ).then((_) {
+    ).then((result) {
       if (mounted) {
         setState(() => _isNavBarVisible = true);
         _navBarAnimationController.reverse();
+        
+        if (result is int) {
+          setState(() => _index = result);
+        }
       }
     });
 
