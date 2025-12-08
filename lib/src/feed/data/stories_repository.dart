@@ -319,6 +319,10 @@ class StoriesRepository {
     await _storiesService.replyToComment(commentId, text);
   }
 
+  Future<void> viewStory(String storyId) async {
+    await _storiesService.viewStory(storyId);
+  }
+
   Future<List<Comment>> getStoryComments(String storyId) async {
     try {
       final data = await _storiesService.getStoryComments(storyId);

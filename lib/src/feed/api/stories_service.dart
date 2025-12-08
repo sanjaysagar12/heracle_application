@@ -365,6 +365,17 @@ class StoriesService {
     }
   }
 
+  /// Record a view for a story
+  Future<void> viewStory(String storyId) async {
+    try {
+      // Fire and forget view recording
+      await _dioClient.dio.post('/api/story/$storyId/view');
+    } catch (e) {
+      // Log error but don't disrupt UI for view tracking
+      developer.log('Error recording story view: $e');
+    }
+  }
+
   /// Get comments for a story
   Future<List<Map<String, dynamic>>> getStoryComments(String storyId) async {
     try {
