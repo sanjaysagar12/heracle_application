@@ -11,7 +11,7 @@ class PostWorkoutRepository {
     required int duration,
     required int volume,
     required List<Map<String, dynamic>> exercises,
-    required String? imagePath,
+    required List<String> imagePaths,
   }) async {
     try {
       final tagsString = tags.join(',');
@@ -24,7 +24,7 @@ class PostWorkoutRepository {
         duration: duration,
         volume: volume,
         exercises: exercisesString,
-        imagePath: imagePath,
+        imagePaths: imagePaths,
       );
     } catch (e) {
       rethrow;

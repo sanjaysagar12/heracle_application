@@ -24,17 +24,17 @@ class PostWorkoutScreen extends StatefulWidget {
 class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
   final TextEditingController _captionController = TextEditingController();
   final PostWorkoutRepository _repository = PostWorkoutRepository();
-  File? _selectedImage;
+  List<File> _selectedImages = [];
   bool _isPosting = false;
   bool _isPublic = true;
 
   Future<void> _pickImage() async {
     final picker = img_picker.ImagePicker();
-    final pickedFile = await picker.pickImage(source: img_picker.ImageSource.gallery);
+    final pickedFiles = await picker.pickMultiImage();
 
-    if (pickedFile != null) {
+    if (pickedFiles.isNotEmpty) {
       setState(() {
-        _selectedImage = File(pickedFile.path);
+        _selectedImages.addAll(pickedFiles.map((f) => File(f.path)));
       });
     }
   }
@@ -60,7 +60,7 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
         duration: widget.duration,
         volume: widget.volume,
         exercises: widget.exercises,
-        imagePath: _selectedImage?.path,
+        imagePaths: _selectedImages.map((e) => e.path).toList(),
       );
 
       if (mounted) {
@@ -122,33 +122,85 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image Picker
-            GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                width: double.infinity,
-                height: 200,
-                decoration: BoxDecoration(
-                  color: AppColors.black100,
-                  borderRadius: BorderRadius.circular(16),
-                  image: _selectedImage != null
-                      ? DecorationImage(
-                          image: FileImage(_selectedImage!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
+            // Image Picker
+            if (_selectedImages.isEmpty)
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  width: double.infinity,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: AppColors.black100,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_a_photo, color: AppColors.white60, size: 40),
+                      SizedBox(height: 8),
+                      Text('Add Photos', style: TextStyle(color: AppColors.white60)),
+                    ],
+                  ),
                 ),
-                child: _selectedImage == null
-                    ? const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_a_photo, color: AppColors.white60, size: 40),
-                          SizedBox(height: 8),
-                          Text('Add Photo', style: TextStyle(color: AppColors.white60)),
-                        ],
-                      )
-                    : null,
+              )
+            else
+              SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _selectedImages.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == _selectedImages.length) {
+                      return GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 150,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.black100,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(Icons.add_a_photo, color: AppColors.white60),
+                        ),
+                      );
+                    }
+                    return Stack(
+                      children: [
+                        Container(
+                          width: 150,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            image: DecorationImage(
+                              image: FileImage(_selectedImages[index]),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 12,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedImages.removeAt(index);
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close, color: Colors.white, size: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
             const SizedBox(height: 24),
             // Caption Input
             const Text('Caption', style: TextStyle(color: AppColors.pureWhite, fontSize: 16, fontWeight: FontWeight.w600)),

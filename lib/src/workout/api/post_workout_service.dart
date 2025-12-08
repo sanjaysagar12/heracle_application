@@ -12,7 +12,7 @@ class PostWorkoutService {
     required int duration,
     required int volume,
     required String exercises, // JSON string
-    required String? imagePath,
+    required List<String> imagePaths,
   }) async {
     try {
       // Validate exercises JSON structure
@@ -29,11 +29,13 @@ class PostWorkoutService {
         'exercises': exercises,
       };
 
-      if (imagePath != null && imagePath.isNotEmpty) {
-        data['images'] = await MultipartFile.fromFile(
-          imagePath,
-          filename: imagePath.split('/').last,
-        );
+      if (imagePaths.isNotEmpty) {
+        data['images'] = await Future.wait(imagePaths.map((path) async {
+          return await MultipartFile.fromFile(
+            path,
+            filename: path.split('/').last,
+          );
+        }));
       }
 
       final formData = FormData.fromMap(data);
