@@ -3,6 +3,7 @@ import '/src/workout/presentation/workout_page.dart';
 import 'src/camera/presentation/camera_page.dart';
 import 'src/feed/presentation/feed_page.dart';
 import 'src/home/presentation/home_page.dart';
+import 'src/profile/presentation/profile_page.dart';
 import 'widgets/nav_bar.dart';
 
 class AppPage extends StatefulWidget {
@@ -157,6 +158,15 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
           onTap: (i) {
             if (i == 1) {
               _openCamera();
+              return;
+            }
+            
+            if (i == 3) {
+              // Navigate to profile page
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
               return;
             }
 

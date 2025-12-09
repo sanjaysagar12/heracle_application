@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import '../../../widgets/app_bar.dart';
+import '../../../route.dart';
 import '../data/profile_repository.dart';
 import '../data/progress_repository.dart';
 import '../data/mutual_feed_repository.dart';
@@ -444,6 +445,9 @@ class _HomePageState extends State<HomePage> {
                       name: _profile!.name,
                       age: _profile!.age,
                       profileImageUrl: _profile!.profileImageUrl,
+                      onProfileTap: () {
+                        Navigator.pushNamed(context, AppRoutes.profile);
+                      },
                     ),
                   if (_progress != null)
                     TodayProgressCard(

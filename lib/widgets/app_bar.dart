@@ -6,12 +6,14 @@ class CustomAppBar extends StatelessWidget {
   final String name;
   final int age;
   final String profileImageUrl;
+  final VoidCallback? onProfileTap;
 
   const CustomAppBar({
     super.key,
     required this.name,
     required this.age,
     required this.profileImageUrl,
+    this.onProfileTap,
   });
 
   @override
@@ -27,9 +29,12 @@ class CustomAppBar extends StatelessWidget {
         height: 80.0,
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundImage: NetworkImage(profileImageUrl),
+            GestureDetector(
+              onTap: onProfileTap,
+              child: CircleAvatar(
+                radius: 28,
+                backgroundImage: NetworkImage(profileImageUrl),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
