@@ -26,6 +26,7 @@ class WorkoutSessionStorage {
         'content': session.content,
         'category': session.category,
         'exercises_count': session.exercisesCount,
+        'position': session.position,
         'created_at': now,
       };
       
@@ -141,7 +142,7 @@ class WorkoutSessionStorage {
   Future<List<Session>> getAllSessions() async {
     try {
       final db = await _dbHelper.database;
-      final result = await db.query('sessions', orderBy: 'created_at DESC');
+      final result = await db.query('sessions', orderBy: 'position ASC, created_at DESC');
       final sessions = <Session>[];
       
       for (final row in result) {
@@ -154,6 +155,7 @@ class WorkoutSessionStorage {
           content: session.content,
           category: session.category,
           exercisesCount: session.exercisesCount,
+          position: session.position,
           exercises: exercises,
         );
         sessions.add(updated);
@@ -185,6 +187,7 @@ class WorkoutSessionStorage {
         content: session.content,
         category: session.category,
         exercisesCount: session.exercisesCount,
+        position: session.position,
         exercises: exercises,
       );
     } catch (e) {
@@ -206,6 +209,7 @@ class WorkoutSessionStorage {
         'content': session.content,
         'category': session.category,
         'exercises_count': session.exercisesCount,
+        'position': session.position,
         'created_at': now,
       };
       
@@ -223,6 +227,31 @@ class WorkoutSessionStorage {
         _memorySessions[session.id] = session;
         _memoryExercises[session.id] = session.exercises.map((e) => Map<String, dynamic>.from(e)).toList();
         return 1;
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> updateSessionOrder(List<Session> sessions) async {
+    try {
+      final db = await _dbHelper.database;
+      final batch = db.batch();
+
+      for (int i = 0; i < sessions.length; i++) {
+        final session = sessions[i];
+        batch.update(
+          'sessions',
+          {'position': i},
+          where: 'id = ?',
+          whereArgs: [session.id],
+        );
+      }
+
+      await batch.commit(noResult: true);
+    } catch (e) {
+      if (e is MissingPluginException || e.toString().contains('No implementation found')) {
+        // Fallback for memory store (though unlikely to be needed for drag-drop in this specific catch block)
+        return;
       }
       rethrow;
     }
@@ -254,6 +283,7 @@ class WorkoutSessionStorage {
       content: row['content'] as String? ?? '',
       category: row['category'] as String? ?? '',
       exercisesCount: row['exercises_count'] as int,
+      position: (row['position'] as int?) ?? 0,
       exercises: [], // Will be populated by caller
     );
   }

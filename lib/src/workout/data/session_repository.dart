@@ -7,6 +7,7 @@ class Session {
   final String content;
   final String category;
   final int exercisesCount;
+  final int position; // Added to support reordering
   final List<Map<String, dynamic>> exercises; // list of exercise entries (each may include 'image')
 
   Session({
@@ -15,6 +16,7 @@ class Session {
     required this.content,
     required this.category,
     required this.exercisesCount,
+    this.position = 0,
     this.exercises = const [], // default empty
   });
 }
@@ -87,5 +89,9 @@ class SessionRepository {
 
   Future<void> updateSession(Session session) async {
     await _sessionStorage.updateSession(session);
+  }
+
+  Future<void> updateSessionOrder(List<Session> sessions) async {
+    await _sessionStorage.updateSessionOrder(sessions);
   }
 }

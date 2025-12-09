@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/session_repository.dart';
 import '../presentation/tab/log_workout_tab.dart';
@@ -13,32 +14,54 @@ class SessionsSection extends StatefulWidget {
 }
 
 class _SessionsSectionState extends State<SessionsSection> {
-  late Future<List<Session>> _sessionsFuture;
+  List<Session> _sessions = [];
+  bool _isLoading = true;
   String _selectedFilter = 'All';
   List<String> _filters = ['All'];
 
   @override
   void initState() {
     super.initState();
-    _loadFuture();
+    _loadSessions();
   }
 
   @override
   void didUpdateWidget(covariant SessionsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _loadFuture();
-    setState(() {});
+    _loadSessions();
   }
 
-  void _loadFuture() {
+  Future<void> _loadSessions() async {
     final repo = widget.repository ?? SessionRepository();
-    _sessionsFuture = repo.getSessionsFromDb();
+    try {
+      final sessions = await repo.getSessionsFromDb();
+      if (mounted) {
+        setState(() {
+          _sessions = sessions;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _onRefresh() async {
-    _loadFuture();
-    await _sessionsFuture;
-    setState(() {});
+    await _loadSessions();
+  }
+
+  void _onReorder(int oldIndex, int newIndex) async {
+    setState(() {
+      if (oldIndex < newIndex) {
+        newIndex -= 1;
+      }
+      final Session item = _sessions.removeAt(oldIndex);
+      _sessions.insert(newIndex, item);
+    });
+
+    // Update database
+    final repo = widget.repository ?? SessionRepository();
+    await repo.updateSessionOrder(_sessions);
   }
 
   Future<void> _handleEditSession(Session session) async {
@@ -49,10 +72,10 @@ class _SessionsSectionState extends State<SessionsSection> {
       ),
     );
     
+    // if (result == true) {
     if (result == true) {
       // Refresh the sessions list after successful edit
-      _loadFuture();
-      setState(() {});
+      _loadSessions();
     }
   }
 
@@ -100,8 +123,7 @@ class _SessionsSectionState extends State<SessionsSection> {
           );
 
           // Refresh the sessions list
-          _loadFuture();
-          setState(() {});
+          _loadSessions();
         }
       } catch (e) {
         if (mounted) {
@@ -118,86 +140,135 @@ class _SessionsSectionState extends State<SessionsSection> {
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: AppColors.primary,
-      child: FutureBuilder<List<Session>>(
-        future: _sessionsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const SizedBox(
+      child: _isLoading
+          ? const SizedBox(
               height: 160,
               child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-            );
-          }
+            )
+          : Builder(
+              builder: (context) {
+                final cats = <String>{};
+                for (var s in _sessions) cats.add(s.category);
+                _filters = ['All', ...cats.toList()];
+                if (!_filters.contains(_selectedFilter)) _selectedFilter = 'All';
 
-          final data = snapshot.data ?? [];
-          final cats = <String>{};
-          for (var s in data) cats.add(s.category);
-          _filters = ['All', ...cats.toList()];
-          if (!_filters.contains(_selectedFilter)) _selectedFilter = 'All';
+                final displayedSessions = _selectedFilter == 'All'
+                    ? _sessions
+                    : _sessions.where((s) => s.category == _selectedFilter).toList();
 
-          final sessions = _selectedFilter == 'All' ? data : data.where((s) => s.category == _selectedFilter).toList();
-
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Your Sessions',
-                  style: TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 40,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _filters.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) {
-                      final label = _filters[i];
-                      final selected = label == _selectedFilter;
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedFilter = label),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: selected ? AppColors.primary : AppColors.black100,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Center(
-                            child: Text(
-                              label,
-                              style: TextStyle(
-                                color: selected ? AppColors.black : AppColors.white60,
-                                fontSize: 14,
-                                fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
-                              ),
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Your Sessions',
+                            style: TextStyle(
+                              color: AppColors.pureWhite,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
+                          if (_selectedFilter == 'All' && _sessions.length > 1)
+                             const Padding(
+                               padding: EdgeInsets.only(right: 8.0),
+                               child: Text(
+                                 "Long press to reorder",
+                                 style: TextStyle(color: AppColors.white60, fontSize: 12),
+                               ),
+                             ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 40,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _filters.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (context, i) {
+                            final label = _filters[i];
+                            final selected = label == _selectedFilter;
+                            return GestureDetector(
+                              onTap: () => setState(() => _selectedFilter = label),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: selected ? AppColors.primary : AppColors.black100,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    label,
+                                    style: TextStyle(
+                                      color: selected ? AppColors.black : AppColors.white60,
+                                      fontSize: 14,
+                                      fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                      const SizedBox(height: 16),
+                      if (_selectedFilter == 'All')
+                        ReorderableListView(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          onReorder: _onReorder,
+                          onReorderStart: (index) {
+                            HapticFeedback.heavyImpact();
+                          },
+                          proxyDecorator: (child, index, animation) {
+                            return AnimatedBuilder(
+                              animation: animation,
+                              builder: (BuildContext context, Widget? child) {
+                                final double animValue = Curves.easeInOut.transform(animation.value);
+                                final double scale = 1.0 + (0.05 * animValue);
+                                return Transform.scale(
+                                  scale: scale,
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    elevation: 8,
+                                    shadowColor: Colors.black45,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: child,
+                            );
+                          },
+                          children: [
+                            for (final s in displayedSessions)
+                              Container(
+                                key: ValueKey(s.id),
+                                margin: const EdgeInsets.only(bottom: 12),
+                                child: _buildSessionCard(s, isReorderable: true),
+                              ),
+                          ],
+                        )
+                      else
+                        Column(
+                          children: displayedSessions.map((s) => _buildSessionCard(s)).toList(),
+                        ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                Column(
-                  children: sessions.map((s) => _buildSessionCard(s)).toList(),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 
-  Widget _buildSessionCard(Session s) {
+  Widget _buildSessionCard(Session s, {bool isReorderable = false}) {
     final images = s.exercises.map((e) => (e['image']?.toString() ?? '')).where((i) => i.isNotEmpty).toList();
+    // Use container without margin here because ReorderableListView expects widget for spacing or we apply it in wrapper
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      // margin handled by parent in ReorderableListView, or here if Column
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.black100,
@@ -208,6 +279,11 @@ class _SessionsSectionState extends State<SessionsSection> {
         children: [
           Row(
             children: [
+              if (isReorderable)
+                const Padding(
+                  padding: EdgeInsets.only(right: 12.0),
+                  child: Icon(Icons.drag_indicator, color: AppColors.white60, size: 20),
+                ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

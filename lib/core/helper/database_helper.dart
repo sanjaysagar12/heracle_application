@@ -24,7 +24,7 @@ class DatabaseHelper {
       
       return await openDatabase(
         path,
-        version: 2, // Updated version to trigger migration
+        version: 3, // Updated version to trigger migration
         onCreate: _createTables,
         onUpgrade: _onUpgrade,
         onConfigure: _onConfigure,
@@ -66,6 +66,7 @@ class DatabaseHelper {
         content TEXT,
         category TEXT,
         exercises_count INTEGER NOT NULL,
+        position INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL
       )
     ''');
@@ -180,6 +181,16 @@ class DatabaseHelper {
       }
 
       await db.execute('CREATE INDEX IF NOT EXISTS idx_targets_type ON targets (target_type)');
+    }
+
+    if (oldVersion < 3) {
+      // Version 3: Add position column to sessions table
+      try {
+        await db.execute('ALTER TABLE sessions ADD COLUMN position INTEGER DEFAULT 0');
+        print('DatabaseHelper: Added position column to sessions table');
+      } catch (e) {
+        print('DatabaseHelper: Error adding position column (may already exist): $e');
+      }
     }
   }
 
