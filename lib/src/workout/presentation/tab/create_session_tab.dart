@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
@@ -406,12 +407,49 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
             ),
             const SizedBox(height: 12),
             // Exercise list
-            ..._exerciseLogs.asMap().entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildExerciseCard(entry.value),
-              );
-            }).toList(),
+            ReorderableListView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              onReorder: (oldIndex, newIndex) {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                setState(() {
+                  final item = _exerciseLogs.removeAt(oldIndex);
+                  _exerciseLogs.insert(newIndex, item);
+                });
+              },
+              onReorderStart: (index) {
+                HapticFeedback.heavyImpact();
+              },
+              proxyDecorator: (child, index, animation) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (BuildContext context, Widget? child) {
+                    final double animValue = Curves.easeInOut.transform(animation.value);
+                    final double scale = 1.0 + (0.05 * animValue);
+                    return Transform.scale(
+                      scale: scale,
+                      child: Material(
+                        color: Colors.transparent,
+                        elevation: 8,
+                        shadowColor: Colors.black45,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: child,
+                );
+              },
+              children: [
+                for (final ex in _exerciseLogs)
+                  Container(
+                    key: ValueKey(ex.id), // Ensure each item has a unique key
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: _buildExerciseCard(ex),
+                  ),
+              ],
+            ),
             const SizedBox(height: 12),
             // Save Session button
             SizedBox(
@@ -483,6 +521,10 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
           // header
           Row(
             children: [
+              const Padding(
+                padding: EdgeInsets.only(right: 12.0),
+                child: Icon(Icons.drag_indicator, color: AppColors.white60, size: 20),
+              ),
               CircleAvatar(backgroundImage: NetworkImage(ex.image), radius: 20, backgroundColor: AppColors.greyDark),
               const SizedBox(width: 12),
               Expanded(
