@@ -5,6 +5,8 @@ import '../widgets/profile_header.dart';
 import '../widgets/profile_tab_bar.dart';
 import '../widgets/highlight_grid.dart';
 import '../widgets/profile_skeleton.dart';
+import '../../feed/data/stories_repository.dart';
+import '../../feed/presentation/tab/reels_tab.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -18,6 +20,7 @@ class _ProfilePageState extends State<ProfilePage> {
   
   UserProfile? _profile;
   List<HighlightVideo> _highlights = [];
+  List<DiscoverStory> _discoverStories = []; // For ReelsTab navigation
   
   bool _isLoading = true;
   int _selectedTabIndex = 0;
@@ -38,6 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _profile = results[0] as UserProfile;
         _highlights = results[1] as List<HighlightVideo>;
+        _discoverStories = _convertToDiscoverStories(_highlights, _profile!);
         _isLoading = false;
       });
     } catch (e) {
@@ -69,13 +73,67 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  /// Convert HighlightVideo list to DiscoverStory list for ReelsTab
+  List<DiscoverStory> _convertToDiscoverStories(List<HighlightVideo> highlights, UserProfile profile) {
+    return highlights.map((highlight) {
+      return DiscoverStory(
+        id: highlight.id,
+        username: profile.name,
+        profileImage: profile.profileImageUrl,
+        content: highlight.category,
+        hashtags: [highlight.category],
+        imageUrl: highlight.thumbnailUrl,
+        platform: highlight.platform,
+        platformHandle: profile.username,
+        timeAgo: 'Recently',
+        isLiked: false,
+        likesCount: 0,
+        likedBy: [],
+        isViewed: false,
+        mediaType: 'VIDEO',
+      );
+    }).toList();
+  }
+
+  /// Handle like action for reels
+  List<DiscoverStory> _handleLike(String storyId) {
+    setState(() {
+      _discoverStories = _discoverStories.map((story) {
+        if (story.id == storyId) {
+          final newIsLiked = !story.isLiked;
+          final newLikesCount = newIsLiked ? story.likesCount + 1 : story.likesCount - 1;
+          return story.copyWith(isLiked: newIsLiked, likesCount: newLikesCount);
+        }
+        return story;
+      }).toList();
+    });
+    return _discoverStories;
+  }
+
   void _onHighlightTap(HighlightVideo highlight) {
-    // TODO: Navigate to video player or detail view
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Playing: ${highlight.formattedViews}'),
-        backgroundColor: AppColors.greyDark,
-        duration: const Duration(seconds: 1),
+    // Find the index of the tapped highlight
+    final index = _highlights.indexWhere((h) => h.id == highlight.id);
+    
+    // Navigate to ReelsTab with all profile reels starting from tapped index
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReelsTab(
+          stories: _discoverStories,
+          initialIndex: index >= 0 ? index : 0,
+          onLike: _handleLike,
+          onStoryViewed: (storyId) {
+            // Mark story as viewed
+            setState(() {
+              _discoverStories = _discoverStories.map((story) {
+                if (story.id == storyId) {
+                  return story.copyWith(isViewed: true);
+                }
+                return story;
+              }).toList();
+            });
+          },
+        ),
       ),
     );
   }
