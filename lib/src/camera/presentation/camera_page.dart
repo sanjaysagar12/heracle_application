@@ -114,9 +114,11 @@ class _CameraPageState extends State<CameraPage>
         opaque: false,
         pageBuilder: (context, _, __) => TextEditorWidget(
           onDone: (overlay) {
-            setState(() {
-              _textOverlays.add(overlay);
-            });
+            if (overlay.text.isNotEmpty) {
+              setState(() {
+                _textOverlays.add(overlay);
+              });
+            }
           },
         ),
       ),
@@ -609,27 +611,7 @@ class _CameraPageState extends State<CameraPage>
             ),
 
           // Delete button for selected overlay
-          if (isPreviewMode && _selectedOverlay != null)
-            Positioned(
-              left: _selectedOverlay!.position.dx - 30,
-              top: _selectedOverlay!.position.dy - 30,
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _textOverlays.remove(_selectedOverlay);
-                    _selectedOverlay = null;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.close, color: Colors.white, size: 20),
-                ),
-              ),
-            ),
+
 
           /// PREVIEW MODE CAPTION BAR
           if (isPreviewMode)
@@ -1029,7 +1011,8 @@ class _TextOverlayWidget extends StatelessWidget {
             decoration: isSelected
                 ? BoxDecoration(
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.5), width: 2),
+                        color: Colors.white.withOpacity(0.5),
+                        width: 2 / overlay.scale),
                     borderRadius: BorderRadius.circular(4),
                   )
                 : null,

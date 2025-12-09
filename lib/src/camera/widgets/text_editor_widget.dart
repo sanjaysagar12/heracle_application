@@ -97,7 +97,6 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      if (_controller.text.isNotEmpty) {
                         final overlay = TextOverlay(
                           id: widget.initialOverlay?.id ?? const uuid_pkg.Uuid().v4(), // preserve id if editing
                           text: _controller.text,
@@ -111,7 +110,6 @@ class _TextEditorWidgetState extends State<TextEditorWidget> {
                           rotation: widget.initialOverlay?.rotation ?? 0.0,
                         );
                         widget.onDone(overlay);
-                      }
                       Navigator.pop(context);
                     },
                     child: const Text(
