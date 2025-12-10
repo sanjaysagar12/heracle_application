@@ -12,12 +12,14 @@ class ProfileApiService {
       'name': 'Sanjay Sagar N',
       'username': '@sanjaysagar',
       'profileImageUrl': 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
+      'bannerUrl': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800',
       'isVerified': true,
+      'isViewer':true,
       'bio': 'Fitness enthusiast | Gym lover',
       'highlights': 123,
       'following': 230000,
       'followers': 23,
-      'isFollowing': false,
+      'isFollowing': true,
     };
   }
 

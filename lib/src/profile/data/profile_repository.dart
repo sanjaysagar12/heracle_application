@@ -9,24 +9,28 @@ class UserProfile {
   final String name;
   final String username;
   final String profileImageUrl;
+  final String? bannerUrl;
   final bool isVerified;
   final String bio;
   final int highlights;
   final int following;
   final int followers;
   final bool isFollowing;
+  final bool isViewer; // added
 
   UserProfile({
     required this.id,
     required this.name,
     required this.username,
     required this.profileImageUrl,
+    this.bannerUrl,
     required this.isVerified,
     required this.bio,
     required this.highlights,
     required this.following,
     required this.followers,
     required this.isFollowing,
+    this.isViewer = false, // default false
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -35,12 +39,14 @@ class UserProfile {
       name: json['name'] as String,
       username: json['username'] as String? ?? '',
       profileImageUrl: json['profileImageUrl'] as String,
+      bannerUrl: json['bannerUrl'] as String?,
       isVerified: json['isVerified'] as bool? ?? false,
       bio: json['bio'] as String? ?? '',
       highlights: json['highlights'] as int? ?? 0,
       following: json['following'] as int? ?? 0,
       followers: json['followers'] as int? ?? 0,
       isFollowing: json['isFollowing'] as bool? ?? false,
+      isViewer: json['isViewer'] as bool? ?? false, // read from API
     );
   }
 
@@ -49,24 +55,28 @@ class UserProfile {
     String? name,
     String? username,
     String? profileImageUrl,
+    String? bannerUrl,
     bool? isVerified,
     String? bio,
     int? highlights,
     int? following,
     int? followers,
     bool? isFollowing,
+    bool? isViewer, // added
   }) {
     return UserProfile(
       id: id ?? this.id,
       name: name ?? this.name,
       username: username ?? this.username,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      bannerUrl: bannerUrl ?? this.bannerUrl,
       isVerified: isVerified ?? this.isVerified,
       bio: bio ?? this.bio,
       highlights: highlights ?? this.highlights,
       following: following ?? this.following,
       followers: followers ?? this.followers,
       isFollowing: isFollowing ?? this.isFollowing,
+      isViewer: isViewer ?? this.isViewer,
     );
   }
 

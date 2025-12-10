@@ -146,22 +146,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.black,
-      appBar: AppBar(
-        backgroundColor: AppColors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.pureWhite),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: AppColors.pureWhite),
-            onPressed: () {
-              // TODO: Show options menu
-            },
-          ),
-        ],
-      ),
       body: _isLoading
           ? const ProfileSkeleton()
           : RefreshIndicator(
@@ -176,7 +160,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     if (_profile != null)
                       ProfileHeader(
                         profile: _profile!,
-                        onFollowTap: _onFollowTap,
+                        // don't provide follow callback when viewing own profile
+                        onFollowTap: _profile!.isViewer ? null : _onFollowTap,
                       ),
                     // Tab Bar
                     ProfileTabBar(
