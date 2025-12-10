@@ -593,17 +593,17 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                 child: Row(
                   children: [
                     SizedBox(
-                      width: 50,
-                      child: Text('Set ${si + 1}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                      width: 40,
+                      child: Text('Set ${si + 1}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Row(
                         children: [
                           const Text('Kg', style: TextStyle(color: AppColors.white60, fontSize: 12)),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           SizedBox(
-                            width: 60,
+                            width: 50,
                             child: TextField(
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
@@ -622,14 +622,14 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Row(
                         children: [
                           const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           SizedBox(
-                            width: 60,
+                            width: 50,
                             child: TextField(
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
@@ -654,6 +654,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                       icon: const Icon(Icons.close, color: Colors.redAccent, size: 20),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
+                      visualDensity: VisualDensity.compact,
                     ),
                   ],
                 ),

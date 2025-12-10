@@ -594,17 +594,17 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                 child: Row(
                   children: [
                     SizedBox(
-                      width: 50,
-                      child: Text('Set ${si + 1}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                      width: 40,
+                      child: Text('Set ${si + 1}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Row(
                         children: [
                           const Text('Kg', style: TextStyle(color: AppColors.white60, fontSize: 12)),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           SizedBox(
-                            width: 60,
+                            width: 50,
                             child: TextField(
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
@@ -623,14 +623,14 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Row(
                         children: [
                           const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           SizedBox(
-                            width: 60,
+                            width: 50,
                             child: TextField(
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
@@ -659,6 +659,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                       ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
+                      visualDensity: VisualDensity.compact,
                     ),
                   ],
                 ),
