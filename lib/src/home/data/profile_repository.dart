@@ -4,11 +4,13 @@ class Profile {
   final String name;
   final int age;
   final String profileImageUrl;
+  final bool hasStory;
 
   Profile({
     required this.name,
     required this.age,
     required this.profileImageUrl,
+    this.hasStory = false,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -16,6 +18,7 @@ class Profile {
       name: json['name'] as String,
       age: json['age'] as int,
       profileImageUrl: json['profileImageUrl'] as String,
+      hasStory: json['hasStory'] as bool? ?? false,
     );
   }
 }

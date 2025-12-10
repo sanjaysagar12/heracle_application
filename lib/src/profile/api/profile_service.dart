@@ -20,6 +20,7 @@ class ProfileApiService {
       'following': 230000,
       'followers': 23,
       'isFollowing': true,
+      'hasStory': false,
     };
   }
 

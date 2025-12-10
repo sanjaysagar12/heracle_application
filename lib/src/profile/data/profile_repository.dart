@@ -18,7 +18,8 @@ class UserProfile {
   final int following;
   final int followers;
   final bool isFollowing;
-  final bool isViewer; // added
+  final bool isViewer;
+  final bool hasStory; // added
 
   UserProfile({
     required this.id,
@@ -32,7 +33,8 @@ class UserProfile {
     required this.following,
     required this.followers,
     required this.isFollowing,
-    this.isViewer = false, // default false
+    this.isViewer = false,
+    this.hasStory = false,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -48,7 +50,8 @@ class UserProfile {
       following: json['following'] as int? ?? 0,
       followers: json['followers'] as int? ?? 0,
       isFollowing: json['isFollowing'] as bool? ?? false,
-      isViewer: json['isViewer'] as bool? ?? false, // read from API
+      isViewer: json['isViewer'] as bool? ?? false,
+      hasStory: json['hasStory'] as bool? ?? false,
     );
   }
 
@@ -64,7 +67,8 @@ class UserProfile {
     int? following,
     int? followers,
     bool? isFollowing,
-    bool? isViewer, // added
+    bool? isViewer,
+    bool? hasStory,
   }) {
     return UserProfile(
       id: id ?? this.id,
@@ -79,6 +83,7 @@ class UserProfile {
       followers: followers ?? this.followers,
       isFollowing: isFollowing ?? this.isFollowing,
       isViewer: isViewer ?? this.isViewer,
+      hasStory: hasStory ?? this.hasStory,
     );
   }
 

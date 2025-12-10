@@ -93,6 +93,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       name: _profile!.name,
                       age: _profile!.age,
                       profileImageUrl: _profile!.profileImageUrl,
+                      hasStory: _profile!.hasStory,
                       onProfileTap: () {
                         Navigator.pushNamed(context, AppRoutes.profile);
                       },
