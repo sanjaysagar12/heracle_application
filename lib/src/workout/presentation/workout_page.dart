@@ -8,7 +8,7 @@ import './tab/select_workouts_tab.dart'; // navigation target
 import '../widgets/sessions_section.dart'; // added
 import '../data/session_repository.dart'; // add import
 import 'tab/workout_logs_tab.dart';
-
+import 'package:heracle/route.dart';
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
 
@@ -93,6 +93,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       name: _profile!.name,
                       age: _profile!.age,
                       profileImageUrl: _profile!.profileImageUrl,
+                      onProfileTap: () {
+                        Navigator.pushNamed(context, AppRoutes.profile);
+                      },
                     ),
                   // bar chart carousel showing multiple progress charts
                   BarChartCard(charts: _chartData),
