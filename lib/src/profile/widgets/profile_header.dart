@@ -134,19 +134,9 @@ class ProfileHeader extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildStatColumn('Highlights', profile.formattedHighlights),
-                  Container(
-                    height: 40,
-                    width: 1,
-                    color: AppColors.greyDark,
-                    margin: const EdgeInsets.symmetric(horizontal: 32),
-                  ),
+                  const SizedBox(width: 32),
                   _buildStatColumn('Following', profile.formattedFollowing),
-                  Container(
-                    height: 40,
-                    width: 1,
-                    color: AppColors.greyDark,
-                    margin: const EdgeInsets.symmetric(horizontal: 32),
-                  ),
+                  const SizedBox(width: 32),
                   _buildStatColumn('Followers', profile.formattedFollowers),
                 ],
               ),
