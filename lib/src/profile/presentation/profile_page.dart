@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/profile_repository.dart';
 import '../widgets/profile_header.dart';
@@ -7,6 +8,8 @@ import '../widgets/highlight_grid.dart';
 import '../widgets/profile_skeleton.dart';
 import '../../feed/data/stories_repository.dart';
 import '../../feed/presentation/tab/reels_tab.dart';
+import '../../workout/widgets/sessions_section.dart';
+import '../../workout/data/session_repository.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -20,6 +23,7 @@ class _ProfilePageState extends State<ProfilePage> {
   
   UserProfile? _profile;
   List<HighlightVideo> _highlights = [];
+  List<Session> _sessions = [];
   List<DiscoverStory> _discoverStories = []; // For ReelsTab navigation
   
   bool _isLoading = true;
@@ -36,11 +40,13 @@ class _ProfilePageState extends State<ProfilePage> {
       final results = await Future.wait([
         _repository.getUserProfile(),
         _repository.getAllHighlights(),
+        _repository.getSessions(),
       ]);
 
       setState(() {
         _profile = results[0] as UserProfile;
         _highlights = results[1] as List<HighlightVideo>;
+        _sessions = results[2] as List<Session>;
         _discoverStories = _convertToDiscoverStories(_highlights, _profile!);
         _isLoading = false;
       });
@@ -156,12 +162,38 @@ class _ProfilePageState extends State<ProfilePage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
-                    // Profile Header
+                    // Profile Header wrapped in a Stack so back button sits on top of banner
                     if (_profile != null)
-                      ProfileHeader(
-                        profile: _profile!,
-                        // don't provide follow callback when viewing own profile
-                        onFollowTap: _profile!.isViewer ? null : _onFollowTap,
+                      Stack(
+                        children: [
+                          ProfileHeader(
+                            profile: _profile!,
+                            // don't provide follow callback when viewing own profile
+                            onFollowTap: _profile!.isViewer ? null : _onFollowTap,
+                          ),
+                          // Back button placed inside the scrollable content so it scrolls with the header
+                          Positioned(
+                            top: 12,
+                            left: 12,
+                            child: Material(
+                              color: Colors.black38,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () => Navigator.of(context).pop(),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: SvgPicture.asset(
+                                    'assets/icons/back.svg',
+                                    width: 22,
+                                    height: 22,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     // Tab Bar
                     ProfileTabBar(
@@ -205,17 +237,9 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildSessionsTab() {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(40),
-        child: Text(
-          'Sessions coming soon',
-          style: TextStyle(
-            color: AppColors.white60,
-            fontSize: 16,
-          ),
-        ),
-      ),
+    return SessionsSection(
+      sessions: _sessions,
+      isViewOnly: true,
     );
   }
 

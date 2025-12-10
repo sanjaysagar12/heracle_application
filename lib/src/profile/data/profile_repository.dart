@@ -2,6 +2,7 @@
 // Handles data transformation and business logic for profile page
 
 import '../api/profile_service.dart';
+import '../../workout/data/session_repository.dart';
 
 /// User Profile Model
 class UserProfile {
@@ -168,32 +169,7 @@ class HighlightVideo {
   }
 }
 
-/// Session Model
-class WorkoutSession {
-  final String id;
-  final String title;
-  final String date;
-  final int duration;
-  final int exercises;
 
-  WorkoutSession({
-    required this.id,
-    required this.title,
-    required this.date,
-    required this.duration,
-    required this.exercises,
-  });
-
-  factory WorkoutSession.fromJson(Map<String, dynamic> json) {
-    return WorkoutSession(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      date: json['date'] as String,
-      duration: json['duration'] as int? ?? 0,
-      exercises: json['exercises'] as int? ?? 0,
-    );
-  }
-}
 
 /// Post Model
 class ProfilePost {
@@ -280,10 +256,18 @@ class ProfileRepository {
   }
 
   /// Get sessions
-  Future<List<WorkoutSession>> getSessions() async {
+  Future<List<Session>> getSessions() async {
     try {
       final data = await _apiService.getSessions();
-      return data.map((json) => WorkoutSession.fromJson(json)).toList();
+      return data.map((json) => Session(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        content: json['content'] as String? ?? '',
+        category: json['category'] as String? ?? 'General',
+        exercisesCount: json['exercisesCount'] as int? ?? 0,
+        position: json['position'] as int? ?? 0,
+        exercises: (json['exercises'] as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
+      )).toList();
     } catch (e) {
       throw Exception('Failed to load sessions: $e');
     }

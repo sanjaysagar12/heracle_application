@@ -125,16 +125,27 @@ class ProfileApiService {
       {
         'id': 's1',
         'title': 'Morning Workout',
-        'date': '2024-12-09',
-        'duration': 45,
-        'exercises': 12,
+        'content': 'High intensity interval training', 
+        'category': 'Functional',
+        'exercisesCount': 12,
+        'position': 0,
+        'exercises': [
+           {'id': 'e1', 'image': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=100'},
+           {'id': 'e2', 'image': 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=100'},
+           {'id': 'e3', 'image': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=100'},
+        ],
       },
       {
         'id': 's2',
         'title': 'Evening Cardio',
-        'date': '2024-12-08',
-        'duration': 30,
-        'exercises': 8,
+        'content': 'Treadmill and Stairmaster',
+        'category': 'Legs',
+        'exercisesCount': 8,
+        'position': 1,
+        'exercises': [
+           {'id': 'e4', 'image': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100'},
+           {'id': 'e5', 'image': 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=100'},
+        ],
       },
     ];
   }
