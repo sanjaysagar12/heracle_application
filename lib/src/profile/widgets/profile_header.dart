@@ -6,12 +6,16 @@ class ProfileHeader extends StatelessWidget {
   final UserProfile profile;
   final VoidCallback? onFollowTap;
   final VoidCallback? onProfileImageTap;
+  final VoidCallback? onFollowersTap;
+  final VoidCallback? onFollowingTap;
 
   const ProfileHeader({
     super.key,
     required this.profile,
     this.onFollowTap,
     this.onProfileImageTap,
+    this.onFollowersTap,
+    this.onFollowingTap,
   });
 
   @override
@@ -135,9 +139,17 @@ class ProfileHeader extends StatelessWidget {
                 children: [
                   _buildStatColumn('Highlights', profile.formattedHighlights),
                   const SizedBox(width: 32),
-                  _buildStatColumn('Following', profile.formattedFollowing),
+                  _buildStatColumn(
+                    'Following', 
+                    profile.formattedFollowing, 
+                    onTap: onFollowingTap,
+                  ),
                   const SizedBox(width: 32),
-                  _buildStatColumn('Followers', profile.formattedFollowers),
+                  _buildStatColumn(
+                    'Followers', 
+                    profile.formattedFollowers, 
+                    onTap: onFollowersTap,
+                  ),
                 ],
               ),
               
@@ -181,27 +193,31 @@ class ProfileHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildStatColumn(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.white60,
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
+  Widget _buildStatColumn(String label, String value, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.white60,
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.pureWhite,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.pureWhite,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

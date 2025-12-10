@@ -176,6 +176,50 @@ class HighlightVideo {
 }
 
 
+/// Connection User Model (Followers/Following)
+class ConnectionUser {
+  final String id;
+  final String name;
+  final String username;
+  final String profileImageUrl;
+  final bool isFollowing;
+
+  ConnectionUser({
+    required this.id,
+    required this.name,
+    required this.username,
+    required this.profileImageUrl,
+    required this.isFollowing,
+  });
+
+  factory ConnectionUser.fromJson(Map<String, dynamic> json) {
+    return ConnectionUser(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      profileImageUrl: json['profileImageUrl'] as String? ?? '',
+      isFollowing: json['isFollowing'] as bool? ?? false,
+    );
+  }
+  
+  ConnectionUser copyWith({
+    String? id,
+    String? name,
+    String? username,
+    String? profileImageUrl,
+    bool? isFollowing,
+  }) {
+    return ConnectionUser(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      username: username ?? this.username,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      isFollowing: isFollowing ?? this.isFollowing,
+    );
+  }
+}
+
+
 
 // Remove local ProfilePost class as we now use FeedPost
 
@@ -295,5 +339,25 @@ class ProfileRepository {
       isFollowing: newFollowStatus,
       followers: newFollowers,
     );
+  }
+
+  /// Get followers
+  Future<List<ConnectionUser>> getFollowers() async {
+    try {
+      final data = await _apiService.getFollowers();
+      return data.map((json) => ConnectionUser.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to load followers: $e');
+    }
+  }
+
+  /// Get following
+  Future<List<ConnectionUser>> getFollowing() async {
+    try {
+      final data = await _apiService.getFollowing();
+      return data.map((json) => ConnectionUser.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to load following: $e');
+    }
   }
 }

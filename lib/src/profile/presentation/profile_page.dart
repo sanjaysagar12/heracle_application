@@ -8,6 +8,7 @@ import '../widgets/highlight_grid.dart';
 import '../widgets/profile_skeleton.dart';
 import '../../feed/data/stories_repository.dart';
 import '../../feed/presentation/tab/reels_tab.dart';
+import 'connections_page.dart';
 import '../../workout/widgets/sessions_section.dart';
 import '../../workout/data/session_repository.dart';
 import '../../home/data/mutual_feed_repository.dart';
@@ -399,6 +400,28 @@ class _ProfilePageState extends State<ProfilePage> {
                           ProfileHeader(
                             profile: _profile!,
                             onFollowTap: _profile!.isViewer ? null : _onFollowTap,
+                            onFollowersTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ConnectionsPage(
+                                    initialIndex: 0,
+                                    username: _profile!.name,
+                                  ),
+                                ),
+                              );
+                            },
+                            onFollowingTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ConnectionsPage(
+                                    initialIndex: 1,
+                                    username: _profile!.name,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           Positioned(
                             top: 12,
