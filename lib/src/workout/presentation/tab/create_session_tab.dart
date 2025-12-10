@@ -286,7 +286,10 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       appBar: AppBar(
         backgroundColor: AppColors.black,
         elevation: 0,
+        toolbarHeight: 40,
         leading: IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
           icon: SvgPicture.asset(
             'assets/icons/back.svg',
             width: 24,
