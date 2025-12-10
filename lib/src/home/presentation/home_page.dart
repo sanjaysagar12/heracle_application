@@ -12,6 +12,8 @@ import '../../../core/theme/app_colors.dart';
 import '../widgets/comments_bottom_sheet.dart';
 import '../widgets/skeleton_loading.dart';
 import '../widgets/likes_bottom_sheet.dart';
+import '../../feed/data/stories_repository.dart';
+import '../../feed/presentation/tab/my_story_viewer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,6 +26,7 @@ class _HomePageState extends State<HomePage> {
   final ProfileRepository _profileRepository = ProfileRepository();
   final ProgressRepository _progressRepository = ProgressRepository();
   final MutualFeedRepository _mutualFeedRepository = MutualFeedRepository();
+  final StoriesRepository _storiesRepository = StoriesRepository();
   Profile? _profile;
   ProgressCard? _progress;
   List<FeedPost> _posts = [];
@@ -431,6 +434,22 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _handleStoryTap() async {
+    try {
+      final myStory = await _storiesRepository.getMyStories();
+      if (!mounted) return;
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MyStoryViewer(myStory: myStory),
+        ),
+      );
+    } catch (e) {
+      print('Failed to open story: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -449,6 +468,7 @@ class _HomePageState extends State<HomePage> {
                       onProfileTap: () {
                         Navigator.pushNamed(context, AppRoutes.profile);
                       },
+                      onStoryTap: _handleStoryTap,
                     ),
                   if (_progress != null)
                     TodayProgressCard(

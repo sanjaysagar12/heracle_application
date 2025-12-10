@@ -9,6 +9,9 @@ import '../widgets/sessions_section.dart'; // added
 import '../data/session_repository.dart'; // add import
 import 'tab/workout_logs_tab.dart';
 import 'package:heracle/route.dart';
+import '../../feed/data/stories_repository.dart';
+import '../../feed/presentation/tab/my_story_viewer.dart';
+
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
 
@@ -19,6 +22,7 @@ class WorkoutPage extends StatefulWidget {
 class _WorkoutPageState extends State<WorkoutPage> {
   final ProfileRepository _profileRepository = ProfileRepository();
   final ProgressRepository _progressRepository = ProgressRepository();
+  final StoriesRepository _storiesRepository = StoriesRepository();
   Profile? _profile;
   bool _isLoading = true;
   List<ChartData> _chartData = [];
@@ -79,6 +83,22 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
+  Future<void> _handleStoryTap() async {
+    try {
+      final myStory = await _storiesRepository.getMyStories();
+      if (!mounted) return;
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MyStoryViewer(myStory: myStory),
+        ),
+      );
+    } catch (e) {
+      print('Failed to open story: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,6 +117,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       onProfileTap: () {
                         Navigator.pushNamed(context, AppRoutes.profile);
                       },
+                      onStoryTap: _handleStoryTap,
                     ),
                   // bar chart carousel showing multiple progress charts
                   BarChartCard(charts: _chartData),
