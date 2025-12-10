@@ -2,6 +2,8 @@
 // Handles data transformation and business logic for profile page
 
 import '../api/profile_service.dart';
+import '../../workout/data/session_repository.dart';
+import '../../home/data/mutual_feed_repository.dart';
 
 /// User Profile Model
 class UserProfile {
@@ -9,24 +11,30 @@ class UserProfile {
   final String name;
   final String username;
   final String profileImageUrl;
+  final String? bannerUrl;
   final bool isVerified;
   final String bio;
   final int highlights;
   final int following;
   final int followers;
   final bool isFollowing;
+  final bool isViewer;
+  final bool hasStory; // added
 
   UserProfile({
     required this.id,
     required this.name,
     required this.username,
     required this.profileImageUrl,
+    this.bannerUrl,
     required this.isVerified,
     required this.bio,
     required this.highlights,
     required this.following,
     required this.followers,
     required this.isFollowing,
+    this.isViewer = false,
+    this.hasStory = false,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -35,12 +43,15 @@ class UserProfile {
       name: json['name'] as String,
       username: json['username'] as String? ?? '',
       profileImageUrl: json['profileImageUrl'] as String,
+      bannerUrl: json['bannerUrl'] as String?,
       isVerified: json['isVerified'] as bool? ?? false,
       bio: json['bio'] as String? ?? '',
       highlights: json['highlights'] as int? ?? 0,
       following: json['following'] as int? ?? 0,
       followers: json['followers'] as int? ?? 0,
       isFollowing: json['isFollowing'] as bool? ?? false,
+      isViewer: json['isViewer'] as bool? ?? false,
+      hasStory: json['hasStory'] as bool? ?? false,
     );
   }
 
@@ -49,24 +60,30 @@ class UserProfile {
     String? name,
     String? username,
     String? profileImageUrl,
+    String? bannerUrl,
     bool? isVerified,
     String? bio,
     int? highlights,
     int? following,
     int? followers,
     bool? isFollowing,
+    bool? isViewer,
+    bool? hasStory,
   }) {
     return UserProfile(
       id: id ?? this.id,
       name: name ?? this.name,
       username: username ?? this.username,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      bannerUrl: bannerUrl ?? this.bannerUrl,
       isVerified: isVerified ?? this.isVerified,
       bio: bio ?? this.bio,
       highlights: highlights ?? this.highlights,
       following: following ?? this.following,
       followers: followers ?? this.followers,
       isFollowing: isFollowing ?? this.isFollowing,
+      isViewer: isViewer ?? this.isViewer,
+      hasStory: hasStory ?? this.hasStory,
     );
   }
 
@@ -158,66 +175,62 @@ class HighlightVideo {
   }
 }
 
-/// Session Model
-class WorkoutSession {
-  final String id;
-  final String title;
-  final String date;
-  final int duration;
-  final int exercises;
 
-  WorkoutSession({
+/// Connection User Model (Followers/Following)
+class ConnectionUser {
+  final String id;
+  final String name;
+  final String username;
+  final String profileImageUrl;
+  final bool isFollowing;
+
+  ConnectionUser({
     required this.id,
-    required this.title,
-    required this.date,
-    required this.duration,
-    required this.exercises,
+    required this.name,
+    required this.username,
+    required this.profileImageUrl,
+    required this.isFollowing,
   });
 
-  factory WorkoutSession.fromJson(Map<String, dynamic> json) {
-    return WorkoutSession(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      date: json['date'] as String,
-      duration: json['duration'] as int? ?? 0,
-      exercises: json['exercises'] as int? ?? 0,
+  factory ConnectionUser.fromJson(Map<String, dynamic> json) {
+    return ConnectionUser(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      profileImageUrl: json['profileImageUrl'] as String? ?? '',
+      isFollowing: json['isFollowing'] as bool? ?? false,
+    );
+  }
+  
+  ConnectionUser copyWith({
+    String? id,
+    String? name,
+    String? username,
+    String? profileImageUrl,
+    bool? isFollowing,
+  }) {
+    return ConnectionUser(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      username: username ?? this.username,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      isFollowing: isFollowing ?? this.isFollowing,
     );
   }
 }
 
-/// Post Model
-class ProfilePost {
-  final String id;
-  final String imageUrl;
-  final String caption;
-  final int likes;
-  final int comments;
 
-  ProfilePost({
-    required this.id,
-    required this.imageUrl,
-    required this.caption,
-    required this.likes,
-    required this.comments,
-  });
 
-  factory ProfilePost.fromJson(Map<String, dynamic> json) {
-    return ProfilePost(
-      id: json['id'] as String,
-      imageUrl: json['imageUrl'] as String,
-      caption: json['caption'] as String? ?? '',
-      likes: json['likes'] as int? ?? 0,
-      comments: json['comments'] as int? ?? 0,
-    );
-  }
-}
+// Remove local ProfilePost class as we now use FeedPost
 
 /// Profile Repository
 class ProfileRepository {
   final ProfileApiService _apiService;
+  final MutualFeedRepository _mutualFeedRepository; // Use composition for actions
 
-  ProfileRepository({ProfileApiService? apiService})
-      : _apiService = apiService ?? ProfileApiService();
+  ProfileRepository({ProfileApiService? apiService, MutualFeedRepository? mutualFeedRepository})
+      : _apiService = apiService ?? ProfileApiService(),
+        _mutualFeedRepository = mutualFeedRepository ?? MutualFeedRepository();
 
   /// Get user profile
   Future<UserProfile> getUserProfile() async {
@@ -270,20 +283,36 @@ class ProfileRepository {
   }
 
   /// Get sessions
-  Future<List<WorkoutSession>> getSessions() async {
+  Future<List<Session>> getSessions() async {
     try {
       final data = await _apiService.getSessions();
-      return data.map((json) => WorkoutSession.fromJson(json)).toList();
+      return data.map((json) => Session(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        content: json['content'] as String? ?? '',
+        category: json['category'] as String? ?? 'General',
+        exercisesCount: json['exercisesCount'] as int? ?? 0,
+        position: json['position'] as int? ?? 0,
+        exercises: (json['exercises'] as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
+      )).toList();
     } catch (e) {
       throw Exception('Failed to load sessions: $e');
     }
   }
 
   /// Get posts
-  Future<List<ProfilePost>> getPosts() async {
+  Future<List<FeedPost>> getPosts() async {
     try {
       final data = await _apiService.getPosts();
-      return data.map((json) => ProfilePost.fromJson(json)).toList();
+      return data.map((json) {
+        final type = json['type'] as String;
+        if (type == 'workout') {
+          return WorkoutPost.fromJson(json);
+        } else if (type == 'nutrition') {
+          return NutritionPost.fromJson(json);
+        }
+        throw Exception('Unknown post type: $type');
+      }).toList();
     } catch (e) {
       throw Exception('Failed to load posts: $e');
     }
@@ -310,5 +339,25 @@ class ProfileRepository {
       isFollowing: newFollowStatus,
       followers: newFollowers,
     );
+  }
+
+  /// Get followers
+  Future<List<ConnectionUser>> getFollowers() async {
+    try {
+      final data = await _apiService.getFollowers();
+      return data.map((json) => ConnectionUser.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to load followers: $e');
+    }
+  }
+
+  /// Get following
+  Future<List<ConnectionUser>> getFollowing() async {
+    try {
+      final data = await _apiService.getFollowing();
+      return data.map((json) => ConnectionUser.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to load following: $e');
+    }
   }
 }

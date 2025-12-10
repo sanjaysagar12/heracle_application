@@ -298,6 +298,26 @@ class Comment {
     );
   }
 
+  Comment copyWith({
+    String? id,
+    String? username,
+    String? handle,
+    String? profileImage,
+    String? timeAgo,
+    String? content,
+    List<Comment>? replies,
+  }) {
+    return Comment(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      handle: handle ?? this.handle,
+      profileImage: profileImage ?? this.profileImage,
+      timeAgo: timeAgo ?? this.timeAgo,
+      content: content ?? this.content,
+      replies: replies ?? this.replies,
+    );
+  }
+
   Comment copyWithReply(Comment newReply) {
     return Comment(
       id: id,

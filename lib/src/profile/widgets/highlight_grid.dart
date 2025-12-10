@@ -30,13 +30,13 @@ class HighlightGrid extends StatelessWidget {
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.all(2),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        crossAxisSpacing: 2,
-        mainAxisSpacing: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
         childAspectRatio: 0.65,
       ),
       itemCount: highlights.length,
@@ -67,10 +67,10 @@ class HighlightCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.greyDark,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(16),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -90,18 +90,6 @@ class HighlightCard extends StatelessWidget {
                     ),
                   );
                 },
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: AppColors.greyDark,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                      ),
-                    ),
-                  );
-                },
               ),
               // Gradient overlay
               Positioned.fill(
@@ -111,29 +99,24 @@ class HighlightCard extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
+                        Colors.black.withOpacity(0.3),
                         Colors.transparent,
                         Colors.black.withOpacity(0.6),
                       ],
-                      stops: const [0.5, 1.0],
+                      stops: const [0.0, 0.5, 1.0],
                     ),
                   ),
                 ),
               ),
-              // Platform badge (TikTok)
-              if (highlight.platform != null)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: _buildPlatformBadge(highlight.platform!),
-                ),
+              
               // Views count
               Positioned(
-                bottom: 8,
-                left: 8,
+                bottom: 12,
+                left: 12,
                 child: Row(
                   children: [
                     const Icon(
-                      Icons.play_arrow,
+                      Icons.play_circle_fill,
                       color: AppColors.pureWhite,
                       size: 16,
                     ),
@@ -143,7 +126,8 @@ class HighlightCard extends StatelessWidget {
                       style: const TextStyle(
                         color: AppColors.pureWhite,
                         fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.bold,
+                        shadows: [Shadow(color: Colors.black, blurRadius: 4)],
                       ),
                     ),
                   ],
@@ -156,39 +140,5 @@ class HighlightCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPlatformBadge(String platform) {
-    IconData icon;
-    Color bgColor;
-    
-    switch (platform.toLowerCase()) {
-      case 'tiktok':
-        icon = Icons.music_note;
-        bgColor = Colors.black;
-        break;
-      case 'instagram':
-        icon = Icons.camera_alt;
-        bgColor = Colors.pink;
-        break;
-      case 'youtube':
-        icon = Icons.play_arrow;
-        bgColor = Colors.red;
-        break;
-      default:
-        icon = Icons.video_library;
-        bgColor = AppColors.greyDark;
-    }
 
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: bgColor.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Icon(
-        icon,
-        color: AppColors.pureWhite,
-        size: 14,
-      ),
-    );
-  }
 }

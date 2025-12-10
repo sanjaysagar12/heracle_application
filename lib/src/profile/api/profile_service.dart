@@ -12,12 +12,15 @@ class ProfileApiService {
       'name': 'Sanjay Sagar N',
       'username': '@sanjaysagar',
       'profileImageUrl': 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
+      'bannerUrl': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800',
       'isVerified': true,
+      'isViewer':true,
       'bio': 'Fitness enthusiast | Gym lover',
       'highlights': 123,
       'following': 230000,
       'followers': 23,
-      'isFollowing': false,
+      'isFollowing': true,
+      'hasStory': false,
     };
   }
 
@@ -115,6 +118,83 @@ class ProfileApiService {
     ];
   }
 
+  /// Get followers list
+  Future<List<Map<String, dynamic>>> getFollowers() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return [
+      {
+        'id': 'u1',
+        'name': 'Sarah Miller',
+        'username': 'sarah_m',
+        'profileImageUrl': 'https://i.pravatar.cc/150?img=47',
+        'isFollowing': true,
+      },
+      {
+        'id': 'u2',
+        'name': 'John Doe',
+        'username': 'johndoe',
+        'profileImageUrl': 'https://i.pravatar.cc/150?img=12',
+         'isFollowing': false,
+      },
+      {
+        'id': 'u3',
+        'name': 'Emma Wilson',
+        'username': 'emma_w',
+        'profileImageUrl': 'https://i.pravatar.cc/150?img=20',
+        'isFollowing': true,
+      },
+       {
+        'id': 'u4',
+        'name': 'Alex Thompson',
+        'username': 'alex_t',
+        'profileImageUrl': 'https://i.pravatar.cc/150?img=15',
+        'isFollowing': false,
+      },
+       {
+        'id': 'u5',
+        'name': 'Emily Davis',
+        'username': 'emily_d',
+        'profileImageUrl': 'https://i.pravatar.cc/150?img=5',
+        'isFollowing': true,
+      },
+    ];
+  }
+
+  /// Get following list
+  Future<List<Map<String, dynamic>>> getFollowing() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return [
+      {
+        'id': 'u6',
+        'name': 'Mike Ross',
+        'username': 'mikeross',
+        'profileImageUrl': 'https://i.pravatar.cc/150?img=13',
+        'isFollowing': true,
+      },
+      {
+        'id': 'u7',
+        'name': 'Rachel Green',
+        'username': 'rachelg',
+        'profileImageUrl': 'https://i.pravatar.cc/150?img=25',
+        'isFollowing': true,
+      },
+      {
+        'id': 'u1',
+        'name': 'Sarah Miller',
+        'username': 'sarah_m',
+        'profileImageUrl': 'https://i.pravatar.cc/150?img=47',
+        'isFollowing': true,
+      },
+       {
+        'id': 'u3',
+        'name': 'Emma Wilson',
+        'username': 'emma_w',
+        'profileImageUrl': 'https://i.pravatar.cc/150?img=20',
+        'isFollowing': true,
+      },
+    ];
+  }
+
   /// Get sessions data
   Future<List<Map<String, dynamic>>> getSessions() async {
     await Future.delayed(const Duration(milliseconds: 500));
@@ -122,17 +202,74 @@ class ProfileApiService {
     return [
       {
         'id': 's1',
-        'title': 'Morning Workout',
-        'date': '2024-12-09',
-        'duration': 45,
-        'exercises': 12,
+        'title': 'Chest Day',
+        'content': 'Heavy chest workout focused on strength', 
+        'category': 'Chest',
+        'exercisesCount': 3,
+        'position': 0,
+        'exercises': [
+           {
+             'id': 'e1', 
+             'name': 'Bench Press (Barbell)',
+             'desc': 'Chest',
+             'image': 'https://media.istockphoto.com/id/482806950/photo/bench-press-exercise.jpg?s=612x612&w=0&k=20&c=OwC49pB9P5P50GjWqXhQZ6IcF1sjXb1XwZp1Qy5Z5yU=',
+             'sets': [
+               {'kg': 20, 'reps': 12},
+               {'kg': 25, 'reps': 10},
+               {'kg': 30, 'reps': 8},
+             ]
+           },
+           {
+             'id': 'e2', 
+             'name': 'Incline Dumbbell Press',
+             'desc': 'Upper Chest',
+             'image': 'https://media.istockphoto.com/id/531536728/photo/incline-dumbbell-press.jpg?s=612x612&w=0&k=20&c=J5q1o7wX5z8K3n7b7x1o8jX9v4l2m0n3o6p9q2r5s8=',
+             'sets': [
+               {'kg': 15, 'reps': 12},
+               {'kg': 17.5, 'reps': 10},
+             ]
+           },
+           {
+             'id': 'e3', 
+             'name': 'Cable Flys',
+             'desc': 'Isolation',
+             'image': 'https://media.istockphoto.com/id/1132086660/photo/cable-crossover-exercise.jpg?s=612x612&w=0&k=20&c=1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f=',
+             'sets': [
+               {'kg': 10, 'reps': 15},
+               {'kg': 10, 'reps': 15},
+             ]
+           },
+        ],
       },
       {
         'id': 's2',
-        'title': 'Evening Cardio',
-        'date': '2024-12-08',
-        'duration': 30,
-        'exercises': 8,
+        'title': 'Leg Day',
+        'content': 'Quad focused leg workout',
+        'category': 'Legs',
+        'exercisesCount': 2,
+        'position': 1,
+        'exercises': [
+           {
+             'id': 'e4', 
+             'name': 'Squat (Barbell)',
+             'desc': 'Legs',
+             'image': 'https://media.istockphoto.com/id/597973710/photo/barbell-squat.jpg?s=612x612&w=0&k=20&c=3s4t5u6v7w8x9y0z1a2b3c4d5e6f7g8h9i0j1k2l=',
+             'sets': [
+               {'kg': 60, 'reps': 10},
+               {'kg': 80, 'reps': 8},
+             ]
+           },
+           {
+             'id': 'e5', 
+             'name': 'Leg Extension',
+             'desc': 'Quads',
+             'image': 'https://media.istockphoto.com/id/175438852/photo/leg-extension.jpg?s=612x612&w=0&k=20&c=5m6n7o8p9q0r1s2t3u4v5w6x7y8z9a0b1c2d3e4f=',
+             'sets': [
+               {'kg': 40, 'reps': 15},
+               {'kg': 45, 'reps': 12},
+             ]
+           },
+        ],
       },
     ];
   }
@@ -144,10 +281,100 @@ class ProfileApiService {
     return [
       {
         'id': 'p1',
-        'imageUrl': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400',
-        'caption': 'Great workout today!',
+        'type': 'workout',
+        'username': 'Sanjay Sagar N',
+        'handle': '@sanjaysagar',
+        'profileImage': 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
+        'isVerified': true,
+        'timeAgo': '2h ago',
+        'content': 'Great workout today! Focused on chest and triceps. Feeling stronger every day. #fitness #gym #workout',
         'likes': 150,
-        'comments': 23,
+        'commentCount': 23,
+        'isLiked': true,
+        'likedBy': [
+          {'name': 'John Doe', 'profileImage': 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100'},
+          {'name': 'Jane Smith', 'profileImage': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100'},
+        ],
+        'tags': ['Chest', 'Triceps', 'Strength'],
+        'duration': '1h 30m',
+        'volume': '12,500 kg',
+        'records': '3 PRs',
+        'images': [
+          'https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800',
+        ],
+        'exercises': [
+          {
+            'name': 'Bench Press',
+            'imageUrl': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=100',
+          },
+          {
+            'name': 'Tricep Pushdown',
+            'imageUrl': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100',
+          },
+          { 
+            'name': 'Bicep Curls',
+            'imageUrl': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100',
+          },
+          {
+            'name': 'Tricep Pushdown',
+            'imageUrl': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100',
+          },
+          {
+            'name': 'Tricep Pushdown',
+            'imageUrl': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100',
+          }
+        ],
+      },
+      {
+        'id': 'p2',
+        'type': 'nutrition',
+        'username': 'Sanjay Sagar N',
+        'handle': '@sanjaysagar',
+        'profileImage': 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
+        'isVerified': true,
+        'timeAgo': '5h ago',
+        'content': 'Post-workout meal: Chicken breast with rice and broccoli. Keeping it clean and simple.',
+        'likes': 85,
+        'commentCount': 10,
+        'isLiked': false,
+        'likedBy': [
+           {'name': 'Mike Ross', 'profileImage': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100'},
+        ],
+        'meals': [
+          { 
+            'mealType': 'Breakfast',
+            'content': 'Oatmeal with berries and almond butter',
+            'calories': 450,
+            'protein': 25,
+            'carbs': 50,
+            'fats': 15,
+            'images': [
+              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
+            ],
+          },
+          {
+            'mealType': 'Lunch',
+            'content': 'Chicken Breast, Rice & Broccoli',
+            'calories': 650,
+            'protein': 45,
+            'carbs': 60,
+            'fats': 15,
+            'images': [
+              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
+            ],
+          },
+          {
+            'mealType': 'Dinner',
+            'content': 'Grilled Salmon, Quinoa, Steamed Vegetables',
+            'calories': 550,
+            'protein': 35,
+            'carbs': 50,
+            'fats': 20,
+            'images': [
+              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
+            ],
+          }
+        ],
       },
     ];
   }
