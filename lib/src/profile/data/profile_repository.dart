@@ -3,6 +3,7 @@
 
 import '../api/profile_service.dart';
 import '../../workout/data/session_repository.dart';
+import '../../home/data/mutual_feed_repository.dart';
 
 /// User Profile Model
 class UserProfile {
@@ -171,39 +172,16 @@ class HighlightVideo {
 
 
 
-/// Post Model
-class ProfilePost {
-  final String id;
-  final String imageUrl;
-  final String caption;
-  final int likes;
-  final int comments;
-
-  ProfilePost({
-    required this.id,
-    required this.imageUrl,
-    required this.caption,
-    required this.likes,
-    required this.comments,
-  });
-
-  factory ProfilePost.fromJson(Map<String, dynamic> json) {
-    return ProfilePost(
-      id: json['id'] as String,
-      imageUrl: json['imageUrl'] as String,
-      caption: json['caption'] as String? ?? '',
-      likes: json['likes'] as int? ?? 0,
-      comments: json['comments'] as int? ?? 0,
-    );
-  }
-}
+// Remove local ProfilePost class as we now use FeedPost
 
 /// Profile Repository
 class ProfileRepository {
   final ProfileApiService _apiService;
+  final MutualFeedRepository _mutualFeedRepository; // Use composition for actions
 
-  ProfileRepository({ProfileApiService? apiService})
-      : _apiService = apiService ?? ProfileApiService();
+  ProfileRepository({ProfileApiService? apiService, MutualFeedRepository? mutualFeedRepository})
+      : _apiService = apiService ?? ProfileApiService(),
+        _mutualFeedRepository = mutualFeedRepository ?? MutualFeedRepository();
 
   /// Get user profile
   Future<UserProfile> getUserProfile() async {
@@ -274,10 +252,18 @@ class ProfileRepository {
   }
 
   /// Get posts
-  Future<List<ProfilePost>> getPosts() async {
+  Future<List<FeedPost>> getPosts() async {
     try {
       final data = await _apiService.getPosts();
-      return data.map((json) => ProfilePost.fromJson(json)).toList();
+      return data.map((json) {
+        final type = json['type'] as String;
+        if (type == 'workout') {
+          return WorkoutPost.fromJson(json);
+        } else if (type == 'nutrition') {
+          return NutritionPost.fromJson(json);
+        }
+        throw Exception('Unknown post type: $type');
+      }).toList();
     } catch (e) {
       throw Exception('Failed to load posts: $e');
     }
