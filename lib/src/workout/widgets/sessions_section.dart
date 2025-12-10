@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../data/session_repository.dart';
 import '../presentation/tab/log_workout_tab.dart';
 import '../presentation/tab/create_session_tab.dart';
+import '../presentation/view_session_page.dart';
 
 class SessionsSection extends StatefulWidget {
   final SessionRepository? repository;
@@ -435,16 +436,10 @@ class _SessionsSectionState extends State<SessionsSection> {
             child: widget.isViewOnly
                 ? OutlinedButton(
                     onPressed: () {
-                      // Navigate to CreateSessionTab in "view" mode (sessionToEdit provided)
-                      // However, create session tab allows editing. 
-                      // For now, let's open it. A real app would have a ReadOnly flag on CreateSessionTab too.
-                      // Or creating a log but not starting it?
-                      
-                      // Using CreateSessionTab with sessionToEdit:
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => CreateSessionTab(sessionToEdit: s),
+                          builder: (_) => ViewSessionPage(session: s),
                         ),
                       );
                     },

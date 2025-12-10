@@ -7,7 +7,8 @@ import 'src/profile/presentation/profile_page.dart';
 import 'widgets/nav_bar.dart';
 
 class AppPage extends StatefulWidget {
-  const AppPage({super.key});
+  final int initialIndex;
+  const AppPage({super.key, this.initialIndex = 0});
 
   @override
   State<AppPage> createState() => _AppPageState();
@@ -47,6 +48,7 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _index = widget.initialIndex;
     
     // Initialize animation controller for navbar
     _navBarAnimationController = AnimationController(
