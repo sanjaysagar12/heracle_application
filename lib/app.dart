@@ -160,16 +160,6 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
               _openCamera();
               return;
             }
-            
-            if (i == 3) {
-              // Navigate to profile page
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfilePage()),
-              );
-              return;
-            }
-
             setState(() => _index = i);
             _lastScrollPosition = 0;
           },
