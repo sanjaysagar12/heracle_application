@@ -233,9 +233,9 @@ class ProfileRepository {
         _mutualFeedRepository = mutualFeedRepository ?? MutualFeedRepository();
 
   /// Get user profile
-  Future<UserProfile> getUserProfile() async {
+  Future<UserProfile> getUserProfile(String username) async {
     try {
-      final data = await _apiService.getUserProfile();
+      final data = await _apiService.getUserProfile(username);
       return UserProfile.fromJson(data);
     } catch (e) {
       throw Exception('Failed to load profile: $e');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../profile/data/profile_repository.dart';
+import '../../../route.dart';
 
 class ConnectionsPage extends StatefulWidget {
   final int initialIndex;
@@ -136,6 +137,13 @@ class _ConnectionsPageState extends State<ConnectionsPage> with SingleTickerProv
       itemBuilder: (context, index) {
         final user = users[index];
         return ListTile(
+          onTap: () {
+            Navigator.pushNamed(
+              context,
+              AppRoutes.profile,
+              arguments: user.username,
+            );
+          },
           leading: CircleAvatar(
             backgroundImage: NetworkImage(user.profileImageUrl),
             radius: 24,

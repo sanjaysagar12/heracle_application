@@ -25,7 +25,8 @@ import '../../home/widgets/workout_post_card.dart';
 import '../../home/widgets/nutrition_post_card.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final String? username;
+  const ProfilePage({super.key, this.username});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -56,8 +57,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadData() async {
     try {
+      final targetUsername = widget.username ?? '@sanjaysagar';
       final results = await Future.wait([
-        _repository.getUserProfile(),
+        _repository.getUserProfile(targetUsername),
         _repository.getAllHighlights(),
         _repository.getSessions(),
         _repository.getPosts(),

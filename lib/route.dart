@@ -15,7 +15,10 @@ class AppRoutes {
       case auth:
         return MaterialPageRoute(builder: (_) => const AuthScreen());
       case profile:
-        return MaterialPageRoute(builder: (_) => const ProfilePage());
+        final username = settings.arguments as String?;
+        return MaterialPageRoute(
+          builder: (_) => ProfilePage(username: username),
+        );
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

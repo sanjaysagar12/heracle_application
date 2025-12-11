@@ -1,27 +1,15 @@
-// Profile API Service
-// Provides mock data for profile page - simulates API responses
+import 'package:dio/dio.dart';
+import '../../../core/network/dio_client.dart';
 
 class ProfileApiService {
   /// Get user profile data
-  Future<Map<String, dynamic>> getUserProfile() async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    return {
-      'id': 'user_001',
-      'name': 'Sanjay Sagar N',
-      'username': '@sanjaysagar',
-      'profileImageUrl': 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
-      'bannerUrl': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800',
-      'isVerified': true,
-      'isViewer':true,
-      'bio': 'Fitness enthusiast | Gym lover',
-      'highlights': 123,
-      'following': 230000,
-      'followers': 23,
-      'isFollowing': true,
-      'hasStory': false,
-    };
+  Future<Map<String, dynamic>> getUserProfile(String username) async {
+    try {
+      final response = await DioClient().dio.get('/api/user/$username');
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to load profile: $e');
+    }
   }
 
   /// Get workout categories/tags
@@ -33,7 +21,7 @@ class ProfileApiService {
       {'id': '2', 'name': 'Biceps', 'isSelected': false},
       {'id': '3', 'name': 'Triceps', 'isSelected': false},
       {'id': '4', 'name': 'Chest', 'isSelected': false},
-      {'id': '5', 'name': 'Back', 'isSelected': false},
+      {'id': '5', 'name': 'Back', 'isSelected': falclearse},
       {'id': '6', 'name': 'Legs', 'isSelected': false},
     ];
   }
