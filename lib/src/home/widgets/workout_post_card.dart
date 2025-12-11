@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
+import '../../../route.dart'; // Add import at top
 
 class WorkoutPostCard extends StatefulWidget {
   final String username;
@@ -52,6 +53,14 @@ class WorkoutPostCard extends StatefulWidget {
 class _WorkoutPostCardState extends State<WorkoutPostCard> {
   bool _isExpanded = false;
 
+  void _navigateToProfile() {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.profile,
+      arguments: widget.handle,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -83,43 +92,47 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
   }
 
   Widget _buildHeader() {
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 24,
-          backgroundImage: NetworkImage(widget.profileImage),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.username,
-                style: const TextStyle(
-                  color: AppColors.pureWhite,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                widget.handle,
-                style: const TextStyle(
-                  color: AppColors.white60,
-                  fontSize: 14,
-                ),
-              ),
-            ],
+    return GestureDetector(
+      onTap: _navigateToProfile,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundImage: NetworkImage(widget.profileImage),
           ),
-        ),
-        Text(
-          widget.timeAgo,
-          style: const TextStyle(
-            color: AppColors.white60,
-            fontSize: 14,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.username,
+                  style: const TextStyle(
+                    color: AppColors.pureWhite,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  widget.handle,
+                  style: const TextStyle(
+                    color: AppColors.white60,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          Text(
+            widget.timeAgo,
+            style: const TextStyle(
+              color: AppColors.white60,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
