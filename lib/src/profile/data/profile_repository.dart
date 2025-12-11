@@ -245,8 +245,14 @@ class ProfileRepository {
   /// Get workout categories
   Future<List<WorkoutCategory>> getWorkoutCategories() async {
     try {
-      final data = await _apiService.getWorkoutCategories();
-      return data.map((json) => WorkoutCategory.fromJson(json)).toList();
+      final sessions = await getSessions();
+      final categoryNames = sessions.map((s) => s.category).toSet().toList();
+      
+      return categoryNames.map((name) => WorkoutCategory(
+        id: name.toLowerCase(),
+        name: name,
+        isSelected: false,
+      )).toList();
     } catch (e) {
       throw Exception('Failed to load categories: $e');
     }

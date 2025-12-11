@@ -12,19 +12,7 @@ class ProfileApiService {
     }
   }
 
-  /// Get workout categories/tags
-  Future<List<Map<String, dynamic>>> getWorkoutCategories() async {
-    await Future.delayed(const Duration(milliseconds: 300));
 
-    return [
-      {'id': '1', 'name': 'Functional', 'isSelected': true},
-      {'id': '2', 'name': 'Biceps', 'isSelected': false},
-      {'id': '3', 'name': 'Triceps', 'isSelected': false},
-      {'id': '4', 'name': 'Chest', 'isSelected': false},
-      {'id': '5', 'name': 'Back', 'isSelected': false},
-      {'id': '6', 'name': 'Legs', 'isSelected': false},
-    ];
-  }
 
   /// Get highlights (video posts)
   Future<List<Map<String, dynamic>>> getHighlights({String? category}) async {
@@ -192,7 +180,7 @@ class ProfileApiService {
         'id': 's1',
         'title': 'Chest Day',
         'content': 'Heavy chest workout focused on strength', 
-        'category': 'Chest',
+        'category': 'Chest Day',
         'exercisesCount': 3,
         'position': 0,
         'exercises': [
