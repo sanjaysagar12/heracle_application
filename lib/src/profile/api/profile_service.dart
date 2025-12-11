@@ -21,7 +21,7 @@ class ProfileApiService {
       {'id': '2', 'name': 'Biceps', 'isSelected': false},
       {'id': '3', 'name': 'Triceps', 'isSelected': false},
       {'id': '4', 'name': 'Chest', 'isSelected': false},
-      {'id': '5', 'name': 'Back', 'isSelected': falclearse},
+      {'id': '5', 'name': 'Back', 'isSelected': false},
       {'id': '6', 'name': 'Legs', 'isSelected': false},
     ];
   }
