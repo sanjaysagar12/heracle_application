@@ -301,11 +301,11 @@ class ProfileRepository {
   }
 
   /// Get posts
-  Future<List<FeedPost>> getPosts() async {
+  Future<List<FeedPost>> getPosts(String username) async {
     try {
-      final data = await _apiService.getPosts();
+      final data = await _apiService.getUserPosts(username);
       return data.map((json) {
-        final type = json['type'] as String;
+        final type = json['type'] as String? ?? 'workout';
         if (type == 'workout') {
           return WorkoutPost.fromJson(json);
         } else if (type == 'nutrition') {

@@ -262,108 +262,21 @@ class ProfileApiService {
     ];
   }
 
-  /// Get posts data
-  Future<List<Map<String, dynamic>>> getPosts() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    return [
-      {
-        'id': 'p1',
-        'type': 'workout',
-        'username': 'Sanjay Sagar N',
-        'handle': '@sanjaysagar',
-        'profileImage': 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
-        'isVerified': true,
-        'timeAgo': '2h ago',
-        'content': 'Great workout today! Focused on chest and triceps. Feeling stronger every day. #fitness #gym #workout',
-        'likes': 150,
-        'commentCount': 23,
-        'isLiked': true,
-        'likedBy': [
-          {'name': 'John Doe', 'profileImage': 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100'},
-          {'name': 'Jane Smith', 'profileImage': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100'},
-        ],
-        'tags': ['Chest', 'Triceps', 'Strength'],
-        'duration': '1h 30m',
-        'volume': '12,500 kg',
-        'records': '3 PRs',
-        'images': [
-          'https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800',
-        ],
-        'exercises': [
-          {
-            'name': 'Bench Press',
-            'imageUrl': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=100',
-          },
-          {
-            'name': 'Tricep Pushdown',
-            'imageUrl': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100',
-          },
-          { 
-            'name': 'Bicep Curls',
-            'imageUrl': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100',
-          },
-          {
-            'name': 'Tricep Pushdown',
-            'imageUrl': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100',
-          },
-          {
-            'name': 'Tricep Pushdown',
-            'imageUrl': 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100',
-          }
-        ],
-      },
-      {
-        'id': 'p2',
-        'type': 'nutrition',
-        'username': 'Sanjay Sagar N',
-        'handle': '@sanjaysagar',
-        'profileImage': 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
-        'isVerified': true,
-        'timeAgo': '5h ago',
-        'content': 'Post-workout meal: Chicken breast with rice and broccoli. Keeping it clean and simple.',
-        'likes': 85,
-        'commentCount': 10,
-        'isLiked': false,
-        'likedBy': [
-           {'name': 'Mike Ross', 'profileImage': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100'},
-        ],
-        'meals': [
-          { 
-            'mealType': 'Breakfast',
-            'content': 'Oatmeal with berries and almond butter',
-            'calories': 450,
-            'protein': 25,
-            'carbs': 50,
-            'fats': 15,
-            'images': [
-              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
-            ],
-          },
-          {
-            'mealType': 'Lunch',
-            'content': 'Chicken Breast, Rice & Broccoli',
-            'calories': 650,
-            'protein': 45,
-            'carbs': 60,
-            'fats': 15,
-            'images': [
-              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
-            ],
-          },
-          {
-            'mealType': 'Dinner',
-            'content': 'Grilled Salmon, Quinoa, Steamed Vegetables',
-            'calories': 550,
-            'protein': 35,
-            'carbs': 50,
-            'fats': 20,
-            'images': [
-              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
-            ],
-          }
-        ],
-      },
-    ];
+  /// Get user posts data
+  Future<List<Map<String, dynamic>>> getUserPosts(String username) async {
+    try {
+      // Clean username if it starts with @
+      final cleanUsername = username.startsWith('@') ? username.substring(1) : username;
+      final response = await DioClient().dio.get('https://leno-api-heracle.portos.cloud/api/user/$cleanUsername/posts');
+      
+      if (response.data is List) {
+        return List<Map<String, dynamic>>.from(response.data);
+      }
+      return [];
+    } catch (e) {
+      // internal error or network error, return empty list or rethrow
+      // For now we rethrow to let repository handle it
+      throw Exception('Failed to load user posts: $e');
+    }
   }
 }
