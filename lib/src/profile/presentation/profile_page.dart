@@ -16,13 +16,6 @@ import '../../home/widgets/comments_bottom_sheet.dart';
 import '../../home/widgets/likes_bottom_sheet.dart';
 import '../../home/widgets/workout_post_card.dart';
 import '../../home/widgets/nutrition_post_card.dart';
-import '../../workout/widgets/sessions_section.dart';
-import '../../workout/data/session_repository.dart';
-import '../../home/data/mutual_feed_repository.dart';
-import '../../home/widgets/comments_bottom_sheet.dart';
-import '../../home/widgets/likes_bottom_sheet.dart';
-import '../../home/widgets/workout_post_card.dart';
-import '../../home/widgets/nutrition_post_card.dart';
 
 class ProfilePage extends StatefulWidget {
   final String? username;
@@ -62,7 +55,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _repository.getUserProfile(targetUsername),
         _repository.getAllHighlights(),
         _repository.getSessions(),
-        _repository.getPosts(),
+        _repository.getPosts(targetUsername),
       ]);
 
       setState(() {
