@@ -1,5 +1,6 @@
 import '../storage/workout_session_storage.dart';
 import '../storage/workout_logs_storage.dart';
+import '../api/workout_session_api_service.dart';
 
 class Session {
   final String id;
@@ -45,21 +46,40 @@ class WorkoutLog {
   });
 }
 
+
+
 class SessionRepository {
   final WorkoutSessionStorage _sessionStorage;
   final WorkoutLogsStorage _logsStorage;
+  final WorkoutSessionApiService _apiService;
   
   SessionRepository({
     WorkoutSessionStorage? sessionStorage,
     WorkoutLogsStorage? logsStorage,
+    WorkoutSessionApiService? apiService,
   }) : _sessionStorage = sessionStorage ?? WorkoutSessionStorage.instance,
-       _logsStorage = logsStorage ?? WorkoutLogsStorage.instance;
+       _logsStorage = logsStorage ?? WorkoutLogsStorage.instance,
+       _apiService = apiService ?? WorkoutSessionApiService();
   
   Future<List<Session>> getSessionsFromDb() async {
     return await _sessionStorage.getAllSessions();
   }
 
   Future<void> saveSessionToDb(Session session) async {
+    try {
+      await _apiService.createSession(session);
+      // If API success, we can optionally update the ID if the backend returns one,
+      // but the current requirements just say "send post request ... and then store it".
+      // We will proceed to store in local DB.
+    } catch (e) {
+       print('Failed to save session to API: $e');
+       // We continue to save locally even if API fails, or rethrow?
+       // The user prompt implies a flow: "send post ... and then store it".
+       // I'll log it and continue to save locally for now, as offline-first is better.
+       // However, strictly speaking, if API fails we might want to let the UI know.
+       // I'll rethrow for now so the UI shows the error as per my plan "Handle success/failure".
+       rethrow; 
+    }
     await _sessionStorage.insertSession(session);
   }
 

@@ -173,81 +173,17 @@ class ProfileApiService {
 
   /// Get sessions data
   Future<List<Map<String, dynamic>>> getSessions() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    return [
-      {
-        'id': 's1',
-        'title': 'Chest Day',
-        'content': 'Heavy chest workout focused on strength', 
-        'category': 'Chest Day',
-        'exercisesCount': 3,
-        'position': 0,
-        'exercises': [
-           {
-             'id': 'e1', 
-             'name': 'Bench Press (Barbell)',
-             'desc': 'Chest',
-             'image': 'https://media.istockphoto.com/id/482806950/photo/bench-press-exercise.jpg?s=612x612&w=0&k=20&c=OwC49pB9P5P50GjWqXhQZ6IcF1sjXb1XwZp1Qy5Z5yU=',
-             'sets': [
-               {'kg': 20, 'reps': 12},
-               {'kg': 25, 'reps': 10},
-               {'kg': 30, 'reps': 8},
-             ]
-           },
-           {
-             'id': 'e2', 
-             'name': 'Incline Dumbbell Press',
-             'desc': 'Upper Chest',
-             'image': 'https://media.istockphoto.com/id/531536728/photo/incline-dumbbell-press.jpg?s=612x612&w=0&k=20&c=J5q1o7wX5z8K3n7b7x1o8jX9v4l2m0n3o6p9q2r5s8=',
-             'sets': [
-               {'kg': 15, 'reps': 12},
-               {'kg': 17.5, 'reps': 10},
-             ]
-           },
-           {
-             'id': 'e3', 
-             'name': 'Cable Flys',
-             'desc': 'Isolation',
-             'image': 'https://media.istockphoto.com/id/1132086660/photo/cable-crossover-exercise.jpg?s=612x612&w=0&k=20&c=1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f=',
-             'sets': [
-               {'kg': 10, 'reps': 15},
-               {'kg': 10, 'reps': 15},
-             ]
-           },
-        ],
-      },
-      {
-        'id': 's2',
-        'title': 'Leg Day',
-        'content': 'Quad focused leg workout',
-        'category': 'Legs',
-        'exercisesCount': 2,
-        'position': 1,
-        'exercises': [
-           {
-             'id': 'e4', 
-             'name': 'Squat (Barbell)',
-             'desc': 'Legs',
-             'image': 'https://media.istockphoto.com/id/597973710/photo/barbell-squat.jpg?s=612x612&w=0&k=20&c=3s4t5u6v7w8x9y0z1a2b3c4d5e6f7g8h9i0j1k2l=',
-             'sets': [
-               {'kg': 60, 'reps': 10},
-               {'kg': 80, 'reps': 8},
-             ]
-           },
-           {
-             'id': 'e5', 
-             'name': 'Leg Extension',
-             'desc': 'Quads',
-             'image': 'https://media.istockphoto.com/id/175438852/photo/leg-extension.jpg?s=612x612&w=0&k=20&c=5m6n7o8p9q0r1s2t3u4v5w6x7y8z9a0b1c2d3e4f=',
-             'sets': [
-               {'kg': 40, 'reps': 15},
-               {'kg': 45, 'reps': 12},
-             ]
-           },
-        ],
-      },
-    ];
+    try {
+      final response = await DioClient().dio.get('/api/workout/sessions');
+      
+      if (response.statusCode == 200) {
+        return List<Map<String, dynamic>>.from(response.data);
+      } else {
+        throw Exception('Failed to load sessions: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to load sessions: $e');
+    }
   }
 
   /// Get user posts data
