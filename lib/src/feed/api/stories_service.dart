@@ -227,6 +227,7 @@ class StoriesService {
           'content': item['caption'] ?? '',
           'hashtags': _extractHashtags(item['caption'] ?? ''),
           'imageUrl': item['mediaUrl'] ?? '',
+          'thumbnail': item['thumbnail'] ?? '',
           'mediaType': item['mediaType'] ?? 'IMAGE',
           'platform': 'Heracle', // Default platform for internal feed
           'platformHandle': '@${user['username'] ?? ''}',

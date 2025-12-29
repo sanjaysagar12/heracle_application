@@ -180,6 +180,7 @@ class DiscoverStory {
   final String content;
   final List<String> hashtags;
   final String? imageUrl;
+  final String? thumbnail;
   final String? platform;
   final String? platformHandle;
   final String? label;
@@ -197,8 +198,9 @@ class DiscoverStory {
     required this.content,
     required this.hashtags,
     required this.imageUrl,
-    required this.platform,
-    required this.platformHandle,
+    this.thumbnail,
+    this.platform,
+    this.platformHandle,
     this.label,
     required this.timeAgo,
     this.isLiked = false,
@@ -218,11 +220,12 @@ class DiscoverStory {
               ?.map((e) => e as String)
               .toList() ??
           [],
-      imageUrl: json['imageUrl'] as String,
-      platform: json['platform'] as String,
-      platformHandle: json['platformHandle'] as String,
+      imageUrl: json['imageUrl'] as String? ?? '',
+      thumbnail: json['thumbnail'] as String?,
+      platform: json['platform'] as String?,
+      platformHandle: json['platformHandle'] as String?,
       label: json['label'] as String?,
-      timeAgo: json['timeAgo'] as String,
+      timeAgo: json['timeAgo'] as String? ?? '',
       isLiked: json['isLiked'] as bool? ?? false,
       likesCount: json['likesCount'] as int? ?? 0,
       likedBy: (json['likedBy'] as List<dynamic>?)
@@ -240,6 +243,7 @@ class DiscoverStory {
     String? content,
     List<String>? hashtags,
     String? imageUrl,
+    String? thumbnail,
     String? platform,
     String? platformHandle,
     String? label,
@@ -257,6 +261,7 @@ class DiscoverStory {
       content: content ?? this.content,
       hashtags: hashtags ?? this.hashtags,
       imageUrl: imageUrl ?? this.imageUrl,
+      thumbnail: thumbnail ?? this.thumbnail,
       platform: platform ?? this.platform,
       platformHandle: platformHandle ?? this.platformHandle,
       label: label ?? this.label,

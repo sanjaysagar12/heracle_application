@@ -31,8 +31,10 @@ class DiscoverStoryCard extends StatelessWidget {
               children: [
                 Center(
                   child: Image.network(
-                    story.imageUrl ?? '',
-                    fit: BoxFit.contain,
+                    (story.mediaType == 'VIDEO' && story.thumbnail != null && story.thumbnail!.isNotEmpty)
+                        ? story.thumbnail!
+                        : (story.imageUrl ?? ''),
+                    fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         color: Colors.grey[900],
