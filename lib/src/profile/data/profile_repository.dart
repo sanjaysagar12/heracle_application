@@ -4,6 +4,7 @@
 import '../api/profile_service.dart';
 import '../../workout/data/session_repository.dart';
 import '../../home/data/mutual_feed_repository.dart';
+import '../../feed/data/stories_repository.dart'; // Added import
 
 /// User Profile Model
 class UserProfile {
@@ -278,7 +279,60 @@ class ProfileRepository {
     }
   }
 
-  /// Get all highlights without filtering
+  /// Get user feed items (replaces getAllHighlights for feed tab)
+  Future<List<DiscoverStory>> getUserFeed(String userId) async {
+    try {
+      final data = await _apiService.getUserFeed(userId);
+      // Ensure 'items' exists and is a list
+      final items = (data['items'] as List<dynamic>?) ?? [];
+      
+      return items.map((item) {
+        final user = item['user'] as Map<String, dynamic>;
+        final createdAt = item['createdAt'] as String;
+        
+        return DiscoverStory(
+          id: item['id'],
+          username: user['username'] ?? '',
+          profileImage: user['avatarUrl'] ?? '',
+          content: item['caption'] ?? '',
+          hashtags: [], // API doesn't seem to return hashtags in this feed endpoint yet
+          imageUrl: item['mediaUrl'] ?? '',
+          thumbnail: item['thumbnail'] ?? '', // Add thumbnail support
+          mediaType: item['mediaType'] ?? 'IMAGE',
+          platform: 'Heracle',
+          platformHandle: '@${user['username'] ?? ''}',
+          timeAgo: _calculateTimeAgo(createdAt),
+          isLiked: item['isLiked'] ?? false,
+          likesCount: item['likeCount'] ?? 0,
+          likedBy: [],
+        );
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to load user feed: $e');
+    }
+  }
+
+  String _calculateTimeAgo(String createdAt) {
+    try {
+      final date = DateTime.parse(createdAt);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Recently';
+    }
+  }
+
+  /// Get all highlights without filtering (Deprecating in favor of getUserFeed for main feed)
   Future<List<HighlightVideo>> getAllHighlights() async {
     try {
       final data = await _apiService.getHighlights();

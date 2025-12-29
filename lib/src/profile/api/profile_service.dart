@@ -12,6 +12,16 @@ class ProfileApiService {
     }
   }
 
+  /// Get user feed
+  Future<Map<String, dynamic>> getUserFeed(String userId) async {
+    try {
+      final response = await DioClient().dio.get('/api/user/$userId/feed');
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to load user feed: $e');
+    }
+  }
+
 
 
   /// Get highlights (video posts)

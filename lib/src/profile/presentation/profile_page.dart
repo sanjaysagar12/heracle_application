@@ -29,7 +29,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final ProfileRepository _repository = ProfileRepository();
   
   UserProfile? _profile;
-  List<HighlightVideo> _highlights = [];
+  // List<HighlightVideo> _highlights = []; // Removed
   List<Session> _sessions = [];
   List<DiscoverStory> _discoverStories = []; // For ReelsTab navigation
   
@@ -51,19 +51,23 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _loadData() async {
     try {
       final targetUsername = widget.username ?? '@sanjaysagar';
+      
+      // 1. Get profile first to get ID
+      final profile = await _repository.getUserProfile(targetUsername);
+      
+      // 2. Fetch independent data in parallel
       final results = await Future.wait([
-        _repository.getUserProfile(targetUsername),
-        _repository.getAllHighlights(),
+        _repository.getUserFeed(profile.id), // Use new feed endpoint
         _repository.getSessions(),
         _repository.getPosts(targetUsername),
       ]);
 
       setState(() {
-        _profile = results[0] as UserProfile;
-        _highlights = results[1] as List<HighlightVideo>;
-        _sessions = results[2] as List<Session>;
-        _posts = results[3] as List<FeedPost>;
-        _discoverStories = _convertToDiscoverStories(_highlights, _profile!);
+        _profile = profile;
+        _discoverStories = results[0] as List<DiscoverStory>; // Feed items directly as DiscoverStory
+        _sessions = results[1] as List<Session>;
+        _posts = results[2] as List<FeedPost>;
+        _posts = results[2] as List<FeedPost>;
         _isLoading = false;
       });
     } catch (e) {
@@ -95,27 +99,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  /// Convert HighlightVideo list to DiscoverStory list for ReelsTab
-  List<DiscoverStory> _convertToDiscoverStories(List<HighlightVideo> highlights, UserProfile profile) {
-    return highlights.map((highlight) {
-      return DiscoverStory(
-        id: highlight.id,
-        username: profile.name,
-        profileImage: profile.profileImageUrl,
-        content: highlight.category,
-        hashtags: [highlight.category],
-        imageUrl: highlight.thumbnailUrl,
-        platform: highlight.platform,
-        platformHandle: profile.username,
-        timeAgo: 'Recently',
-        isLiked: false,
-        likesCount: 0,
-        likedBy: [],
-        isViewed: false,
-        mediaType: 'VIDEO',
-      );
-    }).toList();
-  }
+  // _convertToDiscoverStories removed as we now fetch DiscoverStory directly
 
   /// Handle like action for reels
   List<DiscoverStory> _handleReelLike(String storyId) {
@@ -347,8 +331,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _onHighlightTap(HighlightVideo highlight) {
-    final index = _highlights.indexWhere((h) => h.id == highlight.id);
+  void _onHighlightTap(DiscoverStory highlight) {
+    final index = _discoverStories.indexWhere((h) => h.id == highlight.id);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -471,7 +455,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       children: [
         HighlightGrid(
-          highlights: _highlights,
+          highlights: _discoverStories,
           onHighlightTap: _onHighlightTap,
         ),
       ],
