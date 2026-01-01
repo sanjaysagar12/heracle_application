@@ -1,52 +1,101 @@
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:heracle/core/network/dio_client.dart';
 import 'package:heracle/core/helper/constants.dart';
 import 'package:dio/dio.dart';
 
 class AuthService {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final Dio _dio = DioClient().dio;
 
-  Future<String> _getGoogleIdToken() async {
-    final googleSignIn = GoogleSignIn.instance;
+  Future<String> signInWithGoogle() async {
+    try {
+      // Initialize GoogleSignIn (required in version 7.x)
+      print("Initializing Google Sign In...");
+      await GoogleSignIn.instance.initialize();
+      
+      // Trigger the authentication flow
+      print("Starting Google Sign In...");
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
 
-    await googleSignIn.initialize(
-      clientId: GoogleConfig.clientId,
-      serverClientId: GoogleConfig.serverClientId,
-    );
+      if (googleUser == null) {
+        throw Exception('Google Sign In aborted by user');
+      }
 
-    final account = await googleSignIn.authenticate();
+      print("Google User: ${googleUser.email}");
 
-    final auth = await account.authentication;
-    final idToken = auth.idToken;
-    return idToken!;
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      print("Got Google Auth tokens");
+      print("ID Token: ${googleAuth.idToken != null ? 'Present' : 'Missing'}");
+
+      // Create a new credential (google_sign_in 7.x only provides idToken)
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      print("Signing in to Firebase...");
+
+      // Once signed in, return the UserCredential
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        print('-----------------------------------------');
+        print('Successfully signed in with Google!');
+        print('UID: ${user.uid}');
+        print('Email: ${user.email}');
+        print('DisplayName: ${user.displayName}');
+        print('PhotoURL: ${user.photoURL}');
+        print('-----------------------------------------');
+        
+        // Return the ID token
+        final String? idToken = await user.getIdToken();
+        if (idToken == null) throw Exception("Failed to retrieve ID Token");
+        
+        // Verify with backend
+        print("Verifying with backend...");
+        final backendToken = await _verifyWithBackend(idToken);
+        print("Backend verification successful!");
+        return backendToken;
+      } else {
+        throw Exception('Firebase Sign In failed: User is null');
+      }
+    } catch (e) {
+      print("Error in signInWithGoogle: $e");
+      rethrow;
+    }
   }
 
   Future<String> _verifyWithBackend(String idToken) async {
+    print("Verifying with backend...");
+    print("ID Token: $idToken");
     try {
       final res = await _dio.post(
         "/api/auth/google/token",
         data: {"idToken": idToken},
       );
-      if (res.statusCode == 201 && res.data['token'] != null) {
-        return res.data['token'];
+      
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        if (res.data['token'] != null) {
+          return res.data['token'];
+        }
+        throw Exception("Response missing 'token' field");
       } else {
-        throw Exception("Unexpected response from backend");
+        throw Exception("Backend responded with status: ${res.statusCode}");
       }
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout) {
-        throw Exception("Connection timed out. Check your network.");
-      } else if (e.response != null) {
+      print("Dio Error verifying with backend: ${e.message}");
+      if (e.response != null) {
+        print("Backend response data: ${e.response?.data}");
         throw Exception("Server error: ${e.response?.data}");
-      } else {
-        throw Exception("Network error: ${e.message}");
       }
+      rethrow;
+    } catch (e) {
+      print("Error verifying with backend: $e");
+      rethrow;
     }
-  }
-
-  Future<String> signInWithGoogle() async {
-    final idToken = await _getGoogleIdToken();
-    final jwt = await _verifyWithBackend(idToken);
-    return jwt;
   }
 
   Future<String> devAuth(String email) async {
@@ -68,3 +117,4 @@ class AuthService {
     }
   }
 }
+

@@ -129,8 +129,15 @@ class _AuthScreenState extends State<AuthScreen> {
                 onPressed: () async {
                   try {
                     await AuthRepository().signInWithGoogle();
-                    Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+                    if (context.mounted) {
+                      Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+                    }
                   } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Signin Failed: $e')),
+                      );
+                    }
                   }
                 },
                 child: const Text('Signin'),
