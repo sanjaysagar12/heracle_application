@@ -5,7 +5,9 @@ class ProfileApiService {
   /// Get user profile data
   Future<Map<String, dynamic>> getUserProfile(String username) async {
     try {
-      final response = await DioClient().dio.get('/api/user/$username');
+      // Clean username if it starts with @
+      final cleanUsername = username.startsWith('@') ? username.substring(1) : username;
+      final response = await DioClient().dio.get('/api/user/$cleanUsername');
       return response.data;
     } catch (e) {
       throw Exception('Failed to load profile: $e');
