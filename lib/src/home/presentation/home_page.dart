@@ -90,8 +90,58 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
-    if (result == true) {
-      _loadData(); // Reload to fetch updated post
+
+    // result is now a Map or null if cancelled (or true/false from other paths if any, but we expect Map)
+    if (result != null && result is Map) {
+      final updatedCaption = result['caption'] as String;
+      final updatedTags = result['tags'] as List<String>;
+
+      setState(() {
+        _posts = _posts.map((p) {
+          if (p.id == post.id && p is WorkoutPost) { // Update only target post
+             // Since WorkoutPost is immutable and doesn't have a copyWith for specific fields like caption/tags in the abstract class easily or custom copyWith:
+             // We need to cast and use copyWith or create new instance. 
+             // Let's check WorkoutPost definition in mutual_feed_repository.dart. 
+             // It calls super with content. copyWith in WorkoutPost takes content? 
+             // Let's verify WorkoutPost copyWith.
+             
+             // Wait, WorkoutPost.copyWith signature:
+             // WorkoutPost copyWith({bool? isLiked, int? likes, int? commentCount})
+             // It does NOT support changing content or tags!
+             
+             // I need to update WorkoutPost to support full copyWith or reconstruct it.
+             // For now, I will reconstruct it manually here or update the repo model first.
+             // Better to update the repo model to allow full copyWith.
+             
+             // BUT, I can't update repo model in this step easily without context switch.
+             // Let's assum "copyWith" is limited.
+             // I will create a new WorkoutPost instance.
+             return WorkoutPost(
+              id: p.id,
+              username: p.username,
+              handle: p.handle,
+              profileImage: p.profileImage,
+              timeAgo: p.timeAgo,
+              content: updatedCaption, // Updated
+              tags: updatedTags, // Updated
+              images: p.images,
+              duration: p.duration,
+              volume: p.volume,
+              records: p.records,
+              exercises: p.exercises,
+              likes: p.likes,
+              likedBy: p.likedBy,
+              isLiked: p.isLiked,
+              isOwnPost: p.isOwnPost,
+              commentCount: p.commentCount,
+             );
+          }
+          return p;
+        }).toList();
+      });
+      
+      // Still reload data in background to be safe
+      _loadData(); 
     }
   }
 

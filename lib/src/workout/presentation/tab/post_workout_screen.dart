@@ -157,7 +157,10 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Workout updated successfully!')),
           );
-          Navigator.pop(context, true); // Return true to signal update
+          Navigator.pop(context, {
+            'caption': _captionController.text,
+            'tags': _tags,
+          }); // Return data to signal update
         }
       } else {
         await _repository.postWorkout(

@@ -261,8 +261,38 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
 
-    if (result == true) {
-      _loadData(); // Reload to fetch updated post
+    if (result != null && result is Map) {
+      final updatedCaption = result['caption'] as String;
+      final updatedTags = result['tags'] as List<String>;
+
+      setState(() {
+        _posts = _posts.map((p) {
+          if (p.id == post.id && p is WorkoutPost) {
+             return WorkoutPost(
+              id: p.id,
+              username: p.username,
+              handle: p.handle,
+              profileImage: p.profileImage,
+              timeAgo: p.timeAgo,
+              content: updatedCaption,
+              tags: updatedTags,
+              images: p.images,
+              duration: p.duration,
+              volume: p.volume,
+              records: p.records,
+              exercises: p.exercises,
+              likes: p.likes,
+              likedBy: p.likedBy,
+              isLiked: p.isLiked,
+              isOwnPost: p.isOwnPost,
+              commentCount: p.commentCount,
+             );
+          }
+          return p;
+        }).toList();
+      });
+      
+      _loadData(); 
     }
   }
 
