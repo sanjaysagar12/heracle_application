@@ -7,12 +7,15 @@ class ExerciseRepository {
     try {
       final data = await _service.fetchExercises();
       
-      return data.map((e) => {
-        'id': (e['_id'] ?? e['id'])?.toString() ?? '',
-        'name': e['name']?.toString() ?? '',
-        'desc': e['description']?.toString() ?? '',
-        'image': e['gifUrl']?.toString() ?? '',
-        'category': e['bodyPart']?.toString() ?? 'Other',
+      return data.map((e) {
+        final categories = e['category'] is List ? (e['category'] as List).join(', ') : (e['category']?.toString() ?? 'Other');
+        return {
+          'id': (e['id'] ?? e['_id'])?.toString() ?? '',
+          'name': e['name']?.toString() ?? '',
+          'desc': e['desc']?.toString() ?? e['description']?.toString() ?? '',
+          'image': e['image']?.toString() ?? e['gifUrl']?.toString() ?? '',
+          'category': categories,
+        };
       }).toList();
     } catch (e) {
       // Fallback to empty list or rethrow depending on requirement
