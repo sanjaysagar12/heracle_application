@@ -1,3 +1,4 @@
+import '../../core/network/cache_manager.dart';
 import '../api/progress_service.dart';
 import '../service/steps_counter.dart';
 import 'targets_repository.dart';
@@ -83,6 +84,7 @@ class ProgressRepository {
   final ProgressService _progressService;
   final StepsCounter _stepsCounter = StepsCounter();
   final TargetsRepository _targetsRepository = TargetsRepository();
+  final CacheManager _cacheManager = CacheManager();
 
   ProgressRepository({ProgressService? progressService})
       : _progressService = progressService ?? ProgressService();
@@ -90,28 +92,37 @@ class ProgressRepository {
   Future<ProgressCard> getTodayProgress() async {
     try {
       final results = await Future.wait([
-        _progressService.getTodayProgress(),
-        _targetsRepository.getAllTargets(),
+        _progressService.getTodayProgress(), // 0
+        _targetsRepository.getAllTargets(),  // 1
       ]);
 
       final data = results[0] as Map<String, dynamic>;
       final targets = results[1] as Map<String, int>;
 
-      // Get real-time steps from step counter
-      final realTimeSteps = _stepsCounter.currentSteps;
+      // Cache the successful API response
+      await _cacheManager.cacheData('progress_today', data);
 
-      // Calculate calories burned based on steps (approximately 0.04 calories per step)
+      return _buildProgressCard(data, targets);
+    } catch (e) {
+      // Try to load from cache
+      final cachedData = await _cacheManager.getCachedData('progress_today');
+      if (cachedData != null) {
+        final targets = await _targetsRepository.getAllTargets(); // Targets are local SQLite, safe to call
+        return _buildProgressCard(cachedData, targets);
+      }
+      throw Exception('Failed to load progress: $e');
+    }
+  }
+
+  ProgressCard _buildProgressCard(Map<String, dynamic> data, Map<String, int> targets) {
+     final realTimeSteps = _stepsCounter.currentSteps;
       final calsBurned = _calculateCaloriesBurned(realTimeSteps);
 
-      // Create progress data with calculated values
       final progressData = Map<String, dynamic>.from(data);
       progressData['steps'] = realTimeSteps;
       progressData['calsBurned'] = calsBurned;
 
       return ProgressCard.fromJson(progressData, targets);
-    } catch (e) {
-      throw Exception('Failed to load progress: $e');
-    }
   }
 
   /// Calculate calories burned based on steps

@@ -2,6 +2,7 @@
 // Handles data transformation and business logic for profile page
 
 import '../api/profile_service.dart';
+import '../../core/network/cache_manager.dart';
 import '../../workout/data/session_repository.dart';
 import '../../home/data/mutual_feed_repository.dart';
 import '../../feed/data/stories_repository.dart'; // Added import
@@ -227,7 +228,8 @@ class ConnectionUser {
 /// Profile Repository
 class ProfileRepository {
   final ProfileApiService _apiService;
-  final MutualFeedRepository _mutualFeedRepository; // Use composition for actions
+  final MutualFeedRepository _mutualFeedRepository;
+  final CacheManager _cacheManager = CacheManager();
 
   ProfileRepository({ProfileApiService? apiService, MutualFeedRepository? mutualFeedRepository})
       : _apiService = apiService ?? ProfileApiService(),
@@ -237,8 +239,13 @@ class ProfileRepository {
   Future<UserProfile> getUserProfile(String username) async {
     try {
       final data = await _apiService.getUserProfile(username);
+      await _cacheManager.cacheData('profile_$username', data);
       return UserProfile.fromJson(data);
     } catch (e) {
+      final cachedData = await _cacheManager.getCachedData('profile_$username');
+      if (cachedData != null) {
+        return UserProfile.fromJson(cachedData);
+      }
       throw Exception('Failed to load profile: $e');
     }
   }
@@ -295,9 +302,9 @@ class ProfileRepository {
           username: user['username'] ?? '',
           profileImage: user['avatarUrl'] ?? '',
           content: item['caption'] ?? '',
-          hashtags: [], // API doesn't seem to return hashtags in this feed endpoint yet
+          hashtags: [], 
           imageUrl: item['mediaUrl'] ?? '',
-          thumbnail: item['thumbnail'] ?? '', // Add thumbnail support
+          thumbnail: item['thumbnail'] ?? '', 
           mediaType: item['mediaType'] ?? 'IMAGE',
           platform: 'Heracle',
           platformHandle: '@${user['username'] ?? ''}',
@@ -346,6 +353,18 @@ class ProfileRepository {
   Future<List<Session>> getSessions() async {
     try {
       final data = await _apiService.getSessions();
+      await _cacheManager.cacheData('profile_sessions', data);
+      return _mapSessions(data);
+    } catch (e) {
+      final cachedData = await _cacheManager.getCachedData('profile_sessions');
+      if (cachedData != null && cachedData is List) {
+        return _mapSessions(List<Map<String, dynamic>>.from(cachedData));
+      }
+      throw Exception('Failed to load sessions: $e');
+    }
+  }
+
+  List<Session> _mapSessions(List<Map<String, dynamic>> data) {
       return data.map((json) => Session(
         id: json['id'] as String,
         title: json['title'] as String,
@@ -356,27 +375,33 @@ class ProfileRepository {
         position: json['position'] as int? ?? 0,
         exercises: (json['exercises'] as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
       )).toList();
-    } catch (e) {
-      throw Exception('Failed to load sessions: $e');
-    }
   }
 
   /// Get posts
   Future<List<FeedPost>> getPosts(String username) async {
     try {
       final data = await _apiService.getUserPosts(username);
-      return data.map((json) {
-        final type = json['type'] as String? ?? 'workout';
-        if (type == 'workout') {
-          return WorkoutPost.fromJson(json);
-        } else if (type == 'nutrition') {
-          return NutritionPost.fromJson(json);
-        }
-        throw Exception('Unknown post type: $type');
-      }).toList();
+      await _cacheManager.cacheData('profile_posts_$username', data);
+      return _mapPosts(data);
     } catch (e) {
+      final cachedData = await _cacheManager.getCachedData('profile_posts_$username');
+      if (cachedData != null && cachedData is List) {
+        return _mapPosts(List<Map<String, dynamic>>.from(cachedData));
+      }
       throw Exception('Failed to load posts: $e');
     }
+  }
+
+  List<FeedPost> _mapPosts(List<Map<String, dynamic>> data) {
+    return data.map((json) {
+      final type = json['type'] as String? ?? 'workout';
+      if (type == 'workout') {
+        return WorkoutPost.fromJson(json);
+      } else if (type == 'nutrition') {
+        return NutritionPost.fromJson(json);
+      }
+      throw Exception('Unknown post type: $type');
+    }).toList();
   }
 
   /// Update selected category

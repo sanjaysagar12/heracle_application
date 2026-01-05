@@ -1,3 +1,4 @@
+import '../../core/network/cache_manager.dart';
 import '../api/mutual_feed_service.dart';
 
 class LikedByUser {
@@ -341,6 +342,7 @@ class Comment {
 
 class MutualFeedRepository {
   final MutualFeedService _service;
+  final CacheManager _cacheManager = CacheManager();
 
   MutualFeedRepository({MutualFeedService? service})
       : _service = service ?? MutualFeedService();
@@ -348,18 +350,29 @@ class MutualFeedRepository {
   Future<List<FeedPost>> getMutualFeed() async {
     try {
       final data = await _service.getMutualFeed();
-      return data.map((json) {
-        final type = json['type'] as String;
-        if (type == 'workout') {
-          return WorkoutPost.fromJson(json);
-        } else if (type == 'nutrition') {
-          return NutritionPost.fromJson(json);
-        }
-        throw Exception('Unknown post type: $type');
-      }).toList();
+      // Cache the successful response
+      await _cacheManager.cacheData('mutual_feed', data);
+      return _mapFeedData(data);
     } catch (e) {
+      // Try to load from cache
+      final cachedData = await _cacheManager.getCachedData('mutual_feed');
+      if (cachedData != null && cachedData is List) {
+        return _mapFeedData(List<Map<String, dynamic>>.from(cachedData));
+      }
       throw Exception('Failed to load mutual feed: $e');
     }
+  }
+
+  List<FeedPost> _mapFeedData(List<Map<String, dynamic>> data) {
+    return data.map((json) {
+      final type = json['type'] as String;
+      if (type == 'workout') {
+        return WorkoutPost.fromJson(json);
+      } else if (type == 'nutrition') {
+        return NutritionPost.fromJson(json);
+      }
+      throw Exception('Unknown post type: $type');
+    }).toList();
   }
 
   Future<void> likePost(String postId) async {

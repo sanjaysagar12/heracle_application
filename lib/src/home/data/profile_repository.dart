@@ -1,3 +1,4 @@
+import '../../core/network/cache_manager.dart';
 import '../api/profile_service.dart';
 
 class Profile {
@@ -28,6 +29,7 @@ class Profile {
 
 class ProfileRepository {
   final ProfileService _profileService;
+  final CacheManager _cacheManager = CacheManager();
 
   ProfileRepository({ProfileService? profileService})
       : _profileService = profileService ?? ProfileService();
@@ -35,8 +37,13 @@ class ProfileRepository {
   Future<Profile> getProfile() async {
     try {
       final data = await _profileService.getProfile();
+      await _cacheManager.cacheData('home_profile', data);
       return Profile.fromJson(data);
     } catch (e) {
+      final cachedData = await _cacheManager.getCachedData('home_profile');
+      if (cachedData != null) {
+        return Profile.fromJson(cachedData);
+      }
       throw Exception('Failed to load profile: $e');
     }
   }

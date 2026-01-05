@@ -116,7 +116,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
                       profileImageUrl: _profile!.profileImageUrl,
                       hasStory: _profile!.hasStory,
                       onProfileTap: () {
-                        Navigator.pushNamed(context, AppRoutes.profile);
+                        Navigator.pushNamed(
+                          context, 
+                          AppRoutes.profile,
+                          arguments: _profile!.username,
+                        );
                       },
                       onStoryTap: _handleStoryTap,
                     ),

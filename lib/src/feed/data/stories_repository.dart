@@ -1,3 +1,4 @@
+import '../../core/network/cache_manager.dart';
 import '../api/stories_service.dart';
 import '../../home/data/mutual_feed_repository.dart';
 
@@ -277,6 +278,7 @@ class DiscoverStory {
 
 class StoriesRepository {
   final StoriesService _storiesService;
+  final CacheManager _cacheManager = CacheManager();
 
   StoriesRepository({StoriesService? storiesService})
       : _storiesService = storiesService ?? StoriesService();
@@ -284,8 +286,13 @@ class StoriesRepository {
   Future<List<StoryUser>> getStories() async {
     try {
       final data = await _storiesService.getStories();
+      await _cacheManager.cacheData('feed_stories', data);
       return data.map((json) => StoryUser.fromJson(json)).toList();
     } catch (e) {
+      final cachedData = await _cacheManager.getCachedData('feed_stories');
+      if (cachedData != null && cachedData is List) {
+        return (cachedData).map((json) => StoryUser.fromJson(json)).toList();
+      }
       throw Exception('Failed to load stories: $e');
     }
   }
@@ -293,8 +300,13 @@ class StoriesRepository {
   Future<StoryUser> getMyStories() async {
     try {
       final data = await _storiesService.getMyStories();
+      await _cacheManager.cacheData('my_stories', data);
       return StoryUser.fromJson(data);
     } catch (e) {
+      final cachedData = await _cacheManager.getCachedData('my_stories');
+      if (cachedData != null) {
+        return StoryUser.fromJson(cachedData);
+      }
       throw Exception('Failed to load my stories: $e');
     }
   }
@@ -302,8 +314,13 @@ class StoriesRepository {
   Future<List<DiscoverStory>> getDiscoverStories() async {
     try {
       final data = await _storiesService.getDiscoverStories();
+      await _cacheManager.cacheData('discover_stories', data);
       return data.map((json) => DiscoverStory.fromJson(json)).toList();
     } catch (e) {
+      final cachedData = await _cacheManager.getCachedData('discover_stories');
+      if (cachedData != null && cachedData is List) {
+        return (cachedData).map((json) => DiscoverStory.fromJson(json)).toList();
+      }
       throw Exception('Failed to load discover stories: $e');
     }
   }
