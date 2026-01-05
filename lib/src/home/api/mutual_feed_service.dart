@@ -74,7 +74,8 @@ class MutualFeedService {
 
   Future<void> followUser(String username) async {
     try {
-      await _dio.post('/api/social/follow/$username', data: {});
+      final cleanUsername = username.startsWith('@') ? username.substring(1) : username;
+      await _dio.post('/api/social/follow/$cleanUsername', data: {});
     } catch (e) {
       throw Exception('Failed to follow user: $e');
     }

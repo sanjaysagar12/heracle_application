@@ -42,7 +42,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> with SingleTickerProv
 
   Future<void> _loadFollowers() async {
     try {
-      final data = await _repository.getFollowers();
+      final data = await _repository.getFollowers(widget.username);
       if (mounted) {
         setState(() {
           _followers = data;
@@ -56,7 +56,7 @@ class _ConnectionsPageState extends State<ConnectionsPage> with SingleTickerProv
 
   Future<void> _loadFollowing() async {
     try {
-      final data = await _repository.getFollowing();
+      final data = await _repository.getFollowing(widget.username);
       if (mounted) {
         setState(() {
           _following = data;
@@ -203,7 +203,14 @@ class _ConnectionsPageState extends State<ConnectionsPage> with SingleTickerProv
       }
     });
 
-    // Ideally, call API here to persist changes
-    // _repository.followUser(user.id);
+    // Call API persistence
+    _repository.followUser(user.username).catchError((e) {
+      if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text('Failed to update follow status: $e')),
+         );
+         // Revert changes on error?
+      }
+    });
   }
 }

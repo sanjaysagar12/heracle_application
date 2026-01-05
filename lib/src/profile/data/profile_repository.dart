@@ -428,9 +428,9 @@ class ProfileRepository {
   }
 
   /// Get followers
-  Future<List<ConnectionUser>> getFollowers() async {
+  Future<List<ConnectionUser>> getFollowers(String username) async {
     try {
-      final data = await _apiService.getFollowers();
+      final data = await _apiService.getFollowers(username);
       return data.map((json) => ConnectionUser.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to load followers: $e');
@@ -438,12 +438,21 @@ class ProfileRepository {
   }
 
   /// Get following
-  Future<List<ConnectionUser>> getFollowing() async {
+  Future<List<ConnectionUser>> getFollowing(String username) async {
     try {
-      final data = await _apiService.getFollowing();
+      final data = await _apiService.getFollowing(username);
       return data.map((json) => ConnectionUser.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to load following: $e');
+    }
+  }
+
+  /// Follow user
+  Future<void> followUser(String username) async {
+    try {
+      await _apiService.followUser(username);
+    } catch (e) {
+      throw Exception('Failed to follow user: $e');
     }
   }
 }

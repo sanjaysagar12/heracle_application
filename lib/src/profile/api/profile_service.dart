@@ -26,80 +26,44 @@ class ProfileApiService {
 
 
   /// Get followers list
-  Future<List<Map<String, dynamic>>> getFollowers() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return [
-      {
-        'id': 'u1',
-        'name': 'Sarah Miller',
-        'username': 'sarah_m',
-        'profileImageUrl': 'https://i.pravatar.cc/150?img=47',
-        'isFollowing': true,
-      },
-      {
-        'id': 'u2',
-        'name': 'John Doe',
-        'username': 'johndoe',
-        'profileImageUrl': 'https://i.pravatar.cc/150?img=12',
-         'isFollowing': false,
-      },
-      {
-        'id': 'u3',
-        'name': 'Emma Wilson',
-        'username': 'emma_w',
-        'profileImageUrl': 'https://i.pravatar.cc/150?img=20',
-        'isFollowing': true,
-      },
-       {
-        'id': 'u4',
-        'name': 'Alex Thompson',
-        'username': 'alex_t',
-        'profileImageUrl': 'https://i.pravatar.cc/150?img=15',
-        'isFollowing': false,
-      },
-       {
-        'id': 'u5',
-        'name': 'Emily Davis',
-        'username': 'emily_d',
-        'profileImageUrl': 'https://i.pravatar.cc/150?img=5',
-        'isFollowing': true,
-      },
-    ];
+  Future<List<Map<String, dynamic>>> getFollowers(String username) async {
+    try {
+      final cleanUsername = username.startsWith('@') ? username.substring(1) : username;
+      final response = await DioClient().dio.get('/api/social/followers/$cleanUsername');
+      
+      if (response.data is List) {
+        return List<Map<String, dynamic>>.from(response.data);
+      }
+      return [];
+    } catch (e) {
+      throw Exception('Failed to load followers: $e');
+    }
   }
 
   /// Get following list
-  Future<List<Map<String, dynamic>>> getFollowing() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return [
-      {
-        'id': 'u6',
-        'name': 'Mike Ross',
-        'username': 'mikeross',
-        'profileImageUrl': 'https://i.pravatar.cc/150?img=13',
-        'isFollowing': true,
-      },
-      {
-        'id': 'u7',
-        'name': 'Rachel Green',
-        'username': 'rachelg',
-        'profileImageUrl': 'https://i.pravatar.cc/150?img=25',
-        'isFollowing': true,
-      },
-      {
-        'id': 'u1',
-        'name': 'Sarah Miller',
-        'username': 'sarah_m',
-        'profileImageUrl': 'https://i.pravatar.cc/150?img=47',
-        'isFollowing': true,
-      },
-       {
-        'id': 'u3',
-        'name': 'Emma Wilson',
-        'username': 'emma_w',
-        'profileImageUrl': 'https://i.pravatar.cc/150?img=20',
-        'isFollowing': true,
-      },
-    ];
+  Future<List<Map<String, dynamic>>> getFollowing(String username) async {
+    try {
+      final cleanUsername = username.startsWith('@') ? username.substring(1) : username;
+      final response = await DioClient().dio.get('/api/social/following/$cleanUsername');
+      
+      if (response.data is List) {
+        return List<Map<String, dynamic>>.from(response.data);
+      }
+      return [];
+    } catch (e) {
+      throw Exception('Failed to load following: $e');
+    }
+  }
+
+  /// Follow/Unfollow a user
+  Future<Map<String, dynamic>> followUser(String username) async {
+    try {
+      final cleanUsername = username.startsWith('@') ? username.substring(1) : username;
+      final response = await DioClient().dio.post('/api/social/follow/$cleanUsername');
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to follow user: $e');
+    }
   }
 
   /// Get sessions data

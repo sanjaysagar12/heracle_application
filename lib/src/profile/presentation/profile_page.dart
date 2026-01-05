@@ -95,8 +95,21 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _onFollowTap() {
     if (_profile != null) {
+      final oldProfile = _profile;
       setState(() {
         _profile = _repository.toggleFollow(_profile!);
+      });
+      
+      _repository.followUser(_profile!.username).catchError((e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update follow status: $e')),
+          );
+          // Revert optimistic update
+          setState(() {
+            _profile = oldProfile;
+          });
+        }
       });
     }
   }
@@ -463,7 +476,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 MaterialPageRoute(
                                   builder: (context) => ConnectionsPage(
                                     initialIndex: 0,
-                                    username: _profile!.name,
+                                    username: _profile!.username,
                                   ),
                                 ),
                               );
@@ -474,7 +487,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 MaterialPageRoute(
                                   builder: (context) => ConnectionsPage(
                                     initialIndex: 1,
-                                    username: _profile!.name,
+                                    username: _profile!.username,
                                   ),
                                 ),
                               );

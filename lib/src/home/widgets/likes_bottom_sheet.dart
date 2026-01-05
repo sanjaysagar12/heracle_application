@@ -33,7 +33,7 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
     super.initState();
     // Initialize following status from the user data (if any provided)
     _likes = widget.likedByUsers ?? [];
-    _followingStatus = { for (var user in _likes) user.name: user.isFollowing };
+    _followingStatus = { for (var user in _likes) user.username: user.isFollowing };
 
     // Show skeleton immediately. If a postId is provided, fetch from backend;
     // otherwise display the provided likedByUsers immediately.
@@ -52,7 +52,7 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
       final likes = await repo.getPostLikes(widget.postId!);
       setState(() {
         _likes = likes;
-        _followingStatus = { for (var u in _likes) u.name: u.isFollowing };
+        _followingStatus = { for (var u in _likes) u.username: u.isFollowing };
         _isLoading = false;
       });
     } catch (e) {
@@ -64,25 +64,25 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
     }
   }
 
-  Future<void> _toggleFollow(String userName) async {
-    if (_followInProgress.contains(userName)) return;
-    final previous = _followingStatus[userName] ?? false;
+  Future<void> _toggleFollow(String username) async {
+    if (_followInProgress.contains(username)) return;
+    final previous = _followingStatus[username] ?? false;
 
     // Optimistic update (UI toggles immediately)
     setState(() {
-      _followingStatus[userName] = !previous;
-      _followInProgress.add(userName);
+      _followingStatus[username] = !previous;
+      _followInProgress.add(username);
     });
 
     try {
       final repo = MutualFeedRepository();
-      await repo.followUser(userName);
+      await repo.followUser(username);
       // success — UI already updated optimistically
     } catch (e) {
       // revert on error
       if (mounted) {
         setState(() {
-          _followingStatus[userName] = previous;
+          _followingStatus[username] = previous;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -94,7 +94,7 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
       }
     } finally {
       // remove in-progress flag (no UI spinner)
-      _followInProgress.remove(userName);
+      _followInProgress.remove(username);
       if (mounted) setState(() {}); // ensure UI reflects any revert
     }
   }
@@ -170,7 +170,7 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
   }
 
   Widget _buildUserItem(LikedByUser user) {
-    final isFollowing = _followingStatus[user.name] ?? user.isFollowing;
+    final isFollowing = _followingStatus[user.username] ?? user.isFollowing;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -186,7 +186,7 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  user.name,
+                  user.name.isNotEmpty ? user.name : user.username,
                   style: const TextStyle(
                     color: AppColors.pureWhite,
                     fontSize: 16,
@@ -194,7 +194,7 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
                   ),
                 ),
                 Text(
-                  '@${user.name}',
+                  user.username.startsWith('@') ? user.username : '@${user.username}',
                   style: const TextStyle(
                     color: AppColors.white60,
                     fontSize: 14,
@@ -206,7 +206,7 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
           // If this entry represents the viewer themselves, hide follow/following button
           if (!user.isViewer)
             GestureDetector(
-              onTap: () => _toggleFollow(user.name),
+              onTap: () => _toggleFollow(user.username),
               child: _buildFollowButton(isFollowing),
             )
           else
