@@ -55,7 +55,8 @@ class StoriesService {
 
         return {
           'id': username,
-          'username': name,
+          'username': username, // Use handle
+          'name': name, // Use display name
           'profileImage': avatarUrl ?? '',
           'hasStory': stories.isNotEmpty,
           'isViewed': isViewed,
@@ -187,7 +188,8 @@ class StoriesService {
 
       return {
         'id': user['id'] ?? 'me',
-        'username': user['name'] ?? user['username'] ?? 'You',
+        'username': user['username'] ?? 'You', // Use handle
+        'name': user['name'] ?? '', // Use name
         'profileImage': user['avatarUrl'] ?? '',
         'hasStory': stories.isNotEmpty,
         'isViewed': false,
@@ -200,6 +202,7 @@ class StoriesService {
       return {
         'id': 'me',
         'username': 'You',
+        'name': '',
         'profileImage': '',
         'hasStory': false,
         'isViewed': false,

@@ -122,15 +122,17 @@ class StoryContent {
 class StoryUser {
   final String id;
   final String username;
+  final String name; // Added name field
   final String profileImage;
   final bool hasStory;
   final bool isViewed;
   final List<StoryContent> stories;
-  final bool isMyStory; // New field to indicate if this is user's own story
+  final bool isMyStory;
 
   StoryUser({
     required this.id,
     required this.username,
+    this.name = '', // Default empty
     required this.profileImage,
     required this.hasStory,
     required this.isViewed,
@@ -142,6 +144,7 @@ class StoryUser {
     return StoryUser(
       id: json['id'] as String,
       username: json['username'] as String,
+      name: json['name'] as String? ?? '', // Parse name
       profileImage: json['profileImage'] as String,
       hasStory: json['hasStory'] as bool? ?? false,
       isViewed: json['isViewed'] as bool? ?? false,

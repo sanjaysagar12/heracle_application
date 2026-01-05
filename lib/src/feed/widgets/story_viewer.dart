@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../data/stories_repository.dart';
 import '../../home/widgets/comments_bottom_sheet.dart';
 import '../../home/data/mutual_feed_repository.dart';
+import '../../../route.dart';
 
 class StoryViewer extends StatefulWidget {
   final List<StoryUser> stories;
@@ -55,6 +56,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   }
 
   void _onFocusChange() {
+    setState(() {}); // Trigger rebuild to hide/show icons
     if (_commentFocus.hasFocus) {
       // Pause playback when typing
       if (_isVideoProgressTracking) {
@@ -276,6 +278,11 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
 
   void _startTimer(StoryContent story) {
     if (!_isContentLoaded) return;
+
+    // Record view in backend
+    _storiesRepository.viewStory(story.id).catchError((e) {
+      debugPrint('Error recording story view: $e');
+    });
     
     if (story.type == 'video' && _videoController != null) {
       _storyDuration = _videoController!.value.duration;
@@ -408,6 +415,27 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     }
   }
 
+  void _navigateToProfile(String username) {
+    if (_isVideoProgressTracking) {
+      _videoController?.pause();
+    } else {
+      _progressController?.stop();
+    }
+
+    Navigator.of(context).pushNamed(
+      AppRoutes.profile,
+      arguments: username,
+    ).then((_) {
+      if (mounted && _isContentLoaded) {
+        if (_isVideoProgressTracking) {
+          _videoController?.play();
+        } else {
+          _progressController?.forward();
+        }
+      }
+    });
+  }
+
   @override
   void dispose() {
     _commentFocus.removeListener(_onFocusChange);
@@ -424,6 +452,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      resizeToAvoidBottomInset: false, // Prevent image resizing when keyboard opens
       body: PageView.builder(
         controller: _pageController,
         itemCount: _localStories.length,
@@ -451,7 +480,14 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
           
           return GestureDetector(
             onTapUp: (details) {
+              // If keyboard is open, close it on tap and do nothing else
+              if (_commentFocus.hasFocus) {
+                _commentFocus.unfocus();
+                return;
+              }
+
               final screenHeight = MediaQuery.of(context).size.height;
+              // Ignore taps in the bottom area (input box area)
               if (details.globalPosition.dy > screenHeight - 120) return;
               
               final screenWidth = MediaQuery.of(context).size.width;
@@ -548,28 +584,46 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                 Positioned(
                   top: 80,
                   left: 16,
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundImage: _isValidUrl(user.profileImage) 
-                            ? NetworkImage(user.profileImage)
-                            : null,
-                        backgroundColor: Colors.grey[600],
-                        child: !_isValidUrl(user.profileImage) 
-                            ? const Icon(Icons.person, color: Colors.white, size: 20)
-                            : null,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        user.username,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                  child: GestureDetector(
+                    onTap: () => _navigateToProfile(user.username),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundImage: _isValidUrl(user.profileImage) 
+                              ? NetworkImage(user.profileImage)
+                              : null,
+                          backgroundColor: Colors.grey[600],
+                          child: !_isValidUrl(user.profileImage) 
+                              ? const Icon(Icons.person, color: Colors.white, size: 20)
+                              : null,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (user.name.isNotEmpty)
+                              Text(
+                                user.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            Text(
+                              user.username.startsWith('@') ? user.username : '@${user.username}',
+                              style: TextStyle(
+                                color: user.name.isNotEmpty ? Colors.white70 : Colors.white,
+                                fontSize: user.name.isNotEmpty ? 13 : 16,
+                                fontWeight: user.name.isNotEmpty ? FontWeight.normal : FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 
@@ -587,7 +641,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                 ),
                 
                 Positioned(
-                  bottom: 0,
+                  bottom: MediaQuery.of(context).viewInsets.bottom, // Move up with keyboard
                   left: 0,
                   right: 0,
                   child: Container(
@@ -604,7 +658,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                     padding: EdgeInsets.only(
                       left: 20,
                       right: 20,
-                      bottom: MediaQuery.of(context).padding.bottom + 16,
+                      bottom: 16, // Fixed bottom padding, viewInsets handles keyboard
                       top: 20,
                     ),
                     child: Row(
@@ -617,7 +671,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                               borderRadius: BorderRadius.circular(24),
                             ),
                             alignment: Alignment.centerLeft,
-                            padding: const EdgeInsets.only(left: 14, right: 14),
+                            padding: const EdgeInsets.only(left: 14, right: 4),
                             child: TextField(
                               controller: _commentController,
                               focusNode: _commentFocus,
@@ -625,94 +679,88 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                                 color: Colors.white,
                                 fontSize: 15,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Send message',
-                                hintStyle: TextStyle(
+                                hintStyle: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 15,
                                 ),
                                 border: InputBorder.none,
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
+                                contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 8,
-                                  vertical: 0,
+                                  vertical: 12, // Adjusted for vertical alignment with icon
                                 ),
+                                suffixIcon: _commentController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(
+                                          Icons.send,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                        onPressed: _submitComment,
+                                      )
+                                    : null,
                               ),
                               maxLines: 1,
                               onSubmitted: (_) => _submitComment(),
+                              onChanged: (text) {
+                                setState(() {});
+                              },
                             ),
                           ),
                         ),
                         
-                        const SizedBox(width: 12),
+                        if (!_commentFocus.hasFocus) ...[
+                          const SizedBox(width: 12),
 
-                        GestureDetector(
-                          onTap: _showComments,
-                          child: Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.chat_bubble_outline,
-                                color: Colors.white,
-                                size: 22,
+                          GestureDetector(
+                            onTap: _showComments,
+                            child: Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                shape: BoxShape.circle,
                               ),
-                            ),
-                          ),
-                        ),
-                        
-                        const SizedBox(width: 8),
-                        
-                        GestureDetector(
-                          onTap: _toggleLike,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: currentStory.isLiked
-                                  ? Colors.red.withOpacity(0.2)
-                                  : Colors.white.withOpacity(0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 200),
+                              child: const Center(
                                 child: Icon(
-                                  currentStory.isLiked ? Icons.favorite : Icons.favorite_border,
-                                  key: ValueKey(currentStory.isLiked),
-                                  color: currentStory.isLiked ? Colors.red : Colors.white,
+                                  Icons.chat_bubble_outline,
+                                  color: Colors.white,
                                   size: 22,
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        
-                        const SizedBox(width: 8),
-                        
-                        GestureDetector(
-                          onTap: _submitComment,
-                          child: Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.send,
-                                color: Colors.white,
-                                size: 22,
+                          
+                          const SizedBox(width: 8),
+                          
+                          GestureDetector(
+                            onTap: _toggleLike,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: currentStory.isLiked
+                                    ? Colors.red.withOpacity(0.2)
+                                    : Colors.white.withOpacity(0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Icon(
+                                    currentStory.isLiked ? Icons.favorite : Icons.favorite_border,
+                                    key: ValueKey(currentStory.isLiked),
+                                    color: currentStory.isLiked ? Colors.red : Colors.white,
+                                    size: 22,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),

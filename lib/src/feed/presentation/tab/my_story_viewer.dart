@@ -394,12 +394,37 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
                   const Text('Swipe up for details', style: TextStyle(color: AppColors.pureWhite, fontSize: 12)),
                   const SizedBox(height: 8),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      _buildStatItem(Icons.visibility, '${currentStory.views}'),
-                      _buildStatItem(Icons.favorite, '${currentStory.likes}'),
-                      _buildActionItem(Icons.public, 'Public', () => _handlePublic(currentStory)),
-                      _buildActionItem(Icons.delete, 'Delete', () => _handleDelete(currentStory)),
+                       GestureDetector(
+                        onTap: () => _handlePublic(currentStory),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(8), // Add padding for SVG
+                          child: SvgPicture.asset(
+                            'assets/icons/feed.svg',
+                            colorFilter: const ColorFilter.mode(AppColors.pureWhite, BlendMode.srcIn),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      GestureDetector(
+                        onTap: () => _handleDelete(currentStory),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.delete, color: Colors.red, size: 24),
+                        ),
+                      ),
                     ],
                   ),
                 ],
