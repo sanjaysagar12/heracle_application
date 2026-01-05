@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../route.dart'; // Added for AppRoutes
 import '../data/stories_repository.dart';
 import '../widgets/stories_section.dart';
 import '../widgets/discover_stories_grid.dart';
@@ -7,6 +8,7 @@ import '../widgets/feed_skeleton_loading.dart';
 import '../widgets/story_viewer.dart'; // Updated import path
 import 'tab/reels_tab.dart';
 import 'tab/my_story_viewer.dart';
+import 'search_page.dart';
 
 /// Feed Page - Main stories and discover feed
 /// 
@@ -41,11 +43,16 @@ class _FeedPageState extends State<FeedPage> {
   StoryUser? _myStory;
   List<DiscoverStory> _discoverStories = [];
   bool _isLoading = true;
-
+  
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -92,6 +99,7 @@ class _FeedPageState extends State<FeedPage> {
     }
   }
 
+
   void _handleStoryTap(String storyId) {
     // Check if this is user's own story
     if (_myStory != null && storyId == _myStory!.id) {
@@ -111,7 +119,7 @@ class _FeedPageState extends State<FeedPage> {
             stories: _stories,
             initialIndex: index,
             onStoryViewed: _markStoryAsViewed,
-            onStoryLiked: _handleStoryLike, // Ensure this is passed if needed
+            onStoryLiked: _handleStoryLike,
             onStoryComment: _handleStoryComment,
           ),
         ),
@@ -254,6 +262,40 @@ class _FeedPageState extends State<FeedPage> {
               ),
             ),
 
+
+
+            // Search Bar (Button)
+            SliverToBoxAdapter(
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SearchPage()),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Search users, posts, hashtags...',
+                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 16),
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.search, color: Colors.white54),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            
             // Discover stories grid
             DiscoverStoriesGrid(
               stories: _discoverStories,

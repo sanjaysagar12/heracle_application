@@ -276,6 +276,46 @@ class DiscoverStory {
   }
 }
 
+class SearchUser {
+  final String id;
+  final String username;
+  final String name;
+  final String? avatarUrl;
+  final bool isFollowing;
+  final bool isSelf;
+
+  SearchUser({
+    required this.id,
+    required this.username,
+    required this.name,
+    this.avatarUrl,
+    this.isFollowing = false,
+    this.isSelf = false,
+  });
+
+  factory SearchUser.fromJson(Map<String, dynamic> json) {
+    return SearchUser(
+      id: json['id'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      avatarUrl: json['avatarUrl'] as String?,
+      isFollowing: json['isFollowing'] as bool? ?? false,
+      isSelf: json['isSelf'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'username': username,
+      'name': name,
+      'avatarUrl': avatarUrl,
+      'isFollowing': isFollowing,
+      'isSelf': isSelf,
+    };
+  }
+}
+
 class StoriesRepository {
   final StoriesService _storiesService;
   final CacheManager _cacheManager = CacheManager();
@@ -325,6 +365,64 @@ class StoriesRepository {
     }
   }
 
+  Future<List<SearchUser>> searchUsers(String query) async {
+    try {
+      if (query.isEmpty) return [];
+      final data = await _storiesService.searchUsers(query);
+      return data.map((json) => SearchUser.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to search users: $e');
+    }
+  }
+
+  Future<List<SearchUser>> getRecentSearches() async {
+    try {
+      final cachedData = await _cacheManager.getCachedData('recent_searches');
+      if (cachedData != null && cachedData is List) {
+        return cachedData.map((json) => SearchUser.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> addToRecentSearches(SearchUser user) async {
+    try {
+      final currentList = await getRecentSearches();
+      // Remove if already exists to move it to top
+      currentList.removeWhere((item) => item.id == user.id);
+      // Add to beginning
+      currentList.insert(0, user);
+      // Limit to 10
+      if (currentList.length > 10) {
+        currentList.removeLast();
+      }
+      
+      final jsonData = currentList.map((u) => u.toJson()).toList();
+      await _cacheManager.cacheData('recent_searches', jsonData);
+    } catch (e) {
+      // Ignore cache errors
+    }
+  }
+
+  Future<void> removeFromRecentSearches(String userId) async {
+    try {
+      final currentList = await getRecentSearches();
+      currentList.removeWhere((item) => item.id == userId);
+      
+      final jsonData = currentList.map((u) => u.toJson()).toList();
+      await _cacheManager.cacheData('recent_searches', jsonData);
+    } catch (e) {
+      // Ignore cache errors
+    }
+  }
+
+  Future<void> clearRecentSearches() async {
+    await _cacheManager.clearCache('recent_searches'); 
+    await _cacheManager.cacheData('recent_searches', []);
+  }
+
   Future<void> likeStory(String storyId) async {
     await _storiesService.likeStory(storyId);
   }
@@ -352,6 +450,7 @@ class StoriesRepository {
   Future<void> viewStory(String storyId) async {
     await _storiesService.viewStory(storyId);
   }
+
 
   Future<List<Comment>> getStoryComments(String storyId) async {
     try {

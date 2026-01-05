@@ -130,6 +130,26 @@ class StoriesService {
     }
   }
 
+  /// Search for users
+  Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+    try {
+      final response = await _dioClient.dio.get(
+        '/api/social/search',
+        queryParameters: {'q': query},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to search users: ${response.statusCode}');
+      }
+
+      final List<dynamic> data = response.data as List<dynamic>;
+      return data.cast<Map<String, dynamic>>(); 
+    } catch (e) {
+      developer.log('Error searching users: $e');
+      rethrow;
+    }
+  }
+
   /// Fetch user's own stories
   Future<Map<String, dynamic>> getMyStories() async {
     try {
