@@ -114,17 +114,42 @@ class StepsCounter {
   Future<int> _calculateTodaySteps(int totalSteps) async {
     try {
       // Get stored base steps for today (steps at start of day)
-      final baseSteps = await _storage.getBaseStepsForToday();
+      int baseSteps = await _storage.getBaseStepsForToday();
+      int offsetSteps = await _storage.getOffsetStepsForToday();
       
       if (baseSteps == -1) {
         // First time today, set base steps
         await _storage.setBaseStepsForToday(totalSteps);
-        return 0;
+        // Important: if we have an offset (from previous sessions today), we preserve it
+        return offsetSteps;
+      }
+      
+      // Check for REBOOT condition:
+      // If the current totalSteps from sensor is LESS than the stored baseSteps,
+      // it means the device has rebooted (sensor reset to 0).
+      if (totalSteps < baseSteps) {
+        print('StepsCounter: REBOOT DETECTED! (Current: $totalSteps < Base: $baseSteps)');
+        
+        // The steps counted so far today are: (offsetSteps + (stepsSinceLastBase))
+        // OR simply, we can trust the last saved 'todaySteps' in storage as the new offset.
+        final savedTodaySteps = await _storage.getTodaySteps();
+        
+        // Update offset to include everything counted so far
+        offsetSteps = savedTodaySteps;
+        await _storage.setOffsetStepsForToday(offsetSteps);
+        
+        // Reset base steps to the current new stream value
+        baseSteps = totalSteps;
+        await _storage.setBaseStepsForToday(baseSteps);
+        
+        print('StepsCounter: Adjusted after reboot -> Offset: $offsetSteps, New Base: $baseSteps');
       }
       
       // Calculate steps taken today
-      final todaySteps = totalSteps - baseSteps;
-      return todaySteps > 0 ? todaySteps : 0;
+      final stepsSinceBase = totalSteps - baseSteps;
+      final todaySteps = offsetSteps + (stepsSinceBase > 0 ? stepsSinceBase : 0);
+      
+      return todaySteps;
     } catch (e) {
       print('StepsCounter: Error calculating today steps: $e');
       return 0;

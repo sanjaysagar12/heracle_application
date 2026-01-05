@@ -4,6 +4,7 @@ class StepsStorage {
   static const String _todayStepsKey = 'today_steps';
   static const String _lastDateKey = 'last_date';
   static const String _baseStepsKey = 'base_steps';
+  static const String _offsetStepsKey = 'offset_steps'; // New key for reboot offset
 
   Future<void> saveTodaySteps(int steps) async {
     try {
@@ -65,6 +66,28 @@ class StepsStorage {
     }
   }
 
+  // New method: Save offset steps
+  Future<void> setOffsetStepsForToday(int offset) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // No date check needed here as it's usually called during calculation which checks date
+      await prefs.setInt(_offsetStepsKey, offset);
+    } catch (e) {
+      print('StepsStorage: Error setting offset steps: $e');
+    }
+  }
+
+  // New method: Get offset steps
+  Future<int> getOffsetStepsForToday() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getInt(_offsetStepsKey) ?? 0;
+    } catch (e) {
+      print('StepsStorage: Error getting offset steps: $e');
+      return 0;
+    }
+  }
+
   Future<void> resetDailySteps() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -72,6 +95,7 @@ class StepsStorage {
       
       await prefs.remove(_todayStepsKey);
       await prefs.remove(_baseStepsKey);
+      await prefs.remove(_offsetStepsKey); // Clear offset too
       await prefs.setString(_lastDateKey, today);
       
       print('StepsStorage: Daily steps reset for $today');
@@ -89,6 +113,7 @@ class StepsStorage {
         // It's a new day, reset all step data
         await prefs.remove(_todayStepsKey);
         await prefs.remove(_baseStepsKey);
+        await prefs.remove(_offsetStepsKey); // Clear offset too
         print('StepsStorage: New day detected ($lastDate -> $today), resetting step data');
       }
     } catch (e) {
