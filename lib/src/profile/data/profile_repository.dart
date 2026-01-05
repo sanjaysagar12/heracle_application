@@ -247,7 +247,7 @@ class ProfileRepository {
   Future<List<WorkoutCategory>> getWorkoutCategories() async {
     try {
       final sessions = await getSessions();
-      final categoryNames = sessions.map((s) => s.category).toSet().toList();
+      final categoryNames = sessions.expand((s) => s.categories).toSet().toList();
       
       return categoryNames.map((name) => WorkoutCategory(
         id: name.toLowerCase(),
@@ -350,7 +350,8 @@ class ProfileRepository {
         id: json['id'] as String,
         title: json['title'] as String,
         content: json['content'] as String? ?? '',
-        category: json['category'] as String? ?? 'General',
+        categories: (json['categories'] as List?)?.map((e) => e as String).toList() 
+            ?? ((json['category'] != null) ? [json['category'] as String] : []),
         exercisesCount: json['exercisesCount'] as int? ?? 0,
         position: json['position'] as int? ?? 0,
         exercises: (json['exercises'] as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],

@@ -22,15 +22,26 @@ class WorkoutSessionStorage {
       
       final map = {
         'id': session.id,
+        'backend_id': session.backendId,
         'title': session.title,
         'content': session.content,
-        'category': session.category,
+        // category columns removed from sessions table
         'exercises_count': session.exercisesCount,
         'position': session.position,
         'created_at': now,
       };
       
       await db.insert('sessions', map);
+
+      // Insert categories links
+      for (final catName in session.categories) {
+        final catId = await _getOrCreateCategory(db, catName, now);
+        // avoid duplicates
+        await db.insert('session_category_links', {
+          'session_id': session.id,
+          'category_id': catId,
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      }
 
       // insert exercises separately
       await _deleteSessionExercises(session.id);
@@ -47,6 +58,34 @@ class WorkoutSessionStorage {
         return;
       }
       rethrow;
+    }
+  }
+
+  Future<String> _getOrCreateCategory(Database db, String categoryName, int now) async {
+    if (categoryName.isEmpty) return '';
+    try {
+      final List<Map<String, dynamic>> maps = await db.query(
+        'session_categories',
+        columns: ['id'],
+        where: 'name = ?',
+        whereArgs: [categoryName],
+      );
+
+      if (maps.isNotEmpty) {
+        return maps.first['id'] as String;
+      }
+
+      // Create new category
+      final newId = '${now}_${categoryName.hashCode}';
+      await db.insert('session_categories', {
+        'id': newId,
+        'name': categoryName,
+        'created_at': now,
+      });
+      return newId;
+    } catch (e) {
+      print('WorkoutSessionStorage: Error getting/creating category: $e');
+      return '';
     }
   }
 
@@ -142,20 +181,43 @@ class WorkoutSessionStorage {
   Future<List<Session>> getAllSessions() async {
     try {
       final db = await _dbHelper.database;
+      // Get all sessions
       final result = await db.query('sessions', orderBy: 'position ASC, created_at DESC');
+      
+      // Batch fetch all categories for these sessions
+      final allLinks = await db.rawQuery('''
+        SELECT l.session_id, c.name 
+        FROM session_category_links l
+        JOIN session_categories c ON l.category_id = c.id
+      ''');
+      
+      // Map session_id -> list of category names
+      final categoryMap = <String, List<String>>{};
+      for (final row in allLinks) {
+        final sid = row['session_id'] as String;
+        final name = row['name'] as String;
+        if (categoryMap.containsKey(sid)) {
+          categoryMap[sid]!.add(name);
+        } else {
+          categoryMap[sid] = [name];
+        }
+      }
+
       final sessions = <Session>[];
       
       for (final row in result) {
-        final session = _mapRowToSession(row);
-        final exercises = await getExercisesForSession(session.id);
+        final sessionId = row['id'] as String;
+        final exercises = await getExercisesForSession(sessionId); // Still N+1 but necessary for complex exercise data
+        final categories = categoryMap[sessionId] ?? [];
         
         final updated = Session(
-          id: session.id,
-          title: session.title,
-          content: session.content,
-          category: session.category,
-          exercisesCount: session.exercisesCount,
-          position: session.position,
+          id: sessionId,
+          backendId: row['backend_id'] as String? ?? '',
+          title: row['title'] as String,
+          content: row['content'] as String? ?? '',
+          categories: categories,
+          exercisesCount: row['exercises_count'] as int,
+          position: (row['position'] as int?) ?? 0,
           exercises: exercises,
         );
         sessions.add(updated);
@@ -178,16 +240,18 @@ class WorkoutSessionStorage {
       
       if (result.isEmpty) return null;
       
-      final session = _mapRowToSession(result.first);
-      final exercises = await getExercisesForSession(session.id);
+      final row = result.first;
+      final exercises = await getExercisesForSession(id);
+      final categories = await _getCategoriesForSession(db, id);
       
       return Session(
-        id: session.id,
-        title: session.title,
-        content: session.content,
-        category: session.category,
-        exercisesCount: session.exercisesCount,
-        position: session.position,
+        id: id,
+        backendId: row['backend_id'] as String? ?? '',
+        title: row['title'] as String,
+        content: row['content'] as String? ?? '',
+        categories: categories,
+        exercisesCount: row['exercises_count'] as int,
+        position: (row['position'] as int?) ?? 0,
         exercises: exercises,
       );
     } catch (e) {
@@ -198,6 +262,17 @@ class WorkoutSessionStorage {
     }
   }
 
+  Future<List<String>> _getCategoriesForSession(Database db, String sessionId) async {
+    final result = await db.rawQuery('''
+      SELECT c.name 
+      FROM session_categories c
+      JOIN session_category_links l ON c.id = l.category_id
+      WHERE l.session_id = ?
+    ''', [sessionId]);
+    
+    return result.map((r) => r['name'] as String).toList();
+  }
+
   Future<int> updateSession(Session session) async {
     try {
       final db = await _dbHelper.database;
@@ -205,17 +280,28 @@ class WorkoutSessionStorage {
       
       final map = {
         'id': session.id,
+        'backend_id': session.backendId,
         'title': session.title,
         'content': session.content,
-        'category': session.category,
+        // categories removed
         'exercises_count': session.exercisesCount,
         'position': session.position,
-        'created_at': now,
+        'created_at': now, 
       };
       
       final res = await db.update('sessions', map, where: 'id = ?', whereArgs: [session.id]);
 
-      // update exercises: replace all for simplicity
+      // update categories: delete old links, insert new
+      await db.delete('session_category_links', where: 'session_id = ?', whereArgs: [session.id]);
+      for (final catName in session.categories) {
+        final catId = await _getOrCreateCategory(db, catName, now);
+        await db.insert('session_category_links', {
+          'session_id': session.id,
+          'category_id': catId,
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      }
+
+      // update exercises
       await _deleteSessionExercises(session.id);
       for (var i = 0; i < session.exercises.length; i++) {
         await _insertSessionExercise(session.id, session.exercises[i], i, now);
@@ -276,17 +362,7 @@ class WorkoutSessionStorage {
   }
 
   // Helper methods
-  Session _mapRowToSession(Map<String, dynamic> row) {
-    return Session(
-      id: row['id'] as String,
-      title: row['title'] as String,
-      content: row['content'] as String? ?? '',
-      category: row['category'] as String? ?? '',
-      exercisesCount: row['exercises_count'] as int,
-      position: (row['position'] as int?) ?? 0,
-      exercises: [], // Will be populated by caller
-    );
-  }
+
 
   Map<String, dynamic> _mapRowToExercise(Map<String, dynamic> row) {
     final setsData = row['sets_data'] as String?;

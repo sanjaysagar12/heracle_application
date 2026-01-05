@@ -176,13 +176,13 @@ class _SessionsSectionState extends State<SessionsSection> {
           : Builder(
               builder: (context) {
                 final cats = <String>{};
-                for (var s in _sessions) cats.add(s.category);
+                for (var s in _sessions) cats.addAll(s.categories);
                 _filters = ['All', ...cats.toList()];
                 if (!_filters.contains(_selectedFilter)) _selectedFilter = 'All';
 
                 final displayedSessions = _selectedFilter == 'All'
                     ? _sessions
-                    : _sessions.where((s) => s.category == _selectedFilter).toList();
+                    : _sessions.where((s) => s.categories.contains(_selectedFilter)).toList();
 
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),

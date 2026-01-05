@@ -26,6 +26,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
   Profile? _profile;
   bool _isLoading = true;
   List<ChartData> _chartData = [];
+  int _refreshKey = 0;
 
   @override
   void initState() {
@@ -79,7 +80,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
         _isLoading = false;
       });
     } catch (_) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -127,34 +128,6 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Column(
                       children: [
-                        // View Workout Logs button
-                        // SizedBox(
-                        //   width: double.infinity,
-                        //   child: OutlinedButton.icon(
-                        //     onPressed: () {
-                        //       Navigator.push(
-                        //         context,
-                        //         MaterialPageRoute(builder: (_) => const WorkoutLogsTab()),
-                        //       );
-                        //     },
-                        //     icon: const Icon(Icons.history, color: AppColors.primary, size: 20),
-                        //     label: const Text(
-                        //       'View Workout History',
-                        //       style: TextStyle(
-                        //         color: AppColors.primary,
-                        //         fontSize: 16,
-                        //         fontWeight: FontWeight.w600,
-                        //       ),
-                        //     ),
-                        //     style: OutlinedButton.styleFrom(
-                        //       side: const BorderSide(color: AppColors.primary, width: 1.6),
-                        //       minimumSize: const Size.fromHeight(48),
-                        //       padding: const EdgeInsets.symmetric(vertical: 12),
-                        //       shape: const StadiumBorder(),
-                        //     ),
-                        //   ),
-                        // ),
-                        // const SizedBox(height: 10),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -198,12 +171,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
                           child: OutlinedButton(
                             onPressed: () async {
                               // Navigate to select workouts tab/page (create workout)
-                              await Navigator.push(
+                              final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (_) => SelectWorkoutsTab(mode: 'create')),
                               );
-                              // refresh sessions section after returning
-                              setState(() {});
+                              // refresh sessions section if session was created
+                              if (result == true) {
+                                setState(() {
+                                  _refreshKey++;
+                                });
+                              }
                             },
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: AppColors.primary, width: 1.6),
@@ -226,7 +203,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ),
                   const SizedBox(height: 12),
                   // Sessions section (moved to its own widget & data layer)
-                  SessionsSection(repository: SessionRepository()),
+                  SessionsSection(
+                    key: ValueKey(_refreshKey),
+                    repository: SessionRepository(),
+                  ),
                 ],
               ),
             ),

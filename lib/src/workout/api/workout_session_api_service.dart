@@ -10,7 +10,7 @@ class WorkoutSessionApiService {
       final data = {
         "title": session.title,
         "content": session.content,
-        "category": session.category,
+        "categories": session.categories,
         "position": session.position,
         "exercises": session.exercises.map((e) {
           return {
@@ -55,6 +55,52 @@ class WorkoutSessionApiService {
         return response.data as List<dynamic>;
       } else {
         throw Exception('Failed to load sessions: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateSession(String id, Session session) async {
+    try {
+      final data = {
+        "title": session.title,
+        "content": session.content,
+        "categories": session.categories,
+        "position": session.position,
+        "exercises": session.exercises.map((e) {
+          return {
+            "id": e['id'],
+            "sets": (e['sets'] as List).map((s) {
+              return {
+                "kg": s['kg'],
+                "reps": s['reps'],
+              };
+            }).toList(),
+          };
+        }).toList(),
+      };
+
+      final response = await _dioClient.dio.put(
+        '/api/workout/sessions/$id',
+        data: data,
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to update session: ${response.statusCode}');
+      }
+    } catch (e) {
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteSession(String id) async {
+    try {
+      final response = await _dioClient.dio.delete('/api/workout/sessions/$id');
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete session: ${response.statusCode}');
       }
     } catch (e) {
       rethrow;

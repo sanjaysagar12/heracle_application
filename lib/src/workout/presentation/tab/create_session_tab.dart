@@ -46,6 +46,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
   late List<_ExerciseLog> _exerciseLogs;
   final SessionRepository _sessionRepository = SessionRepository();
   final TextEditingController _sessionNameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
   List<String> _existingCategories = [];
   bool _showCategorySuggestions = false;
@@ -60,7 +61,8 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       // Initialize with existing session data
       final session = widget.sessionToEdit!;
       _sessionNameController.text = session.title;
-      _categoryController.text = session.category;
+      _descriptionController.text = session.content;
+      _categoryController.text = session.categories.join(', ');
 
       _exerciseLogs = session.exercises.map((e) {
         final existingSets = e['sets'] as List<dynamic>? ?? [];
@@ -98,9 +100,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       final sessions = await WorkoutSessionStorage.instance.getAllSessions();
       final categories = <String>{};
       for (var session in sessions) {
-        if (session.category.isNotEmpty) {
-          categories.add(session.category);
-        }
+        categories.addAll(session.categories);
       }
       setState(() {
         _existingCategories = categories.toList()..sort();
@@ -113,6 +113,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
   @override
   void dispose() {
     _sessionNameController.dispose();
+    _descriptionController.dispose();
     _categoryController.dispose();
     super.dispose();
   }
@@ -160,6 +161,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
 
   Future<void> _saveSession() async {
     final sessionName = _sessionNameController.text.trim();
+    final description = _descriptionController.text.trim();
     final category = _categoryController.text.trim();
 
     if (sessionName.isEmpty) {
@@ -169,6 +171,14 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
 
     if (category.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a category')));
+      return;
+    }
+
+    // Parse categories: split by comma, trim whitespace
+    final categoryList = category.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+
+    if (categoryList.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter at least one category')));
       return;
     }
 
@@ -185,10 +195,12 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
 
     final session = Session(
       id: _isEditMode ? widget.sessionToEdit!.id : DateTime.now().millisecondsSinceEpoch.toString(),
+      backendId: _isEditMode ? widget.sessionToEdit!.backendId : '',
       title: sessionName,
-      content: _isEditMode ? widget.sessionToEdit!.content : 'Created from in-app workout',
-      category: category,
+      content: description,
+      categories: categoryList,
       exercisesCount: exercises.length,
+      position: _isEditMode ? widget.sessionToEdit!.position : 0,
       exercises: exercises,
     );
 
@@ -200,9 +212,8 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       } else {
         await _sessionRepository.saveSessionToDb(session);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session created')));
-        // Pop both CreateSessionTab and SelectWorkoutsTab to return to WorkoutPage
-        Navigator.pop(context, true); // pop CreateSessionTab
-        Navigator.pop(context, true); // pop SelectWorkoutsTab
+        // Pop CreateSessionTab, returning true to SelectWorkoutsTab
+        Navigator.pop(context, true); 
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_isEditMode ? 'Update' : 'Save'} failed: $e')));
@@ -298,10 +309,10 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(_isEditMode ? 'Edit Session' : 'Create Session', style: const TextStyle(color: AppColors.pureWhite)),
+        scrolledUnderElevation: 0,
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(16.0),
-        child: ListView(
           children: [
             // Session Name Input
             TextField(
@@ -315,7 +326,26 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                 filled: true,
                 fillColor: AppColors.black100,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Description Input
+            TextField(
+              controller: _descriptionController,
+              style: const TextStyle(color: AppColors.pureWhite),
+              decoration: InputDecoration(
+                labelText: 'Description',
+                labelStyle: const TextStyle(color: AppColors.white60),
+                hintText: 'e.g., A quick morning routine',
+                hintStyle: const TextStyle(color: AppColors.white60),
+                filled: true,
+                fillColor: AppColors.black100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -353,7 +383,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                           )
                         : null,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -392,22 +422,6 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
               ],
             ),
             const SizedBox(height: 12),
-            // Workout count chip
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.black100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.fitness_center, color: AppColors.primary, size: 20),
-                  const SizedBox(width: 8),
-                  Text('$_workoutCount Exercises', style: const TextStyle(color: AppColors.pureWhite, fontWeight: FontWeight.w700)),
-                ],
-              ),
-            ),
             const SizedBox(height: 12),
             // Exercise list
             ReorderableListView(
@@ -508,7 +522,6 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
             const SizedBox(height: 24),
           ],
         ),
-      ),
     );
   }
 

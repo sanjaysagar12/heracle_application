@@ -28,7 +28,7 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: widget.session.title,
         content: widget.session.content,
-        category: widget.session.category,
+        categories: widget.session.categories,
         exercisesCount: widget.session.exercisesCount,
         position: 0, // Should be handled by repository or added to end
         exercises: widget.session.exercises,

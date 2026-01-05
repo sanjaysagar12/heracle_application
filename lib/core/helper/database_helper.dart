@@ -24,7 +24,7 @@ class DatabaseHelper {
       
       return await openDatabase(
         path,
-        version: 3, // Updated version to trigger migration
+        version: 1, // Fresh install starts at version 1
         onCreate: _createTables,
         onUpgrade: _onUpgrade,
         onConfigure: _onConfigure,
@@ -58,13 +58,33 @@ class DatabaseHelper {
       )
     ''');
 
+    // Create session_categories table
+    batch.execute('''
+      CREATE TABLE session_categories (
+        id TEXT PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+
+    // Create session_category_links table (Many-to-Many)
+    batch.execute('''
+      CREATE TABLE session_category_links (
+        session_id TEXT NOT NULL,
+        category_id TEXT NOT NULL,
+        PRIMARY KEY (session_id, category_id),
+        FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE,
+        FOREIGN KEY (category_id) REFERENCES session_categories (id) ON DELETE CASCADE
+      )
+    ''');
+
     // Create sessions table
     batch.execute('''
       CREATE TABLE sessions (
         id TEXT PRIMARY KEY,
+        backend_id TEXT,
         title TEXT NOT NULL,
         content TEXT,
-        category TEXT,
         exercises_count INTEGER NOT NULL,
         position INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL
@@ -151,47 +171,8 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    print('DatabaseHelper: Upgrading database from version $oldVersion to $newVersion');
-    
-    // Handle database migrations
-    if (oldVersion < 2) {
-      // Add targets table
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS targets (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          target_type TEXT NOT NULL UNIQUE,
-          target_value INTEGER NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL
-        )
-      ''');
-
-      // Insert default targets if table is empty
-      final result = await db.rawQuery('SELECT COUNT(*) as count FROM targets');
-      final count = result.first['count'] as int? ?? 0;
-      if (count == 0) {
-        final now = DateTime.now().millisecondsSinceEpoch;
-        await db.execute('''
-          INSERT INTO targets (target_type, target_value, created_at, updated_at) VALUES
-          ('steps', 10000, $now, $now),
-          ('cals_burned', 500, $now, $now),
-          ('cals_taken', 2000, $now, $now),
-          ('protein_taken', 150, $now, $now)
-        ''');
-      }
-
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_targets_type ON targets (target_type)');
-    }
-
-    if (oldVersion < 3) {
-      // Version 3: Add position column to sessions table
-      try {
-        await db.execute('ALTER TABLE sessions ADD COLUMN position INTEGER DEFAULT 0');
-        print('DatabaseHelper: Added position column to sessions table');
-      } catch (e) {
-        print('DatabaseHelper: Error adding position column (may already exist): $e');
-      }
-    }
+    // No upgrades needed as we're starting fresh with the latest schema
+    print('DatabaseHelper: Upgrading database from version $oldVersion to $newVersion (Clean Install Logic)');
   }
 
   Future<void> closeDatabase() async {

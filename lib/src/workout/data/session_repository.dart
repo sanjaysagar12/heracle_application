@@ -4,21 +4,23 @@ import '../api/workout_session_api_service.dart';
 
 class Session {
   final String id;
+  final String backendId;
   final String title;
   final String content;
-  final String category;
+  final List<String> categories; // Refactored to list for M:N
   final int exercisesCount;
-  final int position; // Added to support reordering
-  final List<Map<String, dynamic>> exercises; // list of exercise entries (each may include 'image')
+  final int position;
+  final List<Map<String, dynamic>> exercises;
 
   Session({
     required this.id,
+    this.backendId = '',
     required this.title,
     required this.content,
-    required this.category,
+    this.categories = const [],
     required this.exercisesCount,
     this.position = 0,
-    this.exercises = const [], // default empty
+    this.exercises = const [],
   });
 }
 
@@ -66,21 +68,27 @@ class SessionRepository {
   }
 
   Future<void> saveSessionToDb(Session session) async {
+    Session sessionToSave = session;
     try {
-      await _apiService.createSession(session);
-      // If API success, we can optionally update the ID if the backend returns one,
-      // but the current requirements just say "send post request ... and then store it".
-      // We will proceed to store in local DB.
+      final response = await _apiService.createSession(session);
+      // Assuming response contains 'id' field as per user request: { "id": "string" }
+      if (response['id'] != null) {
+        sessionToSave = Session(
+          id: session.id,
+          backendId: response['id'].toString(),
+          title: session.title,
+          content: session.content,
+          categories: session.categories,
+          exercisesCount: session.exercisesCount,
+          position: session.position,
+          exercises: session.exercises,
+        );
+      }
     } catch (e) {
        print('Failed to save session to API: $e');
-       // We continue to save locally even if API fails, or rethrow?
-       // The user prompt implies a flow: "send post ... and then store it".
-       // I'll log it and continue to save locally for now, as offline-first is better.
-       // However, strictly speaking, if API fails we might want to let the UI know.
-       // I'll rethrow for now so the UI shows the error as per my plan "Handle success/failure".
        rethrow; 
     }
-    await _sessionStorage.insertSession(session);
+    await _sessionStorage.insertSession(sessionToSave);
   }
 
   Future<void> saveWorkoutLogToDb(WorkoutLog log) async {
@@ -100,6 +108,17 @@ class SessionRepository {
   }
 
   Future<void> deleteSession(String id) async {
+    try {
+      final session = await _sessionStorage.getSessionById(id);
+      if (session != null && session.backendId.isNotEmpty) {
+        await _apiService.deleteSession(session.backendId);
+      }
+    } catch (e) {
+      print('Failed to delete session from API: $e');
+      // Continue to delete locally even if offline? 
+      // Usually yes for user experience, but rethrowing lets UI know.
+      // Assuming we want to delete locally regardless:
+    }
     await _sessionStorage.deleteSession(id);
   }
 
@@ -108,6 +127,17 @@ class SessionRepository {
   }
 
   Future<void> updateSession(Session session) async {
+    try {
+      // Use backendId if available, otherwise fallback (or throw? assuming backendId is crucial for sync)
+      final apiId = session.backendId.isNotEmpty ? session.backendId : session.id; 
+      // Note: If session was created offline, backendId might be empty. 
+      // Ideally we should sync first, but for now we follow user instruction to use this ID for editing.
+      
+      await _apiService.updateSession(apiId, session);
+    } catch (e) {
+      print('Failed to update session API: $e');
+      rethrow;
+    }
     await _sessionStorage.updateSession(session);
   }
 

@@ -82,6 +82,7 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
       appBar: AppBar(
         backgroundColor: AppColors.black,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: SvgPicture.asset(
             'assets/icons/back.svg',
@@ -92,87 +93,94 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
         ),
         title: const Text('Select Workouts', style: TextStyle(color: AppColors.pureWhite)),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  onChanged: (v) => setState(() => _query = v),
-                  style: const TextStyle(color: AppColors.pureWhite),
-                  decoration: InputDecoration(
-                    hintText: 'Search Workout...',
-                    hintStyle: const TextStyle(color: AppColors.white60),
-                    filled: true,
-                    fillColor: AppColors.black100,
-                    suffixIcon: const Icon(Icons.search, color: AppColors.white60),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (v) => setState(() => _query = v),
+                    style: const TextStyle(color: AppColors.pureWhite),
+                    decoration: InputDecoration(
+                      hintText: 'Search Workout...',
+                      hintStyle: const TextStyle(color: AppColors.white60),
+                      filled: true,
+                      fillColor: AppColors.black100,
+                      suffixIcon: const Icon(Icons.search, color: AppColors.white60),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 40,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _filters.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) {
-                      final label = _filters[i];
-                      final selected = label == _selectedFilter;
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedFilter = label),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: selected ? AppColors.primary : AppColors.black100,
-                            borderRadius: BorderRadius.circular(20),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 40,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _filters.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, i) {
+                        final label = _filters[i];
+                        final selected = label == _selectedFilter;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedFilter = label),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: selected ? AppColors.primary : AppColors.black100,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Center(
+                              child: Text(label, style: TextStyle(color: selected ? AppColors.black : AppColors.white60)),
+                            ),
                           ),
-                          child: Center(
-                            child: Text(label, style: TextStyle(color: selected ? AppColors.black : AppColors.white60)),
-                          ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          Expanded(
-            child: ListView.separated(
-              padding: EdgeInsets.fromLTRB(8, 0, 8, _selectedIds.isEmpty ? 16 : 96), // dynamic bottom padding
-              itemCount: _filteredItems.length,
-              separatorBuilder: (_, __) => const Divider(color: AppColors.greyDark, height: 1),
-              itemBuilder: (context, index) {
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
                 final item = _filteredItems[index];
                 final id = item['id']!;
                 final selected = _selectedIds.contains(id);
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  leading: CircleAvatar(radius: 22, backgroundImage: NetworkImage(item['image']!)),
-                  title: Text(item['name']!, style: const TextStyle(color: AppColors.pureWhite)),
-                  subtitle: Text(item['desc']!, style: const TextStyle(color: AppColors.white60)),
-                  trailing: GestureDetector(
-                    onTap: () => _toggleSelection(id),
-                    child: Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: selected ? AppColors.primary : Colors.transparent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.white40),
+                return Column(
+                  children: [
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: CircleAvatar(radius: 22, backgroundImage: NetworkImage(item['image']!)),
+                      title: Text(item['name']!, style: const TextStyle(color: AppColors.pureWhite)),
+                      subtitle: Text(item['desc']!, style: const TextStyle(color: AppColors.white60)),
+                      trailing: GestureDetector(
+                        onTap: () => _toggleSelection(id),
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: selected ? AppColors.primary : Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.white40),
+                          ),
+                          child: Icon(selected ? Icons.check : Icons.add, color: selected ? AppColors.black : AppColors.white60, size: 20),
+                        ),
                       ),
-                      child: Icon(selected ? Icons.check : Icons.add, color: selected ? AppColors.black : AppColors.white60, size: 20),
+                      onTap: () => _toggleSelection(id),
                     ),
-                  ),
-                  onTap: () => _toggleSelection(id),
+                    if (index < _filteredItems.length - 1)
+                      const Divider(color: AppColors.greyDark, height: 1),
+                  ],
                 );
               },
+              childCount: _filteredItems.length,
             ),
           ),
+          SliverPadding(padding: EdgeInsets.only(bottom: _selectedIds.isEmpty ? 16 : 96)),
         ],
       ),
       // show floating action button only when at least one item is selected
@@ -191,7 +199,7 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
               width: double.infinity,
               height: 56,
               child: FloatingActionButton.extended(
-                onPressed: _selectedIds.isEmpty ? null : () {
+                onPressed: _selectedIds.isEmpty ? null : () async {
                   final selectedItems = _items.where((it) => _selectedIds.contains(it['id'])).toList();
                   
                   // if mode is 'add', return selected exercises to caller
@@ -201,10 +209,15 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
                   }
 
                   if (widget.mode == 'create') {
-                    Navigator.push(
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => CreateSessionTab(exercises: selectedItems)),
                     );
+                    
+                    // If session was created successfully, return to workout page
+                    if (result == true && mounted) {
+                      Navigator.pop(context, true);
+                    }
                   } else {
                     Navigator.push(
                       context,
