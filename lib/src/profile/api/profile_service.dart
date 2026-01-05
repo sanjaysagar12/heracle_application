@@ -134,4 +134,13 @@ class ProfileApiService {
       throw Exception('Failed to load user posts: $e');
     }
   }
+  /// Get highlights
+  Future<List<Map<String, dynamic>>> getHighlights({String? category}) async {
+    // Return dummy data or make an API call. 
+    // Since I don't have the explicit API endpoint in my instructions, assuming a pattern similar to others.
+    // Ideally this should fetch from an endpoint like /api/highlights or user specific highlights.
+    // For now returning an empty list or mock to fix the build.
+    await Future.delayed(const Duration(milliseconds: 500));
+    return []; 
+  }
 }
