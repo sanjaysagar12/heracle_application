@@ -190,7 +190,7 @@ class _SessionsSectionState extends State<SessionsSection> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const Text(
                             'Your Sessions',
@@ -200,14 +200,15 @@ class _SessionsSectionState extends State<SessionsSection> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          if (_selectedFilter == 'All' && _sessions.length > 1 && !widget.isViewOnly)
-                             const Padding(
-                               padding: EdgeInsets.only(right: 8.0),
-                               child: Text(
-                                 "Long press to reorder",
-                                 style: TextStyle(color: AppColors.white60, fontSize: 12),
-                               ),
+                          if (_selectedFilter == 'All' && _sessions.length > 1 && !widget.isViewOnly) ...[
+                             const SizedBox(width: 8),
+                             Tooltip(
+                               message: "Long press to reorder",
+                               triggerMode: TooltipTriggerMode.tap,
+                               preferBelow: false,
+                               child: const Icon(Icons.info_outline, color: AppColors.white60, size: 20),
                              ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 12),
