@@ -30,4 +30,20 @@ class PostWorkoutRepository {
       rethrow;
     }
   }
+
+  Future<void> deletePost(String postId) async {
+    try {
+      await _service.deletePost(postId);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updatePost(String postId, {String? caption, List<String>? tags}) async {
+    try {
+      await _service.updatePost(postId, caption: caption, tags: tags);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

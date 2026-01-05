@@ -9,6 +9,8 @@ class TrackMutualsSection extends StatefulWidget {
   final Function(String) onLike;
   final Function(String) onComment;
   final Function(String) onLikesClick;
+  final Function(String) onDeletePost;
+  final Function(FeedPost) onEditPost;
 
   const TrackMutualsSection({
     super.key,
@@ -16,6 +18,8 @@ class TrackMutualsSection extends StatefulWidget {
     required this.onLike,
     required this.onComment,
     required this.onLikesClick,
+    required this.onDeletePost,
+    required this.onEditPost,
   });
 
   @override
@@ -95,7 +99,7 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
 
   Widget _buildWorkoutPosts() {
     return Column(
-      children: widget.posts.map((post) {
+      children: widget.posts.map<Widget>((post) {
         if (post is WorkoutPost) {
           return WorkoutPostCard(
             username: post.username,
@@ -112,10 +116,13 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
             likes: post.likes,
             likedBy: post.likedBy,
             isLiked: post.isLiked,
+            isOwnPost: post.isOwnPost,
             commentCount: post.commentCount,
             onLike: () => widget.onLike(post.id),
             onComment: () => widget.onComment(post.id),
             onLikesClick: () => widget.onLikesClick(post.id),
+            onDelete: () => widget.onDeletePost(post.id),
+            onEdit: () => widget.onEditPost(post),
           );
         } else if (post is NutritionPost) {
           return NutritionPostCard(

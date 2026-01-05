@@ -16,6 +16,8 @@ import '../../home/widgets/comments_bottom_sheet.dart';
 import '../../home/widgets/likes_bottom_sheet.dart';
 import '../../home/widgets/workout_post_card.dart';
 import '../../home/widgets/nutrition_post_card.dart';
+import '../../workout/data/post_workout_repository.dart'; // Added
+import '../../workout/presentation/tab/post_workout_screen.dart'; // Added
 
 class ProfilePage extends StatefulWidget {
   final String? username;
@@ -41,6 +43,7 @@ class _ProfilePageState extends State<ProfilePage> {
   List<FeedPost> _posts = [];
   Map<String, List<Comment>> _commentsCache = {};
   final Set<String> _likeInProgress = {};
+  final PostWorkoutRepository _postWorkoutRepository = PostWorkoutRepository(); // Added
 
   @override
   void initState() {
@@ -66,7 +69,6 @@ class _ProfilePageState extends State<ProfilePage> {
         _profile = profile;
         _discoverStories = results[0] as List<DiscoverStory>; // Feed items directly as DiscoverStory
         _sessions = results[1] as List<Session>;
-        _posts = results[2] as List<FeedPost>;
         _posts = results[2] as List<FeedPost>;
         _isLoading = false;
       });
@@ -216,6 +218,52 @@ class _ProfilePageState extends State<ProfilePage> {
     return comments.map((comment) => comment.copyWith(
       replies: comment.replies.where((reply) => !reply.id.startsWith('temp_')).toList(),
     )).toList();
+  }
+
+  Future<void> _handleDeletePost(String postId) async {
+    try {
+      await _postWorkoutRepository.deletePost(postId);
+      setState(() {
+        _posts.removeWhere((p) => p.id == postId);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Post deleted')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete post: $e')),
+        );
+      }
+    }
+  }
+
+  void _handleEditPost(FeedPost post) async {
+    if (post is! WorkoutPost) return;
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostWorkoutScreen(
+          duration: 0, // Placeholder
+          volume: 0, // Placeholder
+          exercises: post.exercises.map((e) => {
+            'name': e.name,
+            'image': e.imageUrl,
+            'sets': [],
+          }).toList(),
+          postId: post.id,
+          initialCaption: post.content,
+          initialTags: post.tags,
+        ),
+      ),
+    );
+
+    if (result == true) {
+      _loadData(); // Reload to fetch updated post
+    }
   }
 
   void _handleOptimisticCommentAdd(String postId, Comment comment) {
@@ -486,7 +534,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     
     return Column(
-      children: _posts.map((post) {
+      children: _posts.map<Widget>((post) {
         if (post is WorkoutPost) {
           return WorkoutPostCard(
             username: post.username,
@@ -507,6 +555,9 @@ class _ProfilePageState extends State<ProfilePage> {
             onLike: () => _handleLike(post.id),
             onComment: () => _handleCommentClick(post.id),
             onLikesClick: () => _handleLikesClick(post.id),
+            onDelete: () => _handleDeletePost(post.id),
+            onEdit: () => _handleEditPost(post),
+            isOwnPost: post.isOwnPost,
           );
         } else if (post is NutritionPost) {
           return NutritionPostCard(

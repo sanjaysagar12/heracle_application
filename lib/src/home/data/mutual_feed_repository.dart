@@ -49,6 +49,7 @@ abstract class FeedPost {
   final int likes;
   final List<LikedByUser> likedBy;
   final bool isLiked;
+  final bool isOwnPost; // New field
   final int commentCount;
 
   FeedPost({
@@ -62,6 +63,7 @@ abstract class FeedPost {
     required this.likes,
     required this.likedBy,
     this.isLiked = false,
+    this.isOwnPost = false, // Default to false
     required this.commentCount,
   });
 
@@ -103,6 +105,7 @@ class WorkoutPost extends FeedPost {
     required super.likes,
     required super.likedBy,
     super.isLiked,
+    super.isOwnPost,
     required this.tags,
     required this.duration,
     required this.volume,
@@ -129,6 +132,7 @@ class WorkoutPost extends FeedPost {
       likedBy: (json['likedBy'] as List? ?? []).map((user) => LikedByUser.fromJson(user)).toList(),
       // read isLiked from API (default false)
       isLiked: json['isLiked'] as bool? ?? false,
+      isOwnPost: json['isOwnPost'] as bool? ?? false,
       commentCount: json['commentCount'] as int? ?? 0,
     );
   }
@@ -151,6 +155,7 @@ class WorkoutPost extends FeedPost {
       likes: likes ?? this.likes,
       likedBy: likedBy,
       isLiked: isLiked ?? this.isLiked,
+      isOwnPost: isOwnPost,
       commentCount: commentCount ?? this.commentCount,
     );
   }
@@ -202,6 +207,7 @@ class NutritionPost extends FeedPost {
     required super.likes,
     required super.likedBy,
     super.isLiked,
+    super.isOwnPost,
     required super.commentCount,
     required this.meals,
   });
@@ -226,6 +232,7 @@ class NutritionPost extends FeedPost {
       likedBy: (json['likedBy'] as List? ?? []).map((user) => LikedByUser.fromJson(user)).toList(),
       // read isLiked from API (default false)
       isLiked: json['isLiked'] as bool? ?? false,
+      isOwnPost: json['isOwnPost'] as bool? ?? false,
       commentCount: json['commentCount'] as int? ?? 0,
       meals: meals,
     );
@@ -244,6 +251,7 @@ class NutritionPost extends FeedPost {
       likes: likes ?? this.likes,
       likedBy: likedBy,
       isLiked: isLiked ?? this.isLiked,
+      isOwnPost: isOwnPost,
       commentCount: commentCount ?? this.commentCount,
       meals: meals,
     );

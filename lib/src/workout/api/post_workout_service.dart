@@ -55,6 +55,29 @@ class PostWorkoutService {
     }
   }
 
+  Future<void> deletePost(String postId) async {
+    try {
+      await _dioClient.dio.delete('/api/post/$postId');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updatePost(String postId, {String? caption, List<String>? tags}) async {
+    try {
+      final data = <String, dynamic>{};
+      if (caption != null) data['caption'] = caption;
+      if (tags != null) data['tags'] = tags; // API expects array of strings for PATCH based on example
+
+      await _dioClient.dio.patch(
+        '/api/post/$postId',
+        data: data,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   void _validateExercises(List<dynamic> exercises) {
     for (var ex in exercises) {
       if (ex is! Map<String, dynamic>) throw const FormatException('Invalid exercise format');

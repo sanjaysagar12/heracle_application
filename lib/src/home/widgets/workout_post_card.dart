@@ -18,6 +18,9 @@ class WorkoutPostCard extends StatefulWidget {
   final List<Exercise> exercises;
   final int likes;
   final List<LikedByUser> likedBy;
+  final bool isOwnPost;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
   final bool isLiked;
   final VoidCallback onLike;
   final int commentCount;
@@ -40,10 +43,13 @@ class WorkoutPostCard extends StatefulWidget {
     required this.likes,
     required this.likedBy,
     this.isLiked = false,
+    this.isOwnPost = false,
     required this.onLike,
     required this.commentCount,
     required this.onComment,
     required this.onLikesClick,
+    required this.onDelete,
+    required this.onEdit,
   });
 
   @override
@@ -59,6 +65,31 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
       AppRoutes.profile,
       arguments: widget.handle,
     );
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.black100,
+        title: const Text('Delete Post', style: TextStyle(color: AppColors.pureWhite)),
+        content: const Text('Are you sure you want to delete this post?', style: TextStyle(color: AppColors.white60)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.white60)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      widget.onDelete();
+    }
   }
 
   @override
@@ -92,30 +123,43 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
   }
 
   Widget _buildHeader() {
-    return GestureDetector(
-      onTap: _navigateToProfile,
-      behavior: HitTestBehavior.opaque,
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundImage: NetworkImage(widget.profileImage),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: _navigateToProfile,
+            behavior: HitTestBehavior.opaque,
+            child: Row(
               children: [
-                Text(
-                  widget.username,
-                  style: const TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                CircleAvatar(
+                  radius: 24,
+                  backgroundImage: NetworkImage(widget.profileImage),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.username,
+                        style: const TextStyle(
+                          color: AppColors.pureWhite,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        widget.handle,
+                        style: const TextStyle(
+                          color: AppColors.white60,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Text(
-                  widget.handle,
+                  widget.timeAgo,
                   style: const TextStyle(
                     color: AppColors.white60,
                     fontSize: 14,
@@ -124,15 +168,43 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
               ],
             ),
           ),
-          Text(
-            widget.timeAgo,
-            style: const TextStyle(
-              color: AppColors.white60,
-              fontSize: 14,
-            ),
+        ),
+        if (widget.isOwnPost)
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'edit') {
+                widget.onEdit();
+              } else if (value == 'delete') {
+                _confirmDelete();
+              }
+            },
+            icon: const Icon(Icons.more_vert, color: AppColors.white60),
+            color: AppColors.black100,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.greyDark)),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, size: 20, color: AppColors.pureWhite),
+                    SizedBox(width: 12),
+                    Text('Edit', style: TextStyle(color: AppColors.pureWhite)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, size: 20, color: Colors.red),
+                    SizedBox(width: 12),
+                    Text('Delete', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+      ],
     );
   }
 

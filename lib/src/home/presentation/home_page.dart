@@ -12,6 +12,8 @@ import '../../../core/theme/app_colors.dart';
 import '../widgets/comments_bottom_sheet.dart';
 import '../widgets/skeleton_loading.dart';
 import '../widgets/likes_bottom_sheet.dart';
+import '../../workout/data/post_workout_repository.dart';
+import '../../workout/presentation/tab/post_workout_screen.dart';
 import '../../feed/data/stories_repository.dart';
 import '../../feed/presentation/tab/my_story_viewer.dart';
 
@@ -26,6 +28,7 @@ class _HomePageState extends State<HomePage> {
   final ProfileRepository _profileRepository = ProfileRepository();
   final ProgressRepository _progressRepository = ProgressRepository();
   final MutualFeedRepository _mutualFeedRepository = MutualFeedRepository();
+  final PostWorkoutRepository _postWorkoutRepository = PostWorkoutRepository(); // Added
   final StoriesRepository _storiesRepository = StoriesRepository();
   Profile? _profile;
   ProgressCard? _progress;
@@ -43,6 +46,113 @@ class _HomePageState extends State<HomePage> {
     _loadData();
     _initializeStepTracking();
   }
+
+  // ... (keeping existing methods)
+
+  Future<void> _handleDeletePost(String postId) async {
+    try {
+      await _postWorkoutRepository.deletePost(postId);
+      setState(() {
+        _posts.removeWhere((p) => p.id == postId);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Post deleted')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete post: $e')),
+        );
+      }
+    }
+  }
+
+  void _handleEditPost(FeedPost post) async {
+    if (post is! WorkoutPost) return;
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostWorkoutScreen(
+          duration: 0, // Placeholder as we don't have int duration in WorkoutPost
+          volume: 0, // Placeholder
+          exercises: post.exercises.map((e) => {
+            'name': e.name,
+            'image': e.imageUrl,
+            'sets': [], // No set details in feed
+          }).toList(),
+          postId: post.id,
+          initialCaption: post.content,
+          initialTags: post.tags,
+        ),
+      ),
+    );
+
+    if (result == true) {
+      _loadData(); // Reload to fetch updated post
+    }
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.black,
+      body: _isLoading
+          ? const SkeletonLoading()
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  if (_profile != null)
+                    CustomAppBar(
+                      name: _profile!.name,
+                      age: _profile!.age,
+                      profileImageUrl: _profile!.profileImageUrl,
+                      hasStory: _profile!.hasStory,
+                      onProfileTap: () {
+                        Navigator.pushNamed(
+                          context, 
+                          AppRoutes.profile,
+                          arguments: _profile!.username,
+                        );
+                      },
+                      onStoryTap: _handleStoryTap,
+                    ),
+                  if (_progress != null)
+                    TodayProgressCard(
+                      workoutsLeft: _progress!.workoutsLeft,
+                      steps: _progress!.steps,
+                      calsBurned: _progress!.calsBurned,
+                      calsTaken: _progress!.calsTaken,
+                      proteinTaken: _progress!.proteinTaken,
+                      stepsProgress: _progress!.stepsProgress,
+                      calsBurnedProgress: _progress!.calsBurnedProgress,
+                      calsTakenProgress: _progress!.calsTakenProgress,
+                      proteinTakenProgress: _progress!.proteinTakenProgress,
+                      onTargetUpdate: _handleTargetUpdate,
+                      actualSteps: _progress!.actualSteps,
+                      actualCalsBurned: _progress!.actualCalsBurned,
+                      actualCalsTaken: _progress!.actualCalsTaken,
+                      actualProteinTaken: _progress!.actualProteinTaken,
+                      targets: _progress!.targets,
+                    ),
+                  TrackMutualsSection(
+                    posts: _posts,
+                    onLike: _handleLike,
+                    onComment: _handleCommentClick,
+                    onLikesClick: _handleLikesClick,
+                    onDeletePost: _handleDeletePost,
+                    onEditPost: _handleEditPost,
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+
+
 
   Future<void> _initializeStepTracking() async {
     try {
@@ -450,59 +560,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.black,
-      body: _isLoading
-          ? const SkeletonLoading()
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  if (_profile != null)
-                    CustomAppBar(
-                      name: _profile!.name,
-                      age: _profile!.age,
-                      profileImageUrl: _profile!.profileImageUrl,
-                      hasStory: _profile!.hasStory,
-                      onProfileTap: () {
-                        Navigator.pushNamed(
-                          context, 
-                          AppRoutes.profile,
-                          arguments: _profile!.username,
-                        );
-                      },
-                      onStoryTap: _handleStoryTap,
-                    ),
-                  if (_progress != null)
-                    TodayProgressCard(
-                      workoutsLeft: _progress!.workoutsLeft,
-                      steps: _progress!.steps,
-                      calsBurned: _progress!.calsBurned,
-                      calsTaken: _progress!.calsTaken,
-                      proteinTaken: _progress!.proteinTaken,
-                      stepsProgress: _progress!.stepsProgress,
-                      calsBurnedProgress: _progress!.calsBurnedProgress,
-                      calsTakenProgress: _progress!.calsTakenProgress,
-                      proteinTakenProgress: _progress!.proteinTakenProgress,
-                      onTargetUpdate: _handleTargetUpdate,
-                      actualSteps: _progress!.actualSteps,
-                      actualCalsBurned: _progress!.actualCalsBurned,
-                      actualCalsTaken: _progress!.actualCalsTaken,
-                      actualProteinTaken: _progress!.actualProteinTaken,
-                      targets: _progress!.targets,
-                    ),
-                  TrackMutualsSection(
-                    posts: _posts,
-                    onLike: _handleLike,
-                    onComment: _handleCommentClick,
-                    onLikesClick: _handleLikesClick,
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
+
 
   @override
   void dispose() {

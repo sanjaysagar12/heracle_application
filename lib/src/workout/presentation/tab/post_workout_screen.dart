@@ -9,12 +9,20 @@ class PostWorkoutScreen extends StatefulWidget {
   final int duration; // in seconds
   final int volume;
   final List<Map<String, dynamic>> exercises;
+  
+  // Edit mode parameters
+  final String? postId;
+  final String? initialCaption;
+  final List<String>? initialTags;
 
   const PostWorkoutScreen({
     super.key,
     required this.duration,
     required this.volume,
     required this.exercises,
+    this.postId,
+    this.initialCaption,
+    this.initialTags,
   });
 
   @override
@@ -28,6 +36,7 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
   final List<String> _tags = []; // Store extracted tags
   bool _isPosting = false;
   bool _isPublic = true;
+  bool get _isEditMode => widget.postId != null;
 
   int get _totalSets {
     int count = 0;
@@ -52,6 +61,12 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
   @override
   void initState() {
     super.initState();
+    if (_isEditMode) {
+      _captionController.text = widget.initialCaption ?? '';
+      if (widget.initialTags != null) {
+        _tags.addAll(widget.initialTags!);
+      }
+    }
     _captionController.addListener(_onCaptionChanged);
   }
 
@@ -98,6 +113,7 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
   }
 
   Future<void> _pickImage() async {
+    if (_isEditMode) return; // Disable image picking in edit mode
     final picker = img_picker.ImagePicker();
     final pickedFiles = await picker.pickMultiImage();
 
@@ -131,22 +147,35 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
     });
 
     try {
-      // Logic change: pass _tags directly instead of extracting from text
-      await _repository.postWorkout(
-        caption: _captionController.text,
-        isPublic: _isPublic,
-        tags: _tags,
-        duration: widget.duration,
-        volume: widget.volume,
-        exercises: widget.exercises,
-        imagePaths: _selectedImages.map((e) => e.path).toList(),
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Workout posted successfully!')),
+      if (_isEditMode) {
+         await _repository.updatePost(
+           widget.postId!,
+           caption: _captionController.text,
+           tags: _tags,
+         );
+         if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Workout updated successfully!')),
+          );
+          Navigator.pop(context, true); // Return true to signal update
+        }
+      } else {
+        await _repository.postWorkout(
+          caption: _captionController.text,
+          isPublic: _isPublic,
+          tags: _tags,
+          duration: widget.duration,
+          volume: widget.volume,
+          exercises: widget.exercises,
+          imagePaths: _selectedImages.map((e) => e.path).toList(),
         );
-        Navigator.popUntil(context, (route) => route.isFirst);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Workout posted successfully!')),
+          );
+          Navigator.popUntil(context, (route) => route.isFirst);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -178,7 +207,7 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Post Workout', style: TextStyle(color: AppColors.pureWhite, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: Text(_isEditMode ? 'Edit Workout' : 'Post Workout', style: const TextStyle(color: AppColors.pureWhite, fontSize: 18, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: Column(
@@ -194,48 +223,50 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Photo Picker Card
-                      GestureDetector(
-                        onTap: _pickImage,
-                        child: Container(
-                          width: 100,
-                          height: 140, // increased height to match container
-                          decoration: BoxDecoration(
-                            color: AppColors.black100,
-                            borderRadius: BorderRadius.circular(16),
-                            image: _selectedImages.isNotEmpty
-                                ? DecorationImage(
-                                    image: FileImage(_selectedImages.first),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
-                          ),
-                          child: _selectedImages.isEmpty
-                              ? const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.add, color: AppColors.pureWhite, size: 30),
-                                    SizedBox(height: 4),
-                                    Text('Add Photos',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(color: AppColors.white60, fontSize: 12)),
-                                  ],
-                                )
-                              : _selectedImages.length > 1
-                                  ? Align(
-                                      alignment: Alignment.topRight,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        margin: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                            color: Colors.black54, shape: BoxShape.circle),
-                                        child: Text('+${_selectedImages.length - 1}',
-                                            style: const TextStyle(color: Colors.white, fontSize: 10)),
-                                      ),
+                      if (!_isEditMode) ...[ // Only show in create mode or show simplified in edit
+                        GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            width: 100,
+                            height: 140, // increased height to match container
+                            decoration: BoxDecoration(
+                              color: AppColors.black100,
+                              borderRadius: BorderRadius.circular(16),
+                              image: _selectedImages.isNotEmpty
+                                  ? DecorationImage(
+                                      image: FileImage(_selectedImages.first),
+                                      fit: BoxFit.cover,
                                     )
                                   : null,
+                            ),
+                            child: _selectedImages.isEmpty
+                                ? const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.add, color: AppColors.pureWhite, size: 30),
+                                      SizedBox(height: 4),
+                                      Text('Add Photos',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                                    ],
+                                  )
+                                : _selectedImages.length > 1
+                                    ? Align(
+                                        alignment: Alignment.topRight,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          margin: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                              color: Colors.black54, shape: BoxShape.circle),
+                                          child: Text('+${_selectedImages.length - 1}',
+                                              style: const TextStyle(color: Colors.white, fontSize: 10)),
+                                        ),
+                                      )
+                                    : null,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
+                        const SizedBox(width: 16),
+                      ],
                       // Caption Input with Tags
                       Expanded(
                         child: Container(
@@ -377,9 +408,9 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
                         height: 24,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                       )
-                    : const Text(
-                        'Post Workout',
-                        style: TextStyle(
+                    : Text(
+                        _isEditMode ? 'Update Workout' : 'Post Workout',
+                        style: const TextStyle(
                           color: Colors.black,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
