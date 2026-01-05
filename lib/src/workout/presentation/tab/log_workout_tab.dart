@@ -242,7 +242,10 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
             if (validSets.isNotEmpty) {
               apiExercises.add({
                 'exerciseId': ex.id,
-                'exercise': ex.name,
+                'exercise': ex.name, // Keep for backend compatibility if needed
+                'name': ex.name,     // For UI
+                'desc': ex.desc,     // For UI
+                'image': ex.image,   // For UI
                 'sets': validSets,
               });
             }
