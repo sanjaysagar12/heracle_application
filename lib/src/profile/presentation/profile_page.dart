@@ -61,7 +61,7 @@ class _ProfilePageState extends State<ProfilePage> {
       // 2. Fetch independent data in parallel
       final results = await Future.wait([
         _repository.getUserFeed(profile.id), // Use new feed endpoint
-        _repository.getSessions(),
+        _repository.getSessions(username: targetUsername),
         _repository.getPosts(targetUsername),
       ]);
 

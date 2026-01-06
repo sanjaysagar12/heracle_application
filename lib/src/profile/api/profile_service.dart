@@ -81,6 +81,23 @@ class ProfileApiService {
     }
   }
 
+  /// Get specific user's sessions
+  Future<List<Map<String, dynamic>>> getUserSessions(String username) async {
+    try {
+      // Clean username if it starts with @
+      final cleanUsername = username.startsWith('@') ? username.substring(1) : username;
+      final response = await DioClient().dio.get('/api/user/$cleanUsername/sessions');
+      
+      if (response.statusCode == 200) {
+        return List<Map<String, dynamic>>.from(response.data);
+      } else {
+        throw Exception('Failed to load user sessions: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to load user sessions: $e');
+    }
+  }
+
   /// Get user posts data
   Future<List<Map<String, dynamic>>> getUserPosts(String username) async {
     try {

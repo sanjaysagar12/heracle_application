@@ -350,13 +350,24 @@ class ProfileRepository {
   }
 
   /// Get sessions
-  Future<List<Session>> getSessions() async {
+  Future<List<Session>> getSessions({String? username}) async {
     try {
-      final data = await _apiService.getSessions();
-      await _cacheManager.cacheData('profile_sessions', data);
+      final List<Map<String, dynamic>> data;
+      final String cacheKey;
+
+      if (username != null) {
+        data = await _apiService.getUserSessions(username);
+        cacheKey = 'profile_sessions_$username';
+      } else {
+        data = await _apiService.getSessions();
+        cacheKey = 'profile_sessions';
+      }
+
+      await _cacheManager.cacheData(cacheKey, data);
       return _mapSessions(data);
     } catch (e) {
-      final cachedData = await _cacheManager.getCachedData('profile_sessions');
+      final cacheKey = username != null ? 'profile_sessions_$username' : 'profile_sessions';
+      final cachedData = await _cacheManager.getCachedData(cacheKey);
       if (cachedData != null && cachedData is List) {
         return _mapSessions(List<Map<String, dynamic>>.from(cachedData));
       }
