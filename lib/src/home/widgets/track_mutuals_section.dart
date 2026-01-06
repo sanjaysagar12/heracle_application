@@ -98,8 +98,27 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
   }
 
   Widget _buildWorkoutPosts() {
+    final displayPosts = widget.posts.where((post) {
+      if (_selectedFilter == 'All') return true;
+      if (_selectedFilter == 'Workout' && post is WorkoutPost) return true;
+      if (_selectedFilter == 'Diet' && post is NutritionPost) return true;
+      return false;
+    }).toList();
+
+    if (displayPosts.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Center(
+          child: Text(
+            'No posts found',
+            style: TextStyle(color: AppColors.white60),
+          ),
+        ),
+      );
+    }
+
     return Column(
-      children: widget.posts.map<Widget>((post) {
+      children: displayPosts.map<Widget>((post) {
         if (post is WorkoutPost) {
           return WorkoutPostCard(
             username: post.username,
@@ -126,18 +145,12 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
           );
         } else if (post is NutritionPost) {
           return NutritionPostCard(
-            username: post.username,
-            handle: post.handle,
-            profileImage: post.profileImage,
-            timeAgo: post.timeAgo,
-            meals: post.meals,
-            likes: post.likes,
-            likedBy: post.likedBy,
-            isLiked: post.isLiked,
-            commentCount: post.commentCount,
+            post: post,
             onLike: () => widget.onLike(post.id),
             onComment: () => widget.onComment(post.id),
             onLikesClick: () => widget.onLikesClick(post.id),
+            onDelete: () => widget.onDeletePost(post.id),
+            // Nutrition post edit not requested yet
           );
         }
         return const SizedBox.shrink();

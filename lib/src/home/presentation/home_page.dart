@@ -16,6 +16,8 @@ import '../../workout/data/post_workout_repository.dart';
 import '../../workout/presentation/tab/post_workout_screen.dart';
 import '../../feed/data/stories_repository.dart';
 import '../../feed/presentation/tab/my_story_viewer.dart';
+import '../widgets/workout_post_card.dart'; // Ensure this is imported if not already relative, wait, line 16 is imports. 
+import '../widgets/nutrition_post_card.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

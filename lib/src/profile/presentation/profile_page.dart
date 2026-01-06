@@ -604,18 +604,11 @@ class _ProfilePageState extends State<ProfilePage> {
           );
         } else if (post is NutritionPost) {
           return NutritionPostCard(
-            username: post.username,
-            handle: post.handle,
-            profileImage: post.profileImage,
-            timeAgo: post.timeAgo,
-            meals: post.meals,
-            likes: post.likes,
-            likedBy: post.likedBy,
-            isLiked: post.isLiked,
-            commentCount: post.commentCount,
+            post: post,
             onLike: () => _handleLike(post.id),
             onComment: () => _handleCommentClick(post.id),
             onLikesClick: () => _handleLikesClick(post.id),
+            onDelete: () => _handleDeletePost(post.id),
           );
         }
         return const SizedBox.shrink();

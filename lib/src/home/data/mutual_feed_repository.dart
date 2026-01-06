@@ -164,6 +164,7 @@ class WorkoutPost extends FeedPost {
   }
 }
 
+
 class NutritionMeal {
   final String mealType;
   final String content;
@@ -185,13 +186,13 @@ class NutritionMeal {
 
   factory NutritionMeal.fromJson(Map<String, dynamic> json) {
     return NutritionMeal(
-      mealType: json['mealType'] as String,
-      content: json['content'] as String,
-      images: List<String>.from(json['images']),
-      calories: json['calories'] as int,
-      protein: json['protein'] as int,
-      carbs: json['carbs'] as int,
-      fats: json['fats'] as int,
+      mealType: json['mealType'] as String? ?? 'Meal',
+      content: json['content'] as String? ?? '',
+      images: List<String>.from(json['images'] ?? []),
+      calories: (json['calories'] as num?)?.toInt() ?? 0,
+      protein: (json['protein'] as num?)?.toInt() ?? 0,
+      carbs: (json['carbs'] as num?)?.toInt() ?? 0,
+      fats: (json['fats'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -216,12 +217,10 @@ class NutritionPost extends FeedPost {
   });
 
   factory NutritionPost.fromJson(Map<String, dynamic> json) {
-    final meals = (json['meals'] as List? ?? [])
-        .map((meal) => NutritionMeal.fromJson(meal))
+    // If meals is null/empty, we can provide empty list
+    final mealsList = (json['meals'] as List? ?? [])
+        .map((e) => NutritionMeal.fromJson(e as Map<String, dynamic>))
         .toList();
-    
-    // Collect all images from meals
-    final allImages = meals.expand((meal) => meal.images).toList();
 
     return NutritionPost(
       id: json['id'] as String,
@@ -229,20 +228,23 @@ class NutritionPost extends FeedPost {
       handle: json['handle'] as String,
       profileImage: json['profileImage'] as String,
       timeAgo: json['timeAgo'] as String,
-      content: meals.isNotEmpty ? meals[0].content : '',
-      images: allImages,
+      content: mealsList.isNotEmpty ? mealsList.first.content : '', // Fallback content
+      images: [], // Nutrition post usually shows meal images separately
       likes: (json['likes'] as int?) ?? 0,
       likedBy: (json['likedBy'] as List? ?? []).map((user) => LikedByUser.fromJson(user)).toList(),
-      // read isLiked from API (default false)
       isLiked: json['isLiked'] as bool? ?? false,
       isOwnPost: json['isOwnPost'] as bool? ?? false,
       commentCount: json['commentCount'] as int? ?? 0,
-      meals: meals,
+      meals: mealsList,
     );
   }
 
   @override
-  NutritionPost copyWith({bool? isLiked, int? likes, int? commentCount}) {
+  NutritionPost copyWith({
+    bool? isLiked,
+    int? likes,
+    int? commentCount,
+  }) {
     return NutritionPost(
       id: id,
       username: username,
@@ -260,6 +262,7 @@ class NutritionPost extends FeedPost {
     );
   }
 }
+
 
 class Comment {
   final String id;
@@ -367,13 +370,13 @@ class MutualFeedRepository {
 
   List<FeedPost> _mapFeedData(List<Map<String, dynamic>> data) {
     return data.map((json) {
-      final type = json['type'] as String;
-      if (type == 'workout') {
-        return WorkoutPost.fromJson(json);
-      } else if (type == 'nutrition') {
+      final type = json['type'] as String? ?? 'workout'; // Default to workout if missing
+      
+      if (type == 'nutrition') {
         return NutritionPost.fromJson(json);
+      } else {
+        return WorkoutPost.fromJson(json);
       }
-      throw Exception('Unknown post type: $type');
     }).toList();
   }
 

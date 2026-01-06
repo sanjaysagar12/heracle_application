@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../nutrition/presentation/track_calories_page.dart';
 import 'target_settings_bottom_sheet.dart';
 
 class TodayProgressCard extends StatelessWidget {
@@ -64,7 +66,7 @@ class TodayProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _buildWorkoutHeader(),
+        _buildWorkoutHeader(context),
         const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -84,90 +86,80 @@ class TodayProgressCard extends StatelessWidget {
     );
   }
 
-  Widget _buildWorkoutHeader() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.black100,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 50,
-                height: 50,
-                child: CircularProgressIndicator(
-                  value: 0.7,
-                  strokeWidth: 3,
-                  backgroundColor: AppColors.greyDark,
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                ),
+  Widget _buildWorkoutHeader(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const TrackCaloriesPage()),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.black100,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.white10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(0),
+              child: SvgPicture.asset(
+                'assets/icons/trackcal.svg',
+                width: 40,
+                height: 40,
               ),
-              const Icon(
-                Icons.fitness_center,
-                color: AppColors.primary,
-                size: 24,
-              ),
-            ],
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Workout Progress',
-                  style: TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '$workoutsLeft Workouts left',
-                  style: const TextStyle(
-                    color: AppColors.white60,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
             ),
-          ),
-          TextButton(
-            onPressed: () {
-              // Navigate to Biceps workout
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Track Your Food',
+                    style: TextStyle(
+                      color: AppColors.pureWhite,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Check cals, protein, fat, carbs...',
+                    style: TextStyle(
+                      color: AppColors.white60,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Row(
               children: [
-                const Text(
-                  'Biceps',
+                Text(
+                  'Track now',
                   style: TextStyle(
                     color: AppColors.primary,
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 4),
-                Transform.rotate(
-                  angle: -0.785398, // -45 degrees in radians
-                  child: const Icon(
-                    Icons.arrow_forward,
-                    color: AppColors.primary,
-                    size: 18,
-                  ),
+                SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_outward,
+                  color: AppColors.primary,
+                  size: 16,
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
 
   Widget _buildStatCard(BuildContext context, String label, String value, IconData icon, bool isHighlighted, double progress, int actualValue, int targetValue, {String unit = ''}) {
     final displayValue = unit.isNotEmpty ? '$value$unit' : value;
