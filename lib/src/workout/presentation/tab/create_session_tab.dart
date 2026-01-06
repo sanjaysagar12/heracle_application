@@ -50,6 +50,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
   final TextEditingController _categoryController = TextEditingController();
   List<String> _existingCategories = [];
   bool _showCategorySuggestions = false;
+  bool _isReordering = false;
   bool get _isEditMode => widget.sessionToEdit != null;
 
   @override
@@ -309,6 +310,14 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(_isEditMode ? 'Edit Session' : 'Create Session', style: const TextStyle(color: AppColors.pureWhite)),
+        actions: [
+          if (_isReordering)
+            TextButton(
+              onPressed: () => setState(() => _isReordering = false),
+              child: const Text('Done', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+            ),
+          if (_isReordering) const SizedBox(width: 8),
+        ],
         scrolledUnderElevation: 0,
       ),
       body: ListView(
@@ -424,49 +433,61 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
             const SizedBox(height: 12),
             const SizedBox(height: 12),
             // Exercise list
-            ReorderableListView(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              onReorder: (oldIndex, newIndex) {
-                if (oldIndex < newIndex) {
-                  newIndex -= 1;
-                }
-                setState(() {
-                  final item = _exerciseLogs.removeAt(oldIndex);
-                  _exerciseLogs.insert(newIndex, item);
-                });
-              },
-              onReorderStart: (index) {
-                HapticFeedback.heavyImpact();
-              },
-              proxyDecorator: (child, index, animation) {
-                return AnimatedBuilder(
-                  animation: animation,
-                  builder: (BuildContext context, Widget? child) {
-                    final double animValue = Curves.easeInOut.transform(animation.value);
-                    final double scale = 1.0 + (0.05 * animValue);
-                    return Transform.scale(
-                      scale: scale,
-                      child: Material(
-                        color: Colors.transparent,
-                        elevation: 8,
-                        shadowColor: Colors.black45,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: child,
-                );
-              },
-              children: [
-                for (final ex in _exerciseLogs)
-                  Container(
-                    key: ValueKey(ex.id), // Ensure each item has a unique key
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: _buildExerciseCard(ex),
-                  ),
-              ],
-            ),
+            // Exercise list
+            if (_isReordering)
+              ReorderableListView(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                onReorder: (oldIndex, newIndex) {
+                  if (oldIndex < newIndex) {
+                    newIndex -= 1;
+                  }
+                  setState(() {
+                    final item = _exerciseLogs.removeAt(oldIndex);
+                    _exerciseLogs.insert(newIndex, item);
+                  });
+                },
+                onReorderStart: (index) {
+                  HapticFeedback.heavyImpact();
+                },
+                proxyDecorator: (child, index, animation) {
+                  return AnimatedBuilder(
+                    animation: animation,
+                    builder: (BuildContext context, Widget? child) {
+                      final double animValue = Curves.easeInOut.transform(animation.value);
+                      final double scale = 1.0 + (0.05 * animValue);
+                      return Transform.scale(
+                        scale: scale,
+                        child: Material(
+                          color: Colors.transparent,
+                          elevation: 8,
+                          shadowColor: Colors.black45,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: child,
+                  );
+                },
+                children: [
+                  for (final ex in _exerciseLogs)
+                    Container(
+                      key: ValueKey(ex.id), // Ensure each item has a unique key
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: _buildExerciseCard(ex, isReordering: true),
+                    ),
+                ],
+              )
+            else
+              Column(
+                children: [
+                  for (final ex in _exerciseLogs)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildExerciseCard(ex, isReordering: false),
+                    ),
+                ],
+              ),
             const SizedBox(height: 12),
             // Save Session button
             SizedBox(
@@ -525,7 +546,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
     );
   }
 
-  Widget _buildExerciseCard(_ExerciseLog ex) {
+  Widget _buildExerciseCard(_ExerciseLog ex, {bool isReordering = false}) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -537,10 +558,11 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
           // header
           Row(
             children: [
-              const Padding(
-                padding: EdgeInsets.only(right: 12.0),
-                child: Icon(Icons.drag_indicator, color: AppColors.white60, size: 20),
-              ),
+              if (isReordering)
+                const Padding(
+                  padding: EdgeInsets.only(right: 12.0),
+                  child: Icon(Icons.drag_indicator, color: AppColors.white60, size: 20),
+                ),
               CircleAvatar(backgroundImage: NetworkImage(ex.image), radius: 20, backgroundColor: AppColors.greyDark),
               const SizedBox(width: 12),
               Expanded(
@@ -550,9 +572,13 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                   Text(ex.desc, style: const TextStyle(color: AppColors.white60, fontSize: 12)),
                 ]),
               ),
-              PopupMenuButton<String>(
+              if (!isReordering)
+                PopupMenuButton<String>(
                 onSelected: (value) {
                   switch (value) {
+                    case 'reorder':
+                      setState(() => _isReordering = true);
+                      break;
                     case 'replace':
                       _handleReplaceExercise(ex);
                       break;
@@ -568,6 +594,19 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                   side: const BorderSide(color: AppColors.greyDark),
                 ),
                 itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'reorder',
+                    child: Row(
+                      children: [
+                        Icon(Icons.swap_vert, color: AppColors.white60, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Reorder',
+                          style: TextStyle(color: AppColors.pureWhite),
+                        ),
+                      ],
+                    ),
+                  ),
                   const PopupMenuItem(
                     value: 'replace',
                     child: Row(

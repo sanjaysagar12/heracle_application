@@ -25,6 +25,7 @@ class SessionsSection extends StatefulWidget {
 class _SessionsSectionState extends State<SessionsSection> {
   List<Session> _sessions = [];
   bool _isLoading = true;
+  bool _isReordering = false;
   String _selectedFilter = 'All';
   List<String> _filters = ['All'];
 
@@ -202,12 +203,11 @@ class _SessionsSectionState extends State<SessionsSection> {
                           ),
                           if (_selectedFilter == 'All' && _sessions.length > 1 && !widget.isViewOnly) ...[
                              const SizedBox(width: 8),
-                             Tooltip(
-                               message: "Long press to reorder",
-                               triggerMode: TooltipTriggerMode.tap,
-                               preferBelow: false,
-                               child: const Icon(Icons.info_outline, color: AppColors.white60, size: 20),
-                             ),
+                             if (_isReordering)
+                               TextButton(
+                                 onPressed: () => setState(() => _isReordering = false),
+                                 child: const Text('Done', style: TextStyle(color: AppColors.primary)),
+                               ),
                           ],
                         ],
                       ),
@@ -245,8 +245,8 @@ class _SessionsSectionState extends State<SessionsSection> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // If reordering is allowed, use ReorderableListView, otherwise just a column
-                      if (!widget.isViewOnly && _selectedFilter == 'All')
+                      // If reordering is allowed and active, use ReorderableListView, otherwise just a column
+                      if (!widget.isViewOnly && _selectedFilter == 'All' && _isReordering)
                         ReorderableListView(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -284,7 +284,7 @@ class _SessionsSectionState extends State<SessionsSection> {
                         )
                       else
                         Column(
-                          children: displayedSessions.map((s) => _buildSessionCard(s)).toList(),
+                          children: displayedSessions.map((s) => _buildSessionCard(s, isReorderable: false)).toList(),
                         ),
                     ],
                   ),
@@ -341,6 +341,9 @@ class _SessionsSectionState extends State<SessionsSection> {
                 PopupMenuButton<String>(
                   onSelected: (value) {
                     switch (value) {
+                      case 'reorder':
+                        setState(() => _isReordering = true);
+                        break;
                       case 'edit':
                         _handleEditSession(s);
                         break;
@@ -356,6 +359,19 @@ class _SessionsSectionState extends State<SessionsSection> {
                     side: const BorderSide(color: AppColors.greyDark),
                   ),
                   itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'reorder',
+                      child: Row(
+                        children: [
+                          Icon(Icons.swap_vert, color: AppColors.white60, size: 20),
+                          SizedBox(width: 12),
+                          Text(
+                            'Reorder',
+                            style: TextStyle(color: AppColors.pureWhite),
+                          ),
+                        ],
+                      ),
+                    ),
                     const PopupMenuItem(
                       value: 'edit',
                       child: Row(
