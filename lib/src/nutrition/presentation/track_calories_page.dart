@@ -1,8 +1,10 @@
+import 'dart:io'; // Added
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../nutrition/api/nutrition_service.dart';
 import '../../nutrition/data/food_item_model.dart';
 import '../../nutrition/data/diet_log_item.dart';
+import 'package:heracle/src/camera/presentation/camera_page.dart';
 import 'post_nutrition_page.dart';
 
 class TrackCaloriesPage extends StatefulWidget {
@@ -16,12 +18,39 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
   final List<DietLogItem> _items = [];
   String _selectedMeal = 'Breakfast';
   final List<String> _mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+  bool _hasProcessedArgs = false; // Added to prevent duplicate processing
 
   @override
   void initState() {
     super.initState();
     // Start with one empty item
     _addItem();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_hasProcessedArgs) return;
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is DietLogItem) {
+      _hasProcessedArgs = true;
+      setState(() {
+        if (_items.length == 1 && _items.first.name.isEmpty) {
+           _items[0] = args;
+        } else {
+           _items.add(args);
+        }
+      });
+      
+      // Check if it's a Cal AI item needing analysis
+      if (args.isLoading && args.imagePath != null) {
+        // Use a post frame callback to show dialog after build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _initiateAnalysis(args);
+        });
+      }
+    }
   }
   // Calculate totals
   int get _totalCalories => _items.fold(0, (sum, item) => sum + (item.calories * item.quantity));
@@ -58,9 +87,89 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
     });
   }
 
+  Future<void> _initiateAnalysis(DietLogItem item) async {
+    final description = await _showDescriptionDialog();
+    if (description != null && description.isNotEmpty) {
+      await _analyzeFood(item, description);
+    } else {
+      // If cancelled or empty, maybe remove the item or keep it as placeholder?
+      // For now, let's stop loading so user can edit manually
+      setState(() {
+        item.isLoading = false;
+      });
+    }
+  }
+
+  Future<String?> _showDescriptionDialog() async {
+    final descriptionController = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false, // Force user to choose
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.greyDark,
+        title: const Text('Describe your food', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: descriptionController,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'e.g. Idli with sambar',
+            hintStyle: TextStyle(color: Colors.white60),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white60)),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, descriptionController.text),
+            child: const Text('Analyze', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _analyzeFood(DietLogItem item, String description) async {
+    if (item.imagePath == null) return;
+
+    try {
+      final File imageFile = File(item.imagePath!);
+      final result = await NutritionApiService().analyzeFood(imageFile, description);
+      print("Debugging: Analyze Result: $result"); // Debug print
+
+      if (mounted) {
+        setState(() {
+          item.isLoading = false;
+          item.name = result['foodName'] ?? 'Unknown Food';
+          print("Debugging: Setting name to ${item.name}");
+          item.calories = (result['calories'] as num?)?.toInt() ?? 0;
+          item.protein = (result['protein'] as num?)?.toDouble() ?? 0.0;
+          item.fat = (result['fat'] as num?)?.toDouble() ?? 0.0;
+          item.carbs = (result['carbs'] as num?)?.toDouble() ?? 0.0;
+          item.fiber = (result['fiber'] as num?)?.toDouble() ?? 0.0;
+          print("Debugging: Updated Item: ${item.calories} ${item.protein}");
+          // Keep the image path on the item so we can display it
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          item.isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Analysis failed: $e')),
+        );
+      }
+    }
+  }
+
   void _continueToPost() {
     // Filter out items with no name
-    final validItems = _items.where((item) => item.name.isNotEmpty).toList();
+    final validItems = _items.where((item) => item.name.isNotEmpty && !item.isLoading).toList();
     if (validItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add at least one food item')),
@@ -94,6 +203,24 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
           icon: const Icon(Icons.arrow_back_ios, color: AppColors.pureWhite, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.camera_alt, color: AppColors.primary),
+            onPressed: () {
+               // Navigate to camera (index 1 usually or Named route)
+               // Assuming named route '/camera' or similar exists for main nav, 
+               // OR we might need to push CameraPage directly.
+               // Existing flow uses Navigator.pushNamed(context, '/home', arguments: index) usually?
+               // Let's use push to CameraPage directly if possible or finding route.
+               // Looking at defaults, often tab based. 
+               // If we want to open camera specifically for this, maybe a direct push is best.
+               Navigator.push(
+                 context, 
+                 MaterialPageRoute(builder: (context) => const CameraPage()) // Need to import
+               );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -221,6 +348,31 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
           ),
           child: Column(
             children: [
+              // Display captured image if present
+              if (item.imagePath != null)
+                Container(
+                  height: 150,
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: FileImage(File(item.imagePath!)),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+
+              // Loading Indicator
+              if (item.isLoading)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: LinearProgressIndicator(
+                    backgroundColor: AppColors.greyDark,
+                    color: AppColors.primary,
+                  ),
+                ),
+
               // Name and Qty
               Row(
                 children: [

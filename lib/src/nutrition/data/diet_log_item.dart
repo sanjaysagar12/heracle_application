@@ -6,12 +6,17 @@ class DietLogItem {
   double protein;
   double fat;
   double carbs;
+  double fiber;
 
   // Track original values to check for modifications
   int? originalCalories;
   double? originalProtein;
   double? originalFat;
   double? originalCarbs;
+  
+  // Cal AI fields
+  String? imagePath;
+  bool isLoading;
 
   DietLogItem({
     this.foodId,
@@ -21,9 +26,9 @@ class DietLogItem {
     this.protein = 0,
     this.fat = 0,
     this.carbs = 0,
-    this.originalCalories,
-    this.originalProtein,
-    this.originalFat,
+    this.fiber = 0,
     this.originalCarbs,
+    this.imagePath,
+    this.isLoading = false,
   });
 }

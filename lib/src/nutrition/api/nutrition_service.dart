@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../../core/network/dio_client.dart';
 import '../data/food_item_model.dart';
@@ -56,6 +57,34 @@ class NutritionApiService {
       }
     } catch (e) {
       throw Exception('Failed to post meal: $e');
+    }
+  }
+
+  /// Analyze food from image
+  Future<Map<String, dynamic>> analyzeFood(File image, String description) async {
+    try {
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(image.path, filename: 'image.jpg'),
+        'description': description,
+      });
+
+      final response = await DioClient().dio.post(
+        '/api/calai/analyze',
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return response.data;
+      } else {
+        throw Exception('Failed to analyze food: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to analyze food: $e');
     }
   }
 }

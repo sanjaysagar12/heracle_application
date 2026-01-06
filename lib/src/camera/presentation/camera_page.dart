@@ -17,6 +17,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:video_player/video_player.dart';
 
+import 'package:heracle/src/nutrition/api/nutrition_service.dart';
+import 'package:heracle/src/nutrition/data/diet_log_item.dart';
+import 'package:heracle/src/nutrition/presentation/track_calories_page.dart'; // Added
+
+enum _CameraMode { story, calAI }
+
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
 
@@ -34,6 +40,7 @@ class _CameraPageState extends State<CameraPage>
   cawesome.CaptureMode _captureMode = cawesome.CaptureMode.photo;
   bool _postSwitchRecord = false;
   int _currentIndex = 1;
+  _CameraMode _selectedMode = _CameraMode.story; // Default mode
 
   String? _currentVideoPath;
 
@@ -330,7 +337,7 @@ class _CameraPageState extends State<CameraPage>
             ),
       body: Stack(
         children: [
-          /// CAMERA VIEW
+            /// CAMERA VIEW
           if (!isPreviewMode)
             // ...existing code...
             cawesome.CameraAwesomeBuilder.custom(
@@ -371,64 +378,86 @@ class _CameraPageState extends State<CameraPage>
                       bottom: 35,
                       left: 0,
                       right: 0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          /// PICK FROM GALLERY
-                          GestureDetector(
-                            onTap: _pickGallery,
-                            child: const CircleAvatar(
-                              radius: 30,
-                              backgroundColor: Colors.white24,
-                              child: Icon(
-                                Icons.photo_library,
-                                color: Colors.white,
-                              ),
+                          // Mode Selector
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 20),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildModeButton('Story', _selectedMode == _CameraMode.story),
+                                const SizedBox(width: 20),
+                                _buildModeButton('Cal AI', _selectedMode == _CameraMode.calAI),
+                              ],
                             ),
                           ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              /// PICK FROM GALLERY
+                              GestureDetector(
+                                onTap: _pickGallery,
+                                child: const CircleAvatar(
+                                  radius: 30,
+                                  backgroundColor: Colors.white24,
+                                  child: Icon(
+                                    Icons.photo_library,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
 
-                          /// CAPTURE BUTTON
-                          AwesomeCaptureButton(
-                            state: state,
-                            onMediaCapture: (filePath) {
-                              setState(() {
-                                _previewFile = File(filePath);
-                                _isVideo = filePath.endsWith('.mp4');
-                              });
-                            },
-                            getCurrentVideoPath: () => _currentVideoPath,
-                            onModeChange: (mode) {
-                              setState(() => _captureMode = mode);
-                            },
-                            onSwitchToRecordingMode: () {
-                              setState(() {
-                                _postSwitchRecord = true;
-                                _captureMode = cawesome.CaptureMode.video;
-                              });
-                              // Trigger the switch
-                              state.when(
-                                onPhotoMode: (photoState) {
-                                  photoState.setState(cawesome.CaptureMode.video);
+                              /// CAPTURE BUTTON
+                              AwesomeCaptureButton(
+                                state: state,
+                                onMediaCapture: (filePath) {
+                                  if (_selectedMode == _CameraMode.calAI) {
+                                    _handleCalAICapture(File(filePath));
+                                  } else {
+                                    setState(() {
+                                      _previewFile = File(filePath);
+                                      _isVideo = filePath.endsWith('.mp4');
+                                    });
+                                  }
                                 },
-                                onVideoMode: (v) {},
-                                onVideoRecordingMode: (v) {},
-                              );
-                            },
-                          ),
-
-                          /// SWITCH CAMERA
-                          GestureDetector(
-                            onTap: () {
-                              state.switchCameraSensor();
-                            },
-                            child: const CircleAvatar(
-                              radius: 30,
-                              backgroundColor: Colors.white24,
-                              child: Icon(
-                                Icons.cameraswitch,
-                                color: Colors.white,
+                                getCurrentVideoPath: () => _currentVideoPath,
+                                onModeChange: (mode) {
+                                  setState(() => _captureMode = mode);
+                                },
+                                onSwitchToRecordingMode: () {
+                                  if (_selectedMode == _CameraMode.calAI) return; // Disable video for Cal AI
+                                  setState(() {
+                                    _postSwitchRecord = true;
+                                    _captureMode = cawesome.CaptureMode.video;
+                                  });
+                                  // Trigger the switch
+                                  state.when(
+                                    onPhotoMode: (photoState) {
+                                      photoState.setState(cawesome.CaptureMode.video);
+                                    },
+                                    onVideoMode: (v) {},
+                                    onVideoRecordingMode: (v) {},
+                                  );
+                                },
                               ),
-                            ),
+
+                              /// SWITCH CAMERA
+                              GestureDetector(
+                                onTap: () {
+                                  state.switchCameraSensor();
+                                },
+                                child: const CircleAvatar(
+                                  radius: 30,
+                                  backgroundColor: Colors.white24,
+                                  child: Icon(
+                                    Icons.cameraswitch,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -740,6 +769,53 @@ class _CameraPageState extends State<CameraPage>
         ],
       ),
     );
+  }
+
+  Widget _buildModeButton(String text, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedMode = text == 'Story' ? _CameraMode.story : _CameraMode.calAI;
+          if (_selectedMode == _CameraMode.calAI) {
+            _captureMode = cawesome.CaptureMode.photo; // Force photo mode for Cal AI
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white24 : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.white60,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleCalAICapture(File imageFile) async {
+      if (!mounted) return;
+
+      // Navigate directly to Track Calories Page with the captured image
+      // The analysis and description prompt will handle there.
+      final item = DietLogItem(
+        imagePath: imageFile.path,
+        isLoading: true, // Mark as loading so TrackCaloriesPage knows to initiate flow
+      );
+
+      Navigator.push(
+        context, 
+        MaterialPageRoute(
+          builder: (context) => const TrackCaloriesPage(),
+          settings: RouteSettings(arguments: item),
+        ),
+      );
   }
 }
 
