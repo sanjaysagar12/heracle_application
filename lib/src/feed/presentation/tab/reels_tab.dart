@@ -28,13 +28,9 @@ class ReelsTab extends StatefulWidget {
 
 class _ReelsTabState extends State<ReelsTab> {
   late PageController _pageController;
-  late PageController _userPageController;
   int _currentIndex = 0;
-  int _currentUserIndex = 0;
   bool _showLikeAnimation = false;
   late List<DiscoverStory> _stories;
-  late Map<String, List<DiscoverStory>> _storiesByUser;
-  late List<String> _userIds;
 
   // Track which stories are expanded (caption/tags shown fully)
   final Set<String> _expandedStories = {};
@@ -47,67 +43,25 @@ class _ReelsTabState extends State<ReelsTab> {
   void initState() {
     super.initState();
     _stories = widget.stories;
-    
-    // Group stories by user
-    _storiesByUser = {};
-    for (var story in _stories) {
-      final userId = story.username; // Using username as user identifier
-      if (!_storiesByUser.containsKey(userId)) {
-        _storiesByUser[userId] = [];
-      }
-      _storiesByUser[userId]!.add(story);
-    }
-    _userIds = _storiesByUser.keys.toList();
-    
-    // Find which user the initial story belongs to
     _currentIndex = widget.initialIndex;
-    final initialStory = _stories[_currentIndex];
-    _currentUserIndex = _userIds.indexOf(initialStory.username);
-    
-    // Find position within user's stories
-    final userStories = _storiesByUser[initialStory.username]!;
-    final storyIndexInUser = userStories.indexWhere((s) => s.id == initialStory.id);
-    
-    _userPageController = PageController(
-      initialPage: _currentUserIndex,
-      viewportFraction: 1.0,
-      keepPage: true,
-    );
     
     _pageController = PageController(
-      initialPage: storyIndexInUser >= 0 ? storyIndexInUser : 0,
+      initialPage: _currentIndex,
       viewportFraction: 1.0,
       keepPage: true,
     );
     
     // Mark initial story as viewed
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.onStoryViewed?.call(initialStory.id);
+      if (_currentIndex < _stories.length) {
+        final initialStory = _stories[_currentIndex];
+        widget.onStoryViewed?.call(initialStory.id);
+        _loadStoryDetails(initialStory.id);
+      }
     });
   }
 
-  // Helper method to rebuild storiesByUser map while preserving order
-  void _rebuildStoriesByUser() {
-    // Create new map while preserving _userIds order
-    final newStoriesByUser = <String, List<DiscoverStory>>{};
-    
-    // First, populate with existing users in same order
-    for (final userId in _userIds) {
-      newStoriesByUser[userId] = [];
-    }
-    
-    // Then add stories to their respective users
-    for (var story in _stories) {
-      final userId = story.username;
-      if (!newStoriesByUser.containsKey(userId)) {
-        newStoriesByUser[userId] = [];
-        _userIds.add(userId); // Add new user to end
-      }
-      newStoriesByUser[userId]!.add(story);
-    }
-    
-    _storiesByUser = newStoriesByUser;
-  }
+
 
   bool _isExpanded(String storyId) => _expandedStories.contains(storyId);
 
@@ -124,7 +78,6 @@ class _ReelsTabState extends State<ReelsTab> {
   @override
   void dispose() {
     _pageController.dispose();
-    _userPageController.dispose();
     super.dispose();
   }
 
@@ -134,7 +87,6 @@ class _ReelsTabState extends State<ReelsTab> {
     
     setState(() {
       _stories = updatedStories;
-      _rebuildStoriesByUser();
     });
     
     // Show animation only when liking (not unliking)
@@ -159,7 +111,6 @@ class _ReelsTabState extends State<ReelsTab> {
     
     setState(() {
       _stories = updatedStories;
-      _rebuildStoriesByUser();
     });
   }
 
@@ -310,7 +261,14 @@ class _ReelsTabState extends State<ReelsTab> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.black100, width: 1),
-                image: DecorationImage(image: NetworkImage(display[i]), fit: BoxFit.cover),
+                image: display[i].isNotEmpty
+                    ? DecorationImage(
+                        image: NetworkImage(display[i]),
+                        fit: BoxFit.cover,
+                        onError: (_, __) {}, // Handle error silently
+                      )
+                    : null,
+                color: display[i].isEmpty ? AppColors.greyDark : null, // Fallback color
               ),
             ),
           );
@@ -387,175 +345,113 @@ class _ReelsTabState extends State<ReelsTab> {
         ),
       ),
       body: PageView.builder(
-        controller: _userPageController,
-        scrollDirection: Axis.horizontal,
+        controller: _pageController,
+        scrollDirection: Axis.vertical,
         physics: const PageScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
         pageSnapping: true,
-        itemCount: _userIds.length,
-        onPageChanged: (userIndex) {
+        itemCount: _stories.length,
+        onPageChanged: (index) {
           setState(() {
-            _currentUserIndex = userIndex;
+            _currentIndex = index;
             _showLikeAnimation = false;
             _expandedStories.clear();
           });
           
-          // Reset story page controller for new user
-          Future.delayed(const Duration(milliseconds: 50), () {
-            if (mounted) {
-              _pageController = PageController(
-                initialPage: 0,
-                viewportFraction: 1.0,
-                keepPage: true,
-              );
-              setState(() {});
-            }
-          });
+          if (index < _stories.length) {
+            final story = _stories[index];
+            widget.onStoryViewed?.call(story.id);
+            _loadStoryDetails(story.id);
+          }
         },
-        itemBuilder: (context, userIndex) {
-          final userId = _userIds[userIndex];
-          // IMPORTANT: Always get fresh stories from _storiesByUser to reflect state changes
-          final userStories = _storiesByUser[userId]!;
+        itemBuilder: (context, index) {
+          final story = _stories[index];
           
+          // Add smooth vertical transitions if needed, or keep simple
+          // Using ValueKey to force rebuild when story state changes
           return AnimatedBuilder(
-            animation: _userPageController,
+            key: ValueKey('${story.id}_${story.isLiked}_${story.isViewed}_${story.likesCount}_${story.commentsCount}'),
+            animation: _pageController,
             builder: (context, child) {
+              // Standard scale/opacity logic for vertical list if desired
               double value = 1.0;
-              if (_userPageController.position.haveDimensions) {
-                value = (_userPageController.page ?? _currentUserIndex.toDouble()) - userIndex;
-                value = (1 - (value.abs() * 0.15)).clamp(0.85, 1.0);
+              double opacity = 1.0;
+              
+              if (_pageController.position.haveDimensions) {
+                final currentPage = _pageController.page ?? 0.0;
+                final offset = currentPage - index;
+                
+                // Subtle scale effect for neighbors
+                value = (1 - (offset.abs() * 0.1)).clamp(0.9, 1.0);
+                // Gentle opacity fade
+                opacity = (1 - (offset.abs() * 0.3)).clamp(0.7, 1.0);
               }
+
+              final isPlaying = index == (_pageController.hasClients ? (_pageController.page?.round() ?? 0) : 0);
               
               return Transform.scale(
                 scale: value,
                 child: Opacity(
-                  opacity: value,
-                  child: child,
+                  opacity: opacity,
+                  child: _buildReelItem(story, isCurrentUser: true, isPlaying: isPlaying),
                 ),
               );
             },
-            child: PageView.builder(
-            controller: userIndex == _currentUserIndex ? _pageController : PageController(),
-            scrollDirection: Axis.vertical,
-            physics: const PageScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            pageSnapping: true,
-            itemCount: userStories.length,
-            onPageChanged: (storyIndex) {
-              if (userIndex == _currentUserIndex) {
-                setState(() {
-                  _showLikeAnimation = false;
-                  _expandedStories.clear();
-                });
-                
-                // Mark story as viewed - get fresh story from map
-                final currentUserId = _userIds[userIndex];
-                final currentUserStories = _storiesByUser[currentUserId]!;
-                if (storyIndex < currentUserStories.length) {
-                  final story = currentUserStories[storyIndex];
-                  widget.onStoryViewed?.call(story.id);
-                }
-              }
-            },
-            itemBuilder: (context, storyIndex) {
-              // IMPORTANT: Get fresh story reference from _storiesByUser to reflect latest state
-              final currentUserId = _userIds[userIndex];
-              final currentUserStories = _storiesByUser[currentUserId]!;
-              final story = currentUserStories[storyIndex];
-              
-              // Add smooth Instagram-style vertical transitions
-              // Use ValueKey to force rebuild when story state changes (like/view status)
-              return AnimatedBuilder(
-                key: ValueKey('${story.id}_${story.isLiked}_${story.isViewed}'),
-                animation: _pageController,
-                builder: (context, child) {
-                  double value = 1.0;
-                  double opacity = 1.0;
-                  
-                  if (userIndex == _currentUserIndex && _pageController.position.haveDimensions) {
-                    final currentPage = _pageController.page ?? 0.0;
-                    final offset = currentPage - storyIndex;
-                    
-                    // Smooth scale effect
-                    value = (1 - (offset.abs() * 0.1)).clamp(0.9, 1.0);
-                    // Gentle opacity fade
-                    opacity = (1 - (offset.abs() * 0.3)).clamp(0.7, 1.0);
-                  }
-                  
-                  // CRITICAL: Don't use cached child - rebuild with fresh story data on every frame
-                  final isPlaying = userIndex == _currentUserIndex && 
-                      storyIndex == (_pageController.hasClients ? (_pageController.page?.round() ?? 0) : 0);
-                  
-                  return Transform.scale(
-                    scale: value,
-                    child: Opacity(
-                      opacity: opacity,
-                      child: _buildReelItem(story, isCurrentUser: userIndex == _currentUserIndex, isPlaying: isPlaying),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
           );
         },
       ),
     );
   }
 
-  void _navigateToPreviousUser() {
-    if (_currentUserIndex > 0) {
-      _userPageController.animateToPage(
-        _currentUserIndex - 1,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-      );
-    }
-  }
+  // Fetch updated story details (likes, comments, etc)
+  Future<void> _loadStoryDetails(String storyId) async {
+    try {
+      final repository = StoriesRepository();
+      final details = await repository.getStoryDetails(storyId);
+      
+      // Update local state with fresh details
+      setState(() {
+        final updatedStories = _stories.map((s) {
+          if (s.id == storyId) {
+            return s.copyWith(
+              likesCount: details.likesCount,
+              commentsCount: details.commentsCount,
+              likedBy: details.likes.map((l) => LikedByUser(
+                name: l.username,
+                username: l.username, // Pass username as handle
+                profileImage: l.avatarUrl ?? '',
+              )).toList(),
+            );
+          }
+          return s;
+        }).toList();
+        
+        _stories = updatedStories;
 
-  void _navigateToNextUser() {
-    if (_currentUserIndex < _userIds.length - 1) {
-      _userPageController.animateToPage(
-        _currentUserIndex + 1,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-      );
+      });
+    } catch (e) {
+      print('Error loading story details: $e');
     }
   }
 
   void _navigateToPreviousStory() {
-    final currentUserId = _userIds[_currentUserIndex];
-    final userStories = _storiesByUser[currentUserId]!;
-    final currentStoryIndex = _pageController.page?.round() ?? 0;
-    
-    if (currentStoryIndex > 0) {
+    if (_currentIndex > 0) {
       _pageController.animateToPage(
-        currentStoryIndex - 1,
+        _currentIndex - 1,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
       );
-    } else {
-      // At first story, go to previous user
-      _navigateToPreviousUser();
     }
   }
 
   void _navigateToNextStory() {
-    final currentUserId = _userIds[_currentUserIndex];
-    final userStories = _storiesByUser[currentUserId]!;
-    final currentStoryIndex = _pageController.page?.round() ?? 0;
-    
-    if (currentStoryIndex < userStories.length - 1) {
+    if (_currentIndex < _stories.length - 1) {
       _pageController.animateToPage(
-        currentStoryIndex + 1,
+        _currentIndex + 1,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
       );
-    } else {
-      // At last story, go to next user
-      _navigateToNextUser();
     }
   }
 
@@ -565,32 +461,30 @@ class _ReelsTabState extends State<ReelsTab> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Left tap zone for previous user/story (Instagram style)
-          if (isCurrentUser)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: MediaQuery.of(context).size.width * 0.3,
-              child: GestureDetector(
-                onTap: _navigateToPreviousStory,
-                behavior: HitTestBehavior.translucent,
-                child: Container(color: Colors.transparent),
-              ),
+          // Left tap zone for previous story
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: MediaQuery.of(context).size.width * 0.3,
+            child: GestureDetector(
+              onTap: _navigateToPreviousStory,
+              behavior: HitTestBehavior.translucent,
+              child: Container(color: Colors.transparent),
             ),
-          // Right tap zone for next user/story (Instagram style)
-          if (isCurrentUser)
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: MediaQuery.of(context).size.width * 0.3,
-              child: GestureDetector(
-                onTap: _navigateToNextStory,
-                behavior: HitTestBehavior.translucent,
-                child: Container(color: Colors.transparent),
-              ),
+          ),
+          // Right tap zone for next story
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: MediaQuery.of(context).size.width * 0.3,
+            child: GestureDetector(
+              onTap: _navigateToNextStory,
+              behavior: HitTestBehavior.translucent,
+              child: Container(color: Colors.transparent),
             ),
+          ),
           // Background Media (Image or Video)
           Container(
             color: Colors.black,
@@ -678,7 +572,7 @@ class _ReelsTabState extends State<ReelsTab> {
           // Right side actions
           Positioned(
             right: 12,
-            bottom: 100,
+            bottom: 40,
             child: _buildRightActions(story),
           ),
 
@@ -686,7 +580,7 @@ class _ReelsTabState extends State<ReelsTab> {
           Positioned(
             left: 16,
             right: 80,
-            bottom: 100,
+            bottom: 40,
             child: _buildBottomInfo(story),
           ),
         ],
@@ -734,7 +628,7 @@ class _ReelsTabState extends State<ReelsTab> {
               ),
               const SizedBox(height: 6),
               Text(
-                '${_getRandomCommentCount()}',
+                _formatCount(story.commentsCount),
                 style: const TextStyle(color: AppColors.pureWhite, fontSize: 12, fontWeight: FontWeight.w600),
               ),
             ],
@@ -832,13 +726,13 @@ class _ReelsTabState extends State<ReelsTab> {
               story.username,
               style: const TextStyle(
                 color: AppColors.pureWhite,
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(width: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 border: Border.all(color: AppColors.pureWhite, width: 1.5),
                 borderRadius: BorderRadius.circular(6),
@@ -910,7 +804,7 @@ class _ReelsTabState extends State<ReelsTab> {
         const SizedBox(height: 8),
 
         // Liked by preview (overlapping avatars + ellipsis text)
-        if (story.likesCount > 0)
+        if (story.likesCount > 0 && story.likedBy.isNotEmpty)
           GestureDetector(
             onTap: () => _showLikes(story),
             child: Padding(
@@ -938,33 +832,7 @@ class _ReelsTabState extends State<ReelsTab> {
           ),
         const SizedBox(height: 8),
 
-        // Platform badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _getPlatformIcon(story.platform ?? ''),
-                color: AppColors.pureWhite,
-                size: 14,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                story.platformHandle ?? '',
-                style: const TextStyle(
-                  color: AppColors.pureWhite,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
+
       ],
     );
   }
@@ -1252,9 +1120,7 @@ class _ReelsTabState extends State<ReelsTab> {
     return count.toString();
   }
 
-  int _getRandomCommentCount() {
-    return 15 + (_currentIndex * 7) % 50;
-  }
+
 
   String _getLikedByText(DiscoverStory story) {
     if (story.likesCount <= 0 || story.likedBy.isEmpty) return '';

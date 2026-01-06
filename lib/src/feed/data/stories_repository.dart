@@ -43,8 +43,15 @@ class StoryDetails {
   final List<StoryLikerInfo> likes;
   final int viewsCount;
   final int likesCount;
+  final int commentsCount;
 
-  StoryDetails({required this.viewers, required this.likes, required this.viewsCount, required this.likesCount});
+  StoryDetails({
+    required this.viewers,
+    required this.likes,
+    required this.viewsCount,
+    required this.likesCount,
+    required this.commentsCount,
+  });
 }
 
 class StoryContent {
@@ -58,6 +65,7 @@ class StoryContent {
   final int likes;
   final int views;
   final List<LikedByUser> likedBy;
+  final bool isHighlighted;
 
   StoryContent({
     required this.id,
@@ -70,6 +78,7 @@ class StoryContent {
     this.likes = 0,
     this.views = 0,
     this.likedBy = const [],
+    this.isHighlighted = false,
   });
 
   factory StoryContent.fromJson(Map<String, dynamic> json) {
@@ -89,6 +98,7 @@ class StoryContent {
           ?.map((e) => LikedByUser.fromJson(e as Map<String, dynamic>))
           .toList() ??
           [],
+      isHighlighted: json['isHighlighted'] as bool? ?? false,
     );
   }
 
@@ -103,6 +113,7 @@ class StoryContent {
     int? likes,
     int? views,
     List<LikedByUser>? likedBy,
+    bool? isHighlighted,
   }) {
     return StoryContent(
       id: id ?? this.id,
@@ -115,6 +126,7 @@ class StoryContent {
       likes: likes ?? this.likes,
       views: views ?? this.views,
       likedBy: likedBy ?? this.likedBy,
+      isHighlighted: isHighlighted ?? this.isHighlighted,
     );
   }
 }
@@ -191,6 +203,7 @@ class DiscoverStory {
   final String? timeAgo;
   final bool isLiked;
   final int likesCount;
+  final int commentsCount;
   final List<LikedByUser> likedBy;
   final bool isViewed;
   final String mediaType; // 'IMAGE' or 'VIDEO'
@@ -209,6 +222,7 @@ class DiscoverStory {
     required this.timeAgo,
     this.isLiked = false,
     this.likesCount = 0,
+    this.commentsCount = 0,
     this.likedBy = const [],
     this.isViewed = false,
     this.mediaType = 'IMAGE',
@@ -232,6 +246,7 @@ class DiscoverStory {
       timeAgo: json['timeAgo'] as String? ?? '',
       isLiked: json['isLiked'] as bool? ?? false,
       likesCount: json['likesCount'] as int? ?? 0,
+      commentsCount: json['commentsCount'] as int? ?? 0,
       likedBy: (json['likedBy'] as List<dynamic>?)
               ?.map((e) => LikedByUser.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -254,6 +269,7 @@ class DiscoverStory {
     String? timeAgo,
     bool? isLiked,
     int? likesCount,
+    int? commentsCount,
     List<LikedByUser>? likedBy,
     bool? isViewed,
     String? mediaType,
@@ -272,6 +288,7 @@ class DiscoverStory {
       timeAgo: timeAgo ?? this.timeAgo,
       isLiked: isLiked ?? this.isLiked,
       likesCount: likesCount ?? this.likesCount,
+      commentsCount: commentsCount ?? this.commentsCount,
       likedBy: likedBy ?? this.likedBy,
       isViewed: isViewed ?? this.isViewed,
       mediaType: mediaType ?? this.mediaType,
@@ -476,6 +493,7 @@ class StoriesRepository {
         likes: likesList.map((e) => StoryLikerInfo.fromJson(e)).toList(),
         viewsCount: counts['views'] ?? 0,
         likesCount: counts['likes'] ?? 0,
+        commentsCount: counts['comments'] ?? 0,
       );
     } catch (e) {
       throw Exception('Failed to load story details: $e');

@@ -40,6 +40,8 @@ class StoriesService {
           final likes = story['likes'] as int? ?? 0;
           final views = story['views'] as int? ?? 0;
           
+          final isHighlighted = story['isHighlighted'] as bool? ?? false;
+          
           return {
             'id': id,
             'type': mediaType == 'IMAGE' ? 'image' : (mediaType == 'VIDEO' ? 'video' : 'image'),
@@ -50,6 +52,7 @@ class StoriesService {
             'likes': likes,
             'views': views,
             'likedBy': <Map<String, dynamic>>[], // Can be extended later
+            'isHighlighted': isHighlighted,
           };
         }).toList();
 
@@ -173,6 +176,8 @@ class StoriesService {
         final likes = story['likes'] as int? ?? 0;
         final views = story['views'] as int? ?? 0;
         
+        final isHighlighted = story['isHighlighted'] as bool? ?? false;
+        
         return {
           'id': id,
           'type': mediaType == 'IMAGE' ? 'image' : (mediaType == 'VIDEO' ? 'video' : 'image'),
@@ -183,6 +188,7 @@ class StoriesService {
           'likes': likes,
           'views': views,
           'likedBy': <Map<String, dynamic>>[],
+          'isHighlighted': isHighlighted,
         };
       }).toList();
 

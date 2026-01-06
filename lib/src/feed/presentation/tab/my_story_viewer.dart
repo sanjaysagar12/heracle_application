@@ -122,21 +122,41 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
   }
 
   Future<void> _handlePublic(StoryContent story) async {
+    final newStatus = !story.isHighlighted;
+    
+    // Optimistic update
+    setState(() {
+      final index = _stories.indexOf(story);
+      if (index != -1) {
+        _stories[index] = story.copyWith(isHighlighted: newStatus);
+      }
+    });
+
     try {
-      await _storiesRepository.highlightStory(story.id, true);
+      await _storiesRepository.highlightStory(story.id, newStatus);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Story highlighted successfully'),
+          SnackBar(
+            content: Text(newStatus ? 'Story highlighted' : 'Story removed from highlights'),
             backgroundColor: AppColors.primary,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
     } catch (e) {
+      // Revert on error
       if (mounted) {
+        setState(() {
+          final index = _stories.indexWhere((s) => s.id == story.id);
+          if (index != -1) {
+            _stories[index] = story.copyWith(isHighlighted: !newStatus);
+          }
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to highlight story: $e')),
+          SnackBar(content: Text('Failed to update highlight status: $e')),
         );
       }
     }
@@ -408,7 +428,10 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
                           padding: const EdgeInsets.all(8), // Add padding for SVG
                           child: SvgPicture.asset(
                             'assets/icons/feed.svg',
-                            colorFilter: const ColorFilter.mode(AppColors.pureWhite, BlendMode.srcIn),
+                            colorFilter: ColorFilter.mode(
+                              currentStory.isHighlighted ? AppColors.primary : AppColors.pureWhite, 
+                              BlendMode.srcIn
+                            ),
                           ),
                         ),
                       ),
