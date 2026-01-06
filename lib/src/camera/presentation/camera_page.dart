@@ -373,6 +373,24 @@ class _CameraPageState extends State<CameraPage>
 
                 return Stack(
                   children: [
+                    /// MODES (Vertical Right Center)
+                    Positioned(
+                      right: 16,
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _buildModeButton('Story', _selectedMode == _CameraMode.story),
+                            const SizedBox(height: 30),
+                            _buildModeButton('Cal AI', _selectedMode == _CameraMode.calAI),
+                          ],
+                        ),
+                      ),
+                    ),
+
                     /// CONTROLS
                     Positioned(
                       bottom: 35,
@@ -381,18 +399,8 @@ class _CameraPageState extends State<CameraPage>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Mode Selector
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 20),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildModeButton('Story', _selectedMode == _CameraMode.story),
-                                const SizedBox(width: 20),
-                                _buildModeButton('Cal AI', _selectedMode == _CameraMode.calAI),
-                              ],
-                            ),
-                          ),
+                          // Mode Selector Removed
+
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
@@ -781,20 +789,23 @@ class _CameraPageState extends State<CameraPage>
           }
         });
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white24 : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+      child: AnimatedDefaultTextStyle(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        style: TextStyle(
+          fontFamily: 'Roboto', // Explicitly set font family to avoid jumping if it changes
+          color: isSelected ? AppColors.pureWhite : AppColors.white40,
+          fontSize: isSelected ? 24 : 16,
+          fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
+          shadows: [
+            Shadow(
+              color: Colors.black.withOpacity(0.5),
+              offset: const Offset(1, 1),
+              blurRadius: 4,
+            ),
+          ],
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white60,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        child: Text(text),
       ),
     );
   }
