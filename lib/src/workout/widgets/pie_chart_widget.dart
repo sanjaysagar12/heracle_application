@@ -26,53 +26,55 @@ class PieChartWidget extends StatelessWidget {
         const SizedBox(width: 24),
         Expanded(
           flex: 2,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: data.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final color = _getPieColor(index, item.label);
-              final unit = _getUnit(item.label);
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: data.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                final color = _getPieColor(index, item.label);
+                final unit = _getUnit(item.label);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.label,
-                            style: const TextStyle(
-                              color: AppColors.pureWhite,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.label,
+                              style: const TextStyle(
+                                color: AppColors.pureWhite,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '${item.value.toInt()}$unit',
-                            style: const TextStyle(
-                              color: AppColors.white60,
-                              fontSize: 11,
+                            Text(
+                              '${item.value.toInt()}$unit',
+                              style: const TextStyle(
+                                color: AppColors.white60,
+                                fontSize: 11,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
           ),
         ),
       ],

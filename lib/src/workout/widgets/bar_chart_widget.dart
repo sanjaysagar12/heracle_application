@@ -29,7 +29,7 @@ class BarChartCard extends StatelessWidget {
   const BarChartCard({
     super.key,
     required this.charts,
-    this.height = 220,
+    this.height = 160,
   });
 
   @override
@@ -135,7 +135,7 @@ class _BarChartCarouselState extends State<_BarChartCarousel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            height: widget.height + 80, // title + chart + labels
+            height: widget.height + 70, // title + chart + labels
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
