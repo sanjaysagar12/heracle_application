@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../nutrition/data/diet_log_item.dart';
 import '../../nutrition/api/nutrition_service.dart';
@@ -27,6 +31,29 @@ class PostNutritionPage extends StatefulWidget {
 
 class _PostNutritionPageState extends State<PostNutritionPage> {
   final TextEditingController _captionController = TextEditingController();
+  final List<XFile> _selectedImages = [];
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImages() async {
+    try {
+      final List<XFile> images = await _picker.pickMultiImage();
+      if (images.isNotEmpty) {
+        setState(() {
+          _selectedImages.addAll(images);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking images: $e')),
+      );
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,29 +80,33 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Add Photos
-                        Container(
-                          width: 100,
-                          height: 130,
-                          decoration: BoxDecoration(
-                            color: AppColors.black100,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: AppColors.greyDark.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(12),
+                        // Add Photos Button
+                        GestureDetector(
+                          onTap: _pickImages,
+                          child: Container(
+                            width: 100,
+                            height: 130,
+                            decoration: BoxDecoration(
+                              color: AppColors.black100,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.white10),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.greyDark.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(Icons.add, color: AppColors.pureWhite),
                                 ),
-                                child: const Icon(Icons.add, color: AppColors.pureWhite),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text('Add Photos', style: TextStyle(color: AppColors.pureWhite, fontSize: 12)),
-                            ],
+                                const SizedBox(height: 8),
+                                const Text('Add Photos', style: TextStyle(color: AppColors.pureWhite, fontSize: 12)),
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -86,7 +117,7 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
                             height: 130,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppColors.black100, // Or transparent based on design
+                              color: AppColors.black100,
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Column(
@@ -112,8 +143,6 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
                                        _buildTag('# Hashtags', AppColors.primary, AppColors.black),
                                        const SizedBox(width: 8),
                                        _buildTag('Back day', AppColors.greyDark, AppColors.white60),
-                                       const SizedBox(width: 8),
-                                       _buildTag('GymRat', AppColors.greyDark, AppColors.white60),
                                      ],
                                    ),
                                 ),
@@ -123,6 +152,52 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
                         ),
                       ],
                     ),
+                    
+                    // Selected Images Preview
+                    if (_selectedImages.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 100,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _selectedImages.length,
+                          itemBuilder: (context, index) {
+                            return Stack(
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(right: 8),
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    image: DecorationImage(
+                                      image: FileImage(File(_selectedImages[index].path)),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 12,
+                                  child: GestureDetector(
+                                    onTap: () => _removeImage(index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 24),
 
                     // "Diet log" Header
@@ -153,7 +228,6 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
               ),
             ),
             
-            // Post Button
             // Bottom Actions
             Padding(
               padding: const EdgeInsets.all(16),
@@ -198,7 +272,7 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
 
   Future<void> _saveLog({required bool shouldPost}) async {
     try {
-      final foods = widget.items.map((item) {
+      final foodsList = widget.items.map((item) {
         final isModified = item.foodId != null && (
           item.calories != item.originalCalories ||
           item.protein != item.originalProtein ||
@@ -207,27 +281,36 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
         );
 
         return {
-          "foodId": item.foodId, // Will be null if custom
+          "foodId": item.foodId,
           "name": item.name,
           "calories": item.calories,
           "protein": item.protein,
           "fat": item.fat,
           "carbs": item.carbs,
           "quantity": item.quantity,
-          "mealType": widget.mealType, // Redundant but requested in item schema
+          "mealType": widget.mealType,
           "date": DateTime.now().toIso8601String(),
           "isModified": isModified
         };
       }).toList();
 
-      final payload = {
-        "foods": foods,
-        "images": ["https://dummyimage.com/600x400/000/fff"], // Dummy URL as requested
-        "mealType": widget.mealType,
-        "date": DateTime.now().toIso8601String(),
-      };
+      final formData = FormData.fromMap({
+        'foods': jsonEncode(foodsList),
+        'mealType': widget.mealType,
+        'date': DateTime.now().toIso8601String(),
+        'caption': _captionController.text,
+      });
 
-      final response = await NutritionApiService().saveMeal(payload);
+      if (_selectedImages.isNotEmpty) {
+        for (var image in _selectedImages) {
+          formData.files.add(MapEntry(
+            'images',
+            await MultipartFile.fromFile(image.path, filename: image.name),
+          ));
+        }
+      }
+
+      final response = await NutritionApiService().saveMeal(formData);
 
       if (!mounted) return;
 
@@ -244,7 +327,6 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
               );
             }
           } else {
-             // Fallback if session ID is missing but save worked
              if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Saved, but could not post (Missing Session ID).')),
@@ -264,10 +346,9 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
         );
       }
       
-      // Navigate back to Home or clearing stack logic
       if (mounted) {
         Navigator.pop(context); // Pop Post Page
-        Navigator.pop(context, true); // Pop Track Page with result
+        Navigator.pop(context, true); // Pop Track Page
       }
       
     } catch (e) {

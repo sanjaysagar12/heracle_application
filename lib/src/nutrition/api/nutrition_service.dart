@@ -22,13 +22,17 @@ class NutritionApiService {
       return [];
     }
   }
-  /// Save meal log matching new schema
-  /// Save meal log matching new schema
-  Future<Map<String, dynamic>> saveMeal(Map<String, dynamic> payload) async {
+  /// Save meal log matching new schema with MultipartRequest
+  Future<Map<String, dynamic>> saveMeal(FormData formData) async {
     try {
       final response = await DioClient().dio.post(
         '/api/nutrition/log/bulk',
-        data: payload,
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        ),
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;

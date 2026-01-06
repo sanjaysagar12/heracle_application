@@ -139,17 +139,31 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
 
           const SizedBox(height: 16),
           
-          if (item.content.isNotEmpty) ...[
-            Text(
-              item.content,
-              style: const TextStyle(
-                color: AppColors.pureWhite,
-                fontSize: 15,
-                height: 1.4,
-              ),
-            ),
-             const SizedBox(height: 16),
-          ],
+          // Dynamic Caption (Meal Content or Post Content)
+          Builder(
+            builder: (context) {
+              final currentContent = (item.meals.isNotEmpty && _currentMealIndex < item.meals.length && item.meals[_currentMealIndex].content.isNotEmpty)
+                  ? item.meals[_currentMealIndex].content
+                  : item.content;
+
+              if (currentContent.isEmpty) return const SizedBox.shrink();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    currentContent,
+                    style: const TextStyle(
+                      color: AppColors.pureWhite,
+                      fontSize: 15,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              );
+            },
+          ),
 
           // Meal Carousel
           if (item.meals.isNotEmpty) ...[

@@ -37,6 +37,7 @@ class _HomePageState extends State<HomePage> {
   List<FeedPost> _posts = [];
   bool _isLoading = true;
   Map<String, List<Comment>> _commentsCache = {};
+  final Map<String, bool> _loadingComments = {}; // Added missing variable
   StreamSubscription<int>? _stepsSubscription;
 
   // Add a set to track like requests in progress
@@ -298,49 +299,103 @@ class _HomePageState extends State<HomePage> {
 
   // Replace the old _handleLike with this async version that does optimistic update
   Future<void> _handleLike(String postId) async {
-    if (_likeInProgress.contains(postId)) return; // prevent duplicate requests
-    _likeInProgress.add(postId);
+    final postIndex = _posts.indexWhere((p) => p.id == postId);
+    if (postIndex == -1) return;
 
-    // Keep a copy of previous posts to allow rollback on failure
-    final previousPosts = List<FeedPost>.from(_posts);
+    final post = _posts[postIndex];
+    final isMeal = post is NutritionPost;
+    final isLiked = post.isLiked;
 
-    // Optimistic UI update
+    // Optimistic update
     setState(() {
-      _posts = _posts.map((post) {
-        if (post.id == postId) {
-          final newIsLiked = !post.isLiked;
-          final newLikes = newIsLiked ? post.likes + 1 : post.likes - 1;
-          return post.copyWith(isLiked: newIsLiked, likes: newLikes);
-        }
-        return post;
-      }).toList();
+      final updatedPost = post.copyWith(
+        isLiked: !isLiked,
+        likes: isLiked ? post.likes - 1 : post.likes + 1,
+      );
+      _posts[postIndex] = updatedPost;
     });
 
     try {
-      // Persist the like to server
-      await _mutualFeedRepository.likePost(postId);
+      await _mutualFeedRepository.likePost(postId, isMeal: isMeal);
     } catch (e) {
-      // Rollback optimistic update on error
+      // Revert optimistic update on error
+      setState(() {
+        _posts[postIndex] = post;
+      });
       if (mounted) {
-        setState(() {
-          _posts = previousPosts;
-        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update like: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+          SnackBar(content: Text('Failed to like post: $e')),
         );
       }
-    } finally {
-      _likeInProgress.remove(postId);
     }
   }
 
-  Future<void> _handleAddComment(String postId, String content) async {
+  void _handleCommentClick(String postId) {
+    final postIndex = _posts.indexWhere((p) => p.id == postId);
+    if (postIndex == -1) return;
+    
+    final post = _posts[postIndex];
+    final isMeal = post is NutritionPost;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CommentsBottomSheet(
+        comments: _commentsCache[postId] ?? [],
+        isLoading: _loadingComments[postId] ?? false,
+        onAddComment: (content) => _handleAddComment(postId, content, isMeal: isMeal),
+        onAddReply: (commentId, content) => _handleAddReply(postId, commentId, content, isMeal: isMeal),
+        onOptimisticCommentAdd: (comment) => _handleOptimisticCommentAdd(postId, comment),
+        onOptimisticReplyAdd: (commentId, reply) => _handleOptimisticReplyAdd(postId, commentId, reply),
+      ),
+    );
+
+    // Load comments if not already cached/loading
+    if (_commentsCache[postId] == null ) {
+      _loadComments(postId, isMeal: isMeal);
+    }
+  }
+
+  Future<void> _loadComments(String postId, {bool isMeal = false}) async {
+    setState(() {
+      _loadingComments[postId] = true;
+    });
+
     try {
-      final newComment = await _mutualFeedRepository.addComment(postId, content);
+      final comments = await _mutualFeedRepository.getComments(postId, isMeal: isMeal); // Fixed method name
+      setState(() {
+        _commentsCache[postId] = comments;
+        _loadingComments[postId] = false;
+      });
+    } catch (e) {
+      if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load comments: $e')));
+      }
+      setState(() {
+        _loadingComments[postId] = false;
+      });
+    }
+  }
+
+  Future<void> _handleAddComment(String postId, String content, {bool isMeal = false}) async {
+    final currentUser = await _profileRepository.getProfile();
+    final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+
+    final tempComment = Comment(
+      id: tempId,
+      username: currentUser.username,
+      handle: currentUser.username,
+      profileImage: currentUser.profileImageUrl,
+      timeAgo: 'Just now',
+      content: content,
+      replies: [],
+    );
+
+    _handleOptimisticCommentAdd(postId, tempComment);
+
+    try {
+      final newComment = await _mutualFeedRepository.addComment(postId, content, isMeal: isMeal);
       
       setState(() {
         // Replace temporary comment with real comment from API
@@ -348,19 +403,26 @@ class _HomePageState extends State<HomePage> {
           _commentsCache[postId] ?? [],
           newComment,
         );
+        
+        // Update comment count on post
+        final postIndex = _posts.indexWhere((p) => p.id == postId);
+        if (postIndex != -1) {
+           final post = _posts[postIndex];
+           _posts[postIndex] = post.copyWith(commentCount: post.commentCount + 1);
+        }
       });
     } catch (e) {
       // Remove temporary comment on error
       setState(() {
         _commentsCache[postId] = _removeTemporaryComments(_commentsCache[postId] ?? []);
       });
-      rethrow; // Re-throw to let CommentsBottomSheet handle the error
+      rethrow; 
     }
   }
 
-  Future<void> _handleAddReply(String postId, String commentId, String content) async {
+  Future<void> _handleAddReply(String postId, String commentId, String content, {bool isMeal = false}) async {
     try {
-      final newReply = await _mutualFeedRepository.addReply(postId, commentId, content);
+      final newReply = await _mutualFeedRepository.addReply(postId, commentId, content, isMeal: isMeal);
       
       setState(() {
         // Replace temporary reply with real reply from API
@@ -374,7 +436,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _commentsCache[postId] = _removeTemporaryReplies(_commentsCache[postId] ?? []);
       });
-      rethrow; // Re-throw to let CommentsBottomSheet handle the error
+      rethrow; 
     }
   }
 
@@ -490,76 +552,7 @@ class _HomePageState extends State<HomePage> {
     }).toList();
   }
 
-  void _handleCommentClick(String postId) async {
-    if (!mounted) return;
-    
-    // Show modal immediately with skeleton loading
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      enableDrag: true,
-      isDismissible: true,
-      useSafeArea: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          // Check if comments are already cached
-          final bool isLoading = !_commentsCache.containsKey(postId);
-          final List<Comment>? comments = _commentsCache[postId];
-          
-          // Load comments if not cached
-          if (isLoading) {
-            _loadCommentsForModal(postId, setModalState);
-          }
-          
-          return DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            minChildSize: 0.5,
-            maxChildSize: 0.95,
-            expand: false,
-            builder: (context, scrollController) => CommentsBottomSheet(
-              comments: comments,
-              isLoading: isLoading,
-              onAddComment: (content) async {
-                await _handleAddComment(postId, content);
-                setModalState(() {}); // Update modal state
-              },
-              onAddReply: (commentId, content) async {
-                await _handleAddReply(postId, commentId, content);
-                setModalState(() {}); // Update modal state
-              },
-              onOptimisticCommentAdd: (comment) {
-                _handleOptimisticCommentAdd(postId, comment);
-                setModalState(() {}); // Update modal state
-              },
-              onOptimisticReplyAdd: (commentId, reply) {
-                _handleOptimisticReplyAdd(postId, commentId, reply);
-                setModalState(() {}); // Update modal state
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
 
-  Future<void> _loadCommentsForModal(String postId, StateSetter setModalState) async {
-    try {
-      final comments = await _mutualFeedRepository.getPostComments(postId);
-      setState(() {
-        _commentsCache[postId] = comments;
-      });
-      // Update modal state to show loaded comments
-      setModalState(() {});
-    } catch (e) {
-      print('Error loading comments: $e');
-      // Show empty state on error
-      setState(() {
-        _commentsCache[postId] = [];
-      });
-      setModalState(() {});
-    }
-  }
 
   void _handleLikesClick(String postId) {
     // Open sheet immediately (sheet shows skeleton while fetching)

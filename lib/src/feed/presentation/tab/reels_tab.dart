@@ -171,7 +171,7 @@ class _ReelsTabState extends State<ReelsTab> {
 
           // Fetch comments in background if not cached
           if (isLoadingComments) {
-            _mutualFeedRepository.getPostComments(story.id).then((comments) {
+            _mutualFeedRepository.getComments(story.id).then((comments) {
               if (mounted) {
                 setState(() {
                   _commentsCache[story.id] = comments;

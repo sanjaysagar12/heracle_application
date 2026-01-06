@@ -80,4 +80,60 @@ class MutualFeedService {
       throw Exception('Failed to follow user: $e');
     }
   }
+
+  // Nutrition Post Interactions
+  Future<void> likeMealPost(String postId) async {
+    try {
+      await _dio.post('/api/post/meal/$postId/like');
+    } catch (e) {
+      throw Exception('Failed to like meal post: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getMealComments(String postId) async {
+    try {
+      final response = await _dio.get('/api/post/meal/$postId/comments');
+      
+      if (response.data is Map<String, dynamic> && response.data.containsKey('comments')) {
+        return List<Map<String, dynamic>>.from(response.data['comments']);
+      }
+      
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      throw Exception('Failed to load meal comments: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> addMealComment(String postId, String content) async {
+    try {
+      final response = await _dio.post(
+        '/api/post/meal/$postId/comment',
+        data: {'text': content},
+      );
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to add meal comment: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> addMealReply(String postId, String commentId, String content) async {
+    try {
+      final response = await _dio.post(
+        '/api/post/comment/meal/$commentId/reply',
+        data: {'text': content},
+      );
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to add meal reply: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getMealLikes(String postId) async {
+    try {
+      final response = await _dio.get('/api/post/meal/$postId/likes');
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to load meal likes: $e');
+    }
+  }
 }

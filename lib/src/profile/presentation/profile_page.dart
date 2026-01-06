@@ -393,7 +393,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadCommentsForModal(String postId, StateSetter setModalState) async {
     try {
-      final comments = await _mutualFeedRepository.getPostComments(postId);
+      final comments = await _mutualFeedRepository.getComments(postId);
       setState(() {
         _commentsCache[postId] = comments;
       });

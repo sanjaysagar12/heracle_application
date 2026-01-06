@@ -380,36 +380,54 @@ class MutualFeedRepository {
     }).toList();
   }
 
-  Future<void> likePost(String postId) async {
+  Future<void> likePost(String postId, {bool isMeal = false}) async {
     try {
-      await _service.likePost(postId);
+      if (isMeal) {
+        await _service.likeMealPost(postId);
+      } else {
+        await _service.likePost(postId);
+      }
+      
+      // Update local state is complex without knowing if it's a like or unlike from API
+      // For now, we assume success and toggle locally in UI logic above this layer if needed, 
+      // but Repository usually fetches fresh data or relies on UI optimistic updates.
+      // Here we will just perform the API call.
     } catch (e) {
       throw Exception('Failed to like post: $e');
     }
   }
 
-  Future<List<Comment>> getPostComments(String postId) async {
+  Future<List<Comment>> getComments(String postId, {bool isMeal = false}) async {
     try {
-      final data = await _service.getPostComments(postId);
-      return data.map((json) => Comment.fromJson(json)).toList();
+      final commentsData = isMeal 
+          ? await _service.getMealComments(postId)
+          : await _service.getPostComments(postId);
+
+      return commentsData.map((json) => Comment.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to load comments: $e');
     }
   }
 
-  Future<Comment> addComment(String postId, String content) async {
+  Future<Comment> addComment(String postId, String content, {bool isMeal = false}) async {
     try {
-      final data = await _service.addComment(postId, content);
-      return Comment.fromJson(data);
+      final commentData = isMeal 
+          ? await _service.addMealComment(postId, content)
+          : await _service.addComment(postId, content);
+          
+      return Comment.fromJson(commentData);
     } catch (e) {
       throw Exception('Failed to add comment: $e');
     }
   }
 
-  Future<Comment> addReply(String postId, String commentId, String content) async {
+  Future<Comment> addReply(String postId, String commentId, String content, {bool isMeal = false}) async {
     try {
-      final data = await _service.addReply(postId, commentId, content);
-      return Comment.fromJson(data);
+      final replyData = isMeal
+          ? await _service.addMealReply(postId, commentId, content)
+          : await _service.addReply(postId, commentId, content);
+          
+      return Comment.fromJson(replyData);
     } catch (e) {
       throw Exception('Failed to add reply: $e');
     }
