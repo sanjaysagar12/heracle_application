@@ -116,5 +116,48 @@ class AuthService {
       return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkRldiBVc2VyIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
     }
   }
+  Future<Map<String, dynamic>> getMyProfile() async {
+    try {
+      final res = await _dio.get("/api/user/my-profile");
+      if (res.statusCode == 200) {
+        return res.data;
+      }
+      throw Exception("Failed to get profile");
+    } catch (e) {
+      print("Error getting profile: $e");
+      rethrow;
+    }
+  }
+
+  Future<bool> checkUsernameAvailability(String username) async {
+    try {
+      final res = await _dio.get(
+        "/api/user/check-availability",
+        queryParameters: {"username": username},
+      );
+      if (res.statusCode == 200) {
+        return res.data['available'] ?? false;
+      }
+      return false;
+    } catch (e) {
+      print("Error checking availability: $e");
+      return false;
+    }
+  }
+
+  Future<void> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final res = await _dio.patch(
+        "/api/user/profile",
+        data: data,
+      );
+      if (res.statusCode != 200 && res.statusCode != 201) {
+        throw Exception("Failed to update profile");
+      }
+    } catch (e) {
+      print("Error updating profile: $e");
+      rethrow;
+    }
+  }
 }
 

@@ -4,6 +4,7 @@ import '../../../route.dart'; // Added import for AppRoutes constants
 import 'package:dio/dio.dart';
 import 'package:heracle/core/storage/local_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'onboarding_page.dart'; // Added
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
@@ -82,7 +83,10 @@ class AuthScreen extends StatelessWidget {
                       try {
                         await AuthRepository().signInWithGoogle();
                         if (context.mounted) {
-                          Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => const OnboardingPage()),
+                          );
                         }
                       } catch (e) {
                         if (context.mounted) {
@@ -150,7 +154,10 @@ class AuthScreen extends StatelessWidget {
                            // I'll make it trigger Google Sign in too for better UX if they are the same.
                            AuthRepository().signInWithGoogle().then((_) {
                               if (context.mounted) {
-                                Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const OnboardingPage()),
+                                );
                               }
                            }).catchError((e) {
                              if (context.mounted) {
