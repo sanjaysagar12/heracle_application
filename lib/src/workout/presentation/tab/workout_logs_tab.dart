@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
+import '../workout_log_detail_page.dart'; // Added
 
 class WorkoutLogsTab extends StatefulWidget {
   const WorkoutLogsTab({super.key});
@@ -123,128 +124,87 @@ class _WorkoutLogsTabState extends State<WorkoutLogsTab> {
   }
 
   Widget _buildLogCard(WorkoutLog log) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.black100,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => WorkoutLogDetailPage(log: log),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.black100,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.white10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       log.title,
                       style: const TextStyle(
                         color: AppColors.pureWhite,
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _formatDate(log.completedAt),
-                      style: const TextStyle(color: AppColors.white60, fontSize: 13),
+                      style: const TextStyle(color: AppColors.white60, fontSize: 12),
                     ),
                   ],
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  _formatDuration(log.duration),
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(Icons.fitness_center, '${log.exercisesCount}', 'Exercises'),
-              _buildStatItem(Icons.repeat, '${log.totalSets}', 'Sets'),
-              _buildStatItem(Icons.monitor_weight, '${log.totalVolume}', 'Volume (kg)'),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            title: const Text(
-              'View Exercises',
-              style: TextStyle(color: AppColors.primary, fontSize: 14),
+                const Icon(Icons.arrow_forward_ios, color: AppColors.white60, size: 16),
+              ],
             ),
-            iconColor: AppColors.primary,
-            collapsedIconColor: AppColors.white60,
-            children: [
-              ...log.exercises.map((exercise) {
-                final sets = exercise['sets'] as List<dynamic>;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        exercise['name']?.toString() ?? 'Exercise',
-                        style: const TextStyle(
-                          color: AppColors.pureWhite,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      ...sets.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final set = entry.value as Map<String, dynamic>;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            'Set ${index + 1}: ${set['kg']}kg × ${set['reps']} reps',
-                            style: const TextStyle(color: AppColors.white60, fontSize: 13),
-                          ),
-                        );
-                      }).toList(),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ],
-          ),
-        ],
+            const SizedBox(height: 16),
+            const Divider(color: AppColors.white10, height: 1),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildStatItem(Icons.access_time, _formatDuration(log.duration), 'Duration'),
+                _buildStatItem(Icons.monitor_weight_outlined, '${log.totalVolume}kg', 'Volume'),
+                _buildStatItem(Icons.fitness_center, '${log.exercisesCount}', 'Exercises'),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildStatItem(IconData icon, String value, String label) {
-    return Column(
+    return Row(
       children: [
-        Icon(icon, color: AppColors.primary, size: 24),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.pureWhite,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.white60, fontSize: 12),
+        Icon(icon, color: AppColors.primary, size: 16),
+        const SizedBox(width: 6),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                color: AppColors.pureWhite,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              label,
+              style: const TextStyle(color: AppColors.white60, fontSize: 10),
+            ),
+          ],
         ),
       ],
     );

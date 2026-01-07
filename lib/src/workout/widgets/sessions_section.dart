@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../data/session_repository.dart';
 import '../presentation/tab/log_workout_tab.dart';
 import '../presentation/tab/create_session_tab.dart';
+import '../presentation/tab/workout_logs_tab.dart'; // Added
 import '../presentation/view_session_page.dart';
 
 class SessionsSection extends StatefulWidget {
@@ -209,6 +210,18 @@ class _SessionsSectionState extends State<SessionsSection> {
                                  child: const Text('Done', style: TextStyle(color: AppColors.primary)),
                                ),
                           ],
+                          const Spacer(), // Push to right
+                          IconButton(
+                            icon: const Icon(Icons.history, color: AppColors.primary),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const WorkoutLogsTab(),
+                                ),
+                              );
+                            },
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
