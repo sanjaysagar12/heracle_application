@@ -185,6 +185,7 @@ class _HomePageState extends State<HomePage> {
                       calsTakenProgress: _progress!.calsTakenProgress,
                       proteinTakenProgress: _progress!.proteinTakenProgress,
                       onTargetUpdate: _handleTargetUpdate,
+                      onRefresh: _loadData, // Pass refresh callback
                       actualSteps: _progress!.actualSteps,
                       actualCalsBurned: _progress!.actualCalsBurned,
                       actualCalsTaken: _progress!.actualCalsTaken,

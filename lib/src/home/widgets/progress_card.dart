@@ -14,7 +14,8 @@ class TodayProgressCard extends StatelessWidget {
   final double calsBurnedProgress;
   final double calsTakenProgress;
   final double proteinTakenProgress;
-  final Function(String, int)? onTargetUpdate;
+  final Function(String, int)? onTargetUpdate; // Restored
+  final VoidCallback? onRefresh; // Added callback
   // Add these new properties
   final int actualSteps;
   final int actualCalsBurned;
@@ -34,6 +35,7 @@ class TodayProgressCard extends StatelessWidget {
     this.calsTakenProgress = 0.0,
     this.proteinTakenProgress = 0.0,
     this.onTargetUpdate,
+    this.onRefresh, // Added
     this.actualSteps = 0,
     this.actualCalsBurned = 0,
     this.actualCalsTaken = 0,
@@ -88,11 +90,14 @@ class TodayProgressCard extends StatelessWidget {
 
   Widget _buildWorkoutHeader(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const TrackCaloriesPage()),
         );
+        if (result == true) {
+          onRefresh?.call(); // Call refresh callback
+        }
       },
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),

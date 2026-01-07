@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../nutrition/data/diet_log_item.dart';
 import '../../nutrition/api/nutrition_service.dart';
+import '../../home/storage/daily_nutrition_storage.dart'; // Added
 
 class PostNutritionPage extends StatefulWidget {
   final List<DietLogItem> items;
@@ -312,6 +313,12 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
 
       final response = await NutritionApiService().saveMeal(formData);
 
+      // Update local storage instantly
+      await DailyNutritionStorage().addNutrition(
+        widget.totalCalories, 
+        widget.totalProtein.toInt()
+      );
+
       if (!mounted) return;
 
       if (shouldPost) {
@@ -347,8 +354,7 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
       }
       
       if (mounted) {
-        Navigator.pop(context); // Pop Post Page
-        Navigator.pop(context, true); // Pop Track Page
+        Navigator.pop(context, true); // Pop Post Page with success result
       }
       
     } catch (e) {

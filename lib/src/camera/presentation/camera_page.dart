@@ -820,13 +820,17 @@ class _CameraPageState extends State<CameraPage>
         isLoading: true, // Mark as loading so TrackCaloriesPage knows to initiate flow
       );
 
-      Navigator.push(
+      final result = await Navigator.push(
         context, 
         MaterialPageRoute(
           builder: (context) => const TrackCaloriesPage(),
           settings: RouteSettings(arguments: item),
         ),
       );
+
+      if (result == true && mounted) {
+        Navigator.pop(context, true);
+      }
   }
 }
 

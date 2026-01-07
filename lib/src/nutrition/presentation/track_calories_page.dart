@@ -167,7 +167,7 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
     }
   }
 
-  void _continueToPost() {
+  void _continueToPost() async {
     // Filter out items with no name
     final validItems = _items.where((item) => item.name.isNotEmpty && !item.isLoading).toList();
     if (validItems.isEmpty) {
@@ -177,7 +177,7 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
       return;
     }
 
-    Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PostNutritionPage(
@@ -190,6 +190,10 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
         ),
       ),
     );
+
+    if (result == true && mounted) {
+      Navigator.pop(context, true);
+    }
   }
   @override
   Widget build(BuildContext context) {
@@ -206,18 +210,14 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.camera_alt, color: AppColors.primary),
-            onPressed: () {
-               // Navigate to camera (index 1 usually or Named route)
-               // Assuming named route '/camera' or similar exists for main nav, 
-               // OR we might need to push CameraPage directly.
-               // Existing flow uses Navigator.pushNamed(context, '/home', arguments: index) usually?
-               // Let's use push to CameraPage directly if possible or finding route.
-               // Looking at defaults, often tab based. 
-               // If we want to open camera specifically for this, maybe a direct push is best.
-               Navigator.push(
+            onPressed: () async {
+               final result = await Navigator.push(
                  context, 
-                 MaterialPageRoute(builder: (context) => const CameraPage()) // Need to import
+                 MaterialPageRoute(builder: (context) => const CameraPage()) 
                );
+               if (result == true && mounted) {
+                 Navigator.pop(context, true);
+               }
             },
           ),
         ],
