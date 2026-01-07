@@ -6,6 +6,7 @@ import '../../nutrition/data/food_item_model.dart';
 import '../../nutrition/data/diet_log_item.dart';
 import 'package:heracle/src/camera/presentation/camera_page.dart';
 import 'post_nutrition_page.dart';
+import 'diet_history_page.dart'; // Added
 
 class TrackCaloriesPage extends StatefulWidget {
   const TrackCaloriesPage({super.key});
@@ -208,6 +209,15 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history, color: AppColors.primary),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DietHistoryPage()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.camera_alt, color: AppColors.primary),
             onPressed: () async {

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../../core/network/dio_client.dart';
 import '../data/food_item_model.dart';
+import '../data/nutrition_history_model.dart'; // Added
 
 class NutritionApiService {
   /// Search for foods matching the query
@@ -100,6 +101,22 @@ class NutritionApiService {
       }
     } catch (e) {
       throw Exception('Failed to analyze food: $e');
+    }
+  }
+  /// Get nutrition sessions/history
+  Future<List<NutritionHistoryResponse>> getNutritionHistory() async {
+    try {
+      final response = await DioClient().dio.get('/api/nutrition/sessions');
+      
+      if (response.statusCode == 200 && response.data is List) {
+        return (response.data as List)
+            .map((json) => NutritionHistoryResponse.fromJson(json))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      print('Failed to load nutrition history: $e');
+      return [];
     }
   }
 }

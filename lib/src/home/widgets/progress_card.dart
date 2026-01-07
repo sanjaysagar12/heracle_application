@@ -101,10 +101,10 @@ class TodayProgressCard extends StatelessWidget {
       },
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced padding
         decoration: BoxDecoration(
           color: AppColors.black100,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20), // Slightly reduced radius
           border: Border.all(color: AppColors.white10),
         ),
         child: Row(
@@ -113,11 +113,11 @@ class TodayProgressCard extends StatelessWidget {
               padding: const EdgeInsets.all(0),
               child: SvgPicture.asset(
                 'assets/icons/trackcal.svg',
-                width: 40,
-                height: 40,
+                width: 32, // Reduced size
+                height: 32,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12), // Reduced gap
             const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,16 +126,16 @@ class TodayProgressCard extends StatelessWidget {
                     'Track Your Food',
                     style: TextStyle(
                       color: AppColors.pureWhite,
-                      fontSize: 18,
+                      fontSize: 16, // Reduced font size
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  SizedBox(height: 2), // Reduced height
                   Text(
                     'Check cals, protein, fat, carbs...',
                     style: TextStyle(
                       color: AppColors.white60,
-                      fontSize: 14,
+                      fontSize: 12, // Reduced font size
                     ),
                   ),
                 ],
