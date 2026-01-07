@@ -166,6 +166,7 @@ class WorkoutPost extends FeedPost {
 
 
 class NutritionMeal {
+  final String sessionId; // Added
   final String mealType;
   final String content;
   final List<String> images;
@@ -175,6 +176,7 @@ class NutritionMeal {
   final int fats;
 
   NutritionMeal({
+    required this.sessionId, // Added
     required this.mealType,
     required this.content,
     required this.images,
@@ -186,6 +188,7 @@ class NutritionMeal {
 
   factory NutritionMeal.fromJson(Map<String, dynamic> json) {
     return NutritionMeal(
+      sessionId: json['sessionId'] as String? ?? '',
       mealType: json['mealType'] as String? ?? 'Meal',
       content: json['content'] as String? ?? '',
       images: List<String>.from(json['images'] ?? []),
@@ -193,6 +196,28 @@ class NutritionMeal {
       protein: (json['protein'] as num?)?.toInt() ?? 0,
       carbs: (json['carbs'] as num?)?.toInt() ?? 0,
       fats: (json['fats'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  NutritionMeal copyWith({
+    String? sessionId,
+    String? mealType,
+    String? content,
+    List<String>? images,
+    int? calories,
+    int? protein,
+    int? carbs,
+    int? fats,
+  }) {
+    return NutritionMeal(
+      sessionId: sessionId ?? this.sessionId,
+      mealType: mealType ?? this.mealType,
+      content: content ?? this.content,
+      images: images ?? this.images,
+      calories: calories ?? this.calories,
+      protein: protein ?? this.protein,
+      carbs: carbs ?? this.carbs,
+      fats: fats ?? this.fats,
     );
   }
 }
@@ -244,6 +269,7 @@ class NutritionPost extends FeedPost {
     bool? isLiked,
     int? likes,
     int? commentCount,
+    List<NutritionMeal>? meals, // Added
   }) {
     return NutritionPost(
       id: id,
@@ -258,7 +284,7 @@ class NutritionPost extends FeedPost {
       isLiked: isLiked ?? this.isLiked,
       isOwnPost: isOwnPost,
       commentCount: commentCount ?? this.commentCount,
-      meals: meals,
+      meals: meals ?? this.meals, // Updated
     );
   }
 }

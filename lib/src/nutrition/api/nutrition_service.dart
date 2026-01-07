@@ -60,6 +60,21 @@ class NutritionApiService {
     }
   }
 
+  /// Update meal caption
+  Future<void> updateMealCaption(String sessionId, String caption) async {
+    try {
+      final response = await DioClient().dio.patch(
+        '/api/post/meal/session/$sessionId/caption',
+        data: {'caption': caption},
+      );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to update caption: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to update caption: $e');
+    }
+  }
+
   /// Analyze food from image
   Future<Map<String, dynamic>> analyzeFood(File image, String description) async {
     try {

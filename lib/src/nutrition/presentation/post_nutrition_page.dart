@@ -15,6 +15,8 @@ class PostNutritionPage extends StatefulWidget {
   final double totalFat;
   final double totalCarbs;
   final String mealType;
+  final String? sessionId; // Added for edit mode
+  final String? initialCaption; // Added for edit mode
 
   const PostNutritionPage({
     super.key,
@@ -24,6 +26,8 @@ class PostNutritionPage extends StatefulWidget {
     required this.totalFat,
     required this.totalCarbs,
     required this.mealType,
+    this.sessionId,
+    this.initialCaption,
   });
 
   @override
@@ -31,9 +35,21 @@ class PostNutritionPage extends StatefulWidget {
 }
 
 class _PostNutritionPageState extends State<PostNutritionPage> {
-  final TextEditingController _captionController = TextEditingController();
+  late TextEditingController _captionController;
   final List<XFile> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _captionController = TextEditingController(text: widget.initialCaption);
+  }
+
+  @override
+  void dispose() {
+    _captionController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickImages() async {
     try {
@@ -61,7 +77,7 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
     return Scaffold(
       backgroundColor: AppColors.black,
       appBar: AppBar(
-        title: const Text('Post Diet', style: TextStyle(color: AppColors.pureWhite, fontWeight: FontWeight.bold)),
+        title: Text(widget.sessionId != null ? 'Edit Caption' : 'Post Diet', style: const TextStyle(color: AppColors.pureWhite, fontWeight: FontWeight.bold)),
         backgroundColor: AppColors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: AppColors.pureWhite, size: 20),
@@ -81,36 +97,38 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Add Photos Button
-                        GestureDetector(
-                          onTap: _pickImages,
-                          child: Container(
-                            width: 100,
-                            height: 130,
-                            decoration: BoxDecoration(
-                              color: AppColors.black100,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.white10),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.greyDark.withOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(12),
+                        // Add Photos Button - HIDE IN EDIT MODE
+                        if (widget.sessionId == null) ...[
+                          GestureDetector(
+                            onTap: _pickImages,
+                            child: Container(
+                              width: 100,
+                              height: 130,
+                              decoration: BoxDecoration(
+                                color: AppColors.black100,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppColors.white10),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.greyDark.withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(Icons.add, color: AppColors.pureWhite),
                                   ),
-                                  child: const Icon(Icons.add, color: AppColors.pureWhite),
-                                ),
-                                const SizedBox(height: 8),
-                                const Text('Add Photos', style: TextStyle(color: AppColors.pureWhite, fontSize: 12)),
-                              ],
+                                  const SizedBox(height: 8),
+                                  const Text('Add Photos', style: TextStyle(color: AppColors.pureWhite, fontSize: 12)),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
+                          const SizedBox(width: 16),
+                        ],
                         
                         // Caption
                         Expanded(
@@ -232,38 +250,52 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
             // Bottom Actions
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 56,
-                      child: OutlinedButton(
-                        onPressed: () => _saveLog(shouldPost: false),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.white60),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                        ),
-                        child: const Text('Save', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.pureWhite)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: SizedBox(
+              child: widget.sessionId != null 
+                  ? SizedBox(
+                      width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () => _saveLog(shouldPost: true),
+                        onPressed: () => _saveLog(shouldPost: false), // Reuse saveLog but it will detect edit mode
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: AppColors.black,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                         ),
-                        child: const Text('Post Workout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: const Text('Update Caption', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 56,
+                            child: OutlinedButton(
+                              onPressed: () => _saveLog(shouldPost: false),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppColors.white60),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                              ),
+                              child: const Text('Save', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.pureWhite)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: SizedBox(
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: () => _saveLog(shouldPost: true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.black,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                              ),
+                              child: const Text('Post Workout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),
@@ -273,6 +305,20 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
 
   Future<void> _saveLog({required bool shouldPost}) async {
     try {
+      // HANDLE EDIT MODE
+      if (widget.sessionId != null) {
+        await NutritionApiService().updateMealCaption(widget.sessionId!, _captionController.text);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Caption updated successfully!')),
+          );
+          Navigator.pop(context, _captionController.text);
+        }
+        return;
+      }
+
+      // CREATE MODE
       final foodsList = widget.items.map((item) {
         final isModified = item.foodId != null && (
           item.calories != item.originalCalories ||

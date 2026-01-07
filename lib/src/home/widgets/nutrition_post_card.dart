@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../nutrition/presentation/post_nutrition_page.dart'; // Added
 import '../data/mutual_feed_repository.dart';
 
 class NutritionPostCard extends StatefulWidget {
@@ -25,6 +26,21 @@ class NutritionPostCard extends StatefulWidget {
 
 class _NutritionPostCardState extends State<NutritionPostCard> {
   int _currentMealIndex = 0;
+  late NutritionPost _post;
+
+  @override
+  void initState() {
+    super.initState();
+    _post = widget.post;
+  }
+
+  @override
+  void didUpdateWidget(NutritionPostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.post != oldWidget.post) {
+      _post = widget.post;
+    }
+  }
   
   Future<void> _confirmDelete() async {
     final confirmed = await showDialog<bool>(
@@ -53,7 +69,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
 
   @override
   Widget build(BuildContext context) {
-    final item = widget.post;
+    final item = _post;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -123,10 +139,76 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, color: AppColors.white60),
                   color: AppColors.black100,
-                  onSelected: (value) {
-                    if (value == 'delete') _confirmDelete();
+                  onSelected: (value) async {
+                    if (value == 'delete') {
+                      _confirmDelete();
+                    } else if (value == 'edit') {
+                      // Navigate to PostNutritionPage in Edit Mode
+                      final currentContent = (item.meals.isNotEmpty && _currentMealIndex < item.meals.length && item.meals[_currentMealIndex].content.isNotEmpty)
+                          ? item.meals[_currentMealIndex].content
+                          : item.content;
+
+                      // Calculate totals from meals if possible, or use current meal stats
+                      int totalCalories = 0;
+                      double totalProtein = 0;
+                      double totalFat = 0;
+                      double totalCarbs = 0;
+
+                      if (item.meals.isNotEmpty && _currentMealIndex < item.meals.length) {
+                         final meal = item.meals[_currentMealIndex];
+                         totalCalories = meal.calories;
+                         totalProtein = meal.protein.toDouble();
+                         totalFat = meal.fats.toDouble();
+                         totalCarbs = meal.carbs.toDouble();
+                      }
+
+                      // Use session ID from the specific meal being viewed
+                      String? sessionId;
+                      if (item.meals.isNotEmpty && _currentMealIndex < item.meals.length) {
+                         sessionId = item.meals[_currentMealIndex].sessionId;
+                      }
+
+                      // If no session ID found (e.g. empty meals list or parsing error), fall back or show error
+                      if (sessionId == null || sessionId.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Cannot edit: Session ID missing')),
+                        );
+                        return;
+                      }
+
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PostNutritionPage(
+                            items: const [], // No items needed for caption edit
+                            totalCalories: totalCalories,
+                            totalProtein: totalProtein,
+                            totalFat: totalFat,
+                            totalCarbs: totalCarbs,
+                            mealType: item.meals.isNotEmpty ? item.meals.first.mealType : 'Meal',
+                            sessionId: sessionId, // Pass MEAL Session ID
+                            initialCaption: currentContent, // Pass current caption
+                          ),
+                        ),
+                      );
+                      
+                      // Handle successful edit (optimistic update)
+                      if (result != null && result is String) {
+                        setState(() {
+                          final updatedMeals = List<NutritionMeal>.from(_post.meals);
+                          updatedMeals[_currentMealIndex] = updatedMeals[_currentMealIndex].copyWith(
+                            content: result,
+                          );
+                          _post = _post.copyWith(meals: updatedMeals);
+                        });
+                      }
+                    }
                   },
                   itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Text('Edit', style: TextStyle(color: AppColors.pureWhite)),
+                    ),
                     const PopupMenuItem(
                       value: 'delete',
                       child: Text('Delete', style: TextStyle(color: Colors.red)),
