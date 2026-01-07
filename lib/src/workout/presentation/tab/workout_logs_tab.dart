@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart'; // Added
 import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
 import '../workout_log_detail_page.dart'; // Added
@@ -108,13 +109,57 @@ class _WorkoutLogsTabState extends State<WorkoutLogsTab> {
               );
             }
 
-            return ListView.separated(
+            // Group logs by date
+            final grouped = <String, List<WorkoutLog>>{};
+            for (var log in logs) {
+              final date = log.completedAt.toLocal();
+              final now = DateTime.now();
+              final today = DateTime(now.year, now.month, now.day);
+              final yesterday = today.subtract(const Duration(days: 1));
+              final dateOnly = DateTime(date.year, date.month, date.day);
+
+              String header;
+              if (dateOnly == today) {
+                header = 'Today';
+              } else if (dateOnly == yesterday) {
+                header = 'Yesterday';
+              } else {
+                header = DateFormat('EEE, MMM dd').format(date);
+              }
+
+              if (!grouped.containsKey(header)) {
+                grouped[header] = [];
+              }
+              grouped[header]!.add(log);
+            }
+
+            return ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: logs.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemCount: grouped.length,
               itemBuilder: (context, index) {
-                final log = logs[index];
-                return _buildLogCard(log);
+                final header = grouped.keys.elementAt(index);
+                final items = grouped[header]!;
+                
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        header,
+                        style: const TextStyle(
+                          color: AppColors.pureWhite,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    ...items.map((log) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildLogCard(log),
+                    )).toList(),
+                  ],
+                );
               },
             );
           },
