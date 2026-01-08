@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
 import 'select_workouts_tab.dart';
 import 'post_workout_screen.dart';
+import '../../storage/streak_storage.dart'; // Added
 
 class LogWorkoutTab extends StatefulWidget {
   final String mode; // 'start' or 'create'
@@ -54,11 +55,13 @@ class _ExerciseLog {
   });
 }
 
+
 class _LogWorkoutTabState extends State<LogWorkoutTab> {
   late List<_ExerciseLog> _exerciseLogs;
   late DateTime _startTime;
   bool _isReordering = false;
   final SessionRepository _sessionRepository = SessionRepository();
+  final StreakStorage _streakStorage = StreakStorage(); // Added
 
   @override
   void initState() {
@@ -220,6 +223,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
       );
 
       await _sessionRepository.saveWorkoutLogToDb(workoutLog);
+      await _streakStorage.incrementStreak(); // Update streak
 
       if (mounted) {
         if (action == 'post') {

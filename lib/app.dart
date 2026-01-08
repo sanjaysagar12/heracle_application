@@ -21,18 +21,17 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
   late Animation<Offset> _navBarSlideAnimation;
   final List<ScrollController> _scrollControllers = [];
 
-  final pages = [
-    const HomePage(),
-    Container(),
-    const FeedPage(),
-    const WorkoutPage(),
-  ];
+  final GlobalKey<WorkoutPageState> _workoutKey = GlobalKey(); // Key to control WorkoutPage
+  late final List<Widget> pages; // Late init
 
   // Method to change tab programmatically
   void _changeTab(int index) {
     setState(() {
       _index = index;
     });
+    if (index == 3) {
+      _workoutKey.currentState?.refresh();
+    }
   }
 
   Widget _buildPage(int index) {
@@ -49,6 +48,14 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _index = widget.initialIndex;
+    
+    // Initialize pages here to use _workoutKey
+    pages = [
+      const HomePage(),
+      Container(),
+      const FeedPage(),
+      WorkoutPage(key: _workoutKey),
+    ];
     
     // Initialize animation controller for navbar
     _navBarAnimationController = AnimationController(
@@ -126,6 +133,7 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
         
         if (result is int) {
           setState(() => _index = result);
+          if (_index == 3) _workoutKey.currentState?.refresh(); // Refresh if navigated to Workout
         }
       }
     });
@@ -163,6 +171,9 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
               return;
             }
             setState(() => _index = i);
+            if (i == 3) {
+              _workoutKey.currentState?.refresh(); // Refresh Workout Page
+            }
             _lastScrollPosition = 0;
           },
         ),

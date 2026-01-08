@@ -17,24 +17,30 @@ class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
 
   @override
-  State<WorkoutPage> createState() => _WorkoutPageState();
+  @override
+  State<WorkoutPage> createState() => WorkoutPageState();
 }
 
-class _WorkoutPageState extends State<WorkoutPage> {
+class WorkoutPageState extends State<WorkoutPage> { // Made public
   final ProfileRepository _profileRepository = ProfileRepository();
   final ProgressRepository _progressRepository = ProgressRepository();
   final StoriesRepository _storiesRepository = StoriesRepository();
-  final StreakStorage _streakStorage = StreakStorage(); // Added
+  final StreakStorage _streakStorage = StreakStorage();
   Profile? _profile;
   bool _isLoading = true;
   List<ChartData> _chartData = [];
   int _refreshKey = 0;
-  int _streakCount = 0; // Added
+  int _streakCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  // Public method to refresh data (called from App scaffold)
+  Future<void> refresh() async {
+    await _loadData();
   }
 
   Future<void> _loadData() async {
@@ -148,8 +154,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
                                 context,
                                 MaterialPageRoute(builder: (_) => SelectWorkoutsTab(mode: 'start')),
                               );
-                              // refresh sessions section after returning
-                              setState(() {});
+                              // refresh sessions section and streak after returning
+                              await _loadData();
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
