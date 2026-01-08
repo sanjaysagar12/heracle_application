@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../nutrition/presentation/post_nutrition_page.dart'; // Added
 import '../data/mutual_feed_repository.dart';
+import '../../../route.dart'; // Added for AppRoutes
 
 class NutritionPostCard extends StatefulWidget {
   final NutritionPost post;
@@ -85,46 +86,55 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
           // Header
           Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: DecorationImage(
-                    image: NetworkImage(item.profileImage.isNotEmpty 
-                      ? item.profileImage 
-                      : 'https://ui-avatars.com/api/?name=${item.username}&background=random'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          item.username, 
-                          style: const TextStyle(
-                            color: AppColors.pureWhite,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                child: GestureDetector(
+                  onTap: () {
+                     Navigator.pushNamed(
+                      context,
+                      AppRoutes.profile,
+                      arguments: item.handle,
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          image: DecorationImage(
+                            image: NetworkImage(item.profileImage.isNotEmpty 
+                              ? item.profileImage 
+                              : 'https://ui-avatars.com/api/?name=${item.username}&background=random'),
+                            fit: BoxFit.cover,
                           ),
                         ),
-                         const SizedBox(width: 4),
-                         const Icon(Icons.verified, size: 14, color: AppColors.primary),
-                      ],
-                    ),
-                    Text(
-                      item.handle,
-                      style: const TextStyle(
-                        color: AppColors.white60,
-                        fontSize: 12,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.username, 
+                              style: const TextStyle(
+                                color: AppColors.pureWhite,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              item.handle,
+                              style: const TextStyle(
+                                color: AppColors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Text(
@@ -424,22 +434,27 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-             _buildMacroItem('Calories', '${meal.calories}', Icons.local_fire_department, AppColors.primary),
-             _buildMacroItem('Protein', '${meal.protein}g', Icons.fitness_center, AppColors.primary),
-             _buildMacroItem('Carbs', '${meal.carbs}g', Icons.grain, AppColors.primary),
-             _buildMacroItem('Fats', '${meal.fats}g', Icons.opacity, AppColors.primary),
+             _buildMacroItem('Calories', '${meal.calories}', 'assets/icons/calories.svg', AppColors.primary),
+             _buildMacroItem('Protein', '${meal.protein}g', 'assets/icons/protein.svg', AppColors.primary),
+             _buildMacroItem('Carbs', '${meal.carbs}g', 'assets/icons/carbs.svg', AppColors.primary),
+             _buildMacroItem('Fats', '${meal.fats}g', 'assets/icons/fat.svg', AppColors.primary),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildMacroItem(String label, String value, IconData icon, Color color) {
+  Widget _buildMacroItem(String label, String value, String assetPath, Color color) {
     return Column(
       children: [
         Row(
           children: [
-            Icon(icon, color: AppColors.white60, size: 14),
+            SvgPicture.asset(
+              assetPath,
+              width: 14,
+              height: 14,
+              color: AppColors.white60,
+            ),
             const SizedBox(width: 4),
             Text(
               label,

@@ -303,31 +303,29 @@ class _OnboardingPageState extends State<OnboardingPage> {
     Function(String)? onChanged,
     Widget? suffix,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.black100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.white10),
-      ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        onChanged: onChanged,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          labelText: hint,
-          labelStyle: const TextStyle(color: AppColors.white40),
-          floatingLabelStyle: const TextStyle(color: AppColors.primary),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          suffixIcon: suffix,
-          suffixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 24),
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      onChanged: onChanged,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: hint,
+        labelStyle: const TextStyle(color: AppColors.white40),
+        floatingLabelStyle: const TextStyle(color: AppColors.primary),
+        filled: true,
+        fillColor: AppColors.black100,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
-        validator: (val) {
-          if (val == null || val.isEmpty) return '';
-          return null;
-        },
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        suffixIcon: suffix,
+        suffixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 24),
       ),
+      validator: (val) {
+        if (val == null || val.isEmpty) return '';
+        return null;
+      },
     );
   }
 
@@ -337,35 +335,32 @@ class _OnboardingPageState extends State<OnboardingPage> {
     required List<String> items,
     required Function(String?) onChanged,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.black100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.white10),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButtonFormField<String>(
-          value: value,
-          isExpanded: true,
-          dropdownColor: AppColors.black100,
-          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.white40),
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: hint,
-            labelStyle: const TextStyle(color: AppColors.white40),
-            floatingLabelStyle: const TextStyle(color: AppColors.primary),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+    return DropdownButtonHideUnderline(
+      child: DropdownButtonFormField<String>(
+        value: value,
+        isExpanded: true,
+        dropdownColor: AppColors.black100,
+        icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.white40),
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          labelText: hint,
+          labelStyle: const TextStyle(color: AppColors.white40),
+          floatingLabelStyle: const TextStyle(color: AppColors.primary),
+          filled: true,
+          fillColor: AppColors.black100,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
           ),
-          onChanged: onChanged,
-          items: items.map((item) {
-            return DropdownMenuItem(
-              value: item,
-              child: Text(item),
-            );
-          }).toList(),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
+        onChanged: onChanged,
+        items: items.map((item) {
+          return DropdownMenuItem(
+            value: item,
+            child: Text(item),
+          );
+        }).toList(),
       ),
     );
   }
