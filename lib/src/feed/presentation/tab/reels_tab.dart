@@ -5,8 +5,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../home/widgets/comments_bottom_sheet.dart';
 import '../../../home/widgets/likes_bottom_sheet.dart';
 import '../../data/stories_repository.dart';
-import '../../../home/data/mutual_feed_repository.dart';
+import '../../../home/data/profile_repository.dart'; // Added
 import 'dart:math' as math;
+import '../../../home/data/mutual_feed_repository.dart'; // Needed for Comment/LikedByUser types
 
 class ReelsTab extends StatefulWidget {
   final List<DiscoverStory> stories;
@@ -35,15 +36,20 @@ class _ReelsTabState extends State<ReelsTab> {
   // Track which stories are expanded (caption/tags shown fully)
   final Set<String> _expandedStories = {};
 
-  // Added: mutual feed repo and comments cache to reuse Home comments UI
-  final MutualFeedRepository _mutualFeedRepository = MutualFeedRepository();
+  // Added: stories repo and comments cache to reuse Home comments UI
+  final StoriesRepository _storiesRepository = StoriesRepository();
   final Map<String, List<Comment>> _commentsCache = {};
+  
+  // Added: Profile loading for comments
+  final ProfileRepository _profileRepository = ProfileRepository();
+  Profile? _profile;
 
   @override
   void initState() {
     super.initState();
     _stories = widget.stories;
     _currentIndex = widget.initialIndex;
+    _loadProfile(); // Load profile
     
     _pageController = PageController(
       initialPage: _currentIndex,
@@ -60,6 +66,22 @@ class _ReelsTabState extends State<ReelsTab> {
       }
     });
   }
+
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await _profileRepository.getProfile();
+      if (mounted) {
+        setState(() {
+          _profile = profile;
+        });
+      }
+    } catch (e) {
+      print('Error loading profile in ReelsTab: $e');
+    }
+  }
+
+  @override
+
 
 
 
@@ -82,15 +104,13 @@ class _ReelsTabState extends State<ReelsTab> {
   }
 
   void _handleDoubleTap(String storyId, bool isLiked) {
-    // Toggle like state and get updated stories
-    final updatedStories = widget.onLike(storyId);
-    
-    setState(() {
-      _stories = updatedStories;
-    });
+    // Toggle like state
+    _handleLike(storyId);
     
     // Show animation only when liking (not unliking)
+    // Note: isLiked passed here is the OLD state. So if it WAS NOT liked, we are liking it now.
     if (!isLiked) {
+
       setState(() {
         _showLikeAnimation = true;
       });
@@ -105,13 +125,27 @@ class _ReelsTabState extends State<ReelsTab> {
     }
   }
 
-  void _handleLike(String storyId) {
-    // Toggle like state and get updated stories
+  Future<void> _handleLike(String storyId) async {
+    // Optimistic update
     final updatedStories = widget.onLike(storyId);
     
     setState(() {
       _stories = updatedStories;
     });
+
+    try {
+      // Use standard story like endpoint
+      await _storiesRepository.likeStory(storyId);
+    } catch (e) {
+      print('Error liking reel: $e');
+      // Revert if failed
+      final revertedStories = widget.onLike(storyId);
+      if (mounted) {
+        setState(() {
+          _stories = revertedStories;
+        });
+      }
+    }
   }
 
   void _showMoreOptions(DiscoverStory story) {
@@ -171,7 +205,7 @@ class _ReelsTabState extends State<ReelsTab> {
 
           // Fetch comments in background if not cached
           if (isLoadingComments) {
-            _mutualFeedRepository.getComments(story.id).then((comments) {
+            _storiesRepository.getStoryComments(story.id).then((comments) {
               if (mounted) {
                 setState(() {
                   _commentsCache[story.id] = comments;
@@ -201,20 +235,21 @@ class _ReelsTabState extends State<ReelsTab> {
               isLoading: isLoadingComments,
               onAddComment: (content) async {
                 // Add comment via repo and update cache + UI
-                final newComment = await _mutualFeedRepository.addComment(story.id, content);
+                final newComment = await _storiesRepository.commentOnStory(story.id, content);
                 setState(() {
                   _commentsCache[story.id] = [...(_commentsCache[story.id] ?? []), newComment];
                 });
                 setModalState(() {}); // refresh modal content
               },
               onAddReply: (commentId, content) async {
-                final newReply = await _mutualFeedRepository.addReply(story.id, commentId, content);
+                final newReply = await _storiesRepository.replyToComment(commentId, content);
                 setState(() {
                   final current = _commentsCache[story.id] ?? [];
                   _commentsCache[story.id] = _addReplyToComment(current, commentId, newReply);
                 });
                 setModalState(() {}); // refresh modal content
               },
+              currentUserProfile: _profile,
             ),
           );
         },

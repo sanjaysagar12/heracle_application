@@ -188,17 +188,12 @@ class _FeedPageState extends State<FeedPage> {
           stories: _discoverStories,
           initialIndex: storyIndex,
           onLike: (storyId) {
-            // Optimistic update
+            // Optimistic update only (API call handled in ReelsTab)
             final updatedStories = _storiesRepository.toggleLike(_discoverStories, storyId);
             setState(() {
               _discoverStories = updatedStories;
             });
             
-            // API call to backend
-            _storiesRepository.likeDiscoverStory(storyId).catchError((e) {
-              print('Error liking discover story: $e');
-            });
-
             // Return the updated story list
             return updatedStories;
           },

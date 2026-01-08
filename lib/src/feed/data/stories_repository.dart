@@ -451,12 +451,14 @@ class StoriesRepository {
     await _storiesService.likeDiscoverStory(storyId);
   }
 
-  Future<void> commentOnStory(String storyId, String text) async {
-    await _storiesService.commentOnStory(storyId, text);
+  Future<Comment> commentOnStory(String storyId, String text) async {
+    final data = await _storiesService.commentOnStory(storyId, text);
+    return _mapToComment(data);
   }
 
-  Future<void> replyToComment(String commentId, String text) async {
-    await _storiesService.replyToComment(commentId, text);
+  Future<Comment> replyToComment(String commentId, String text) async {
+    final data = await _storiesService.replyToComment(commentId, text);
+    return _mapToComment(data);
   }
 
   Future<void> highlightStory(String storyId, bool isHighlighted) async {

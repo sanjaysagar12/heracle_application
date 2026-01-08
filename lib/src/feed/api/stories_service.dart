@@ -233,7 +233,7 @@ class StoriesService {
   }
 
   /// Send comment on a story
-  Future<void> commentOnStory(String storyId, String text) async {
+  Future<Map<String, dynamic>> commentOnStory(String storyId, String text) async {
     try {
       final response = await _dioClient.dio.post(
         '/api/story/$storyId/comment',
@@ -243,6 +243,7 @@ class StoriesService {
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception('Failed to comment on story: ${response.statusCode}');
       }
+      return response.data as Map<String, dynamic>;
     } catch (e) {
       developer.log('Error commenting on story: $e');
       rethrow;
@@ -250,7 +251,7 @@ class StoriesService {
   }
 
   /// Reply to a comment
-  Future<void> replyToComment(String commentId, String text) async {
+  Future<Map<String, dynamic>> replyToComment(String commentId, String text) async {
     try {
       final response = await _dioClient.dio.post(
         '/api/story/comment/$commentId/reply',
@@ -260,6 +261,7 @@ class StoriesService {
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception('Failed to reply to comment: ${response.statusCode}');
       }
+      return response.data as Map<String, dynamic>;
     } catch (e) {
       developer.log('Error replying to comment: $e');
       rethrow;
