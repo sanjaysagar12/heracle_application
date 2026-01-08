@@ -103,7 +103,7 @@ class ProfileApiService {
     try {
       // Clean username if it starts with @
       final cleanUsername = username.startsWith('@') ? username.substring(1) : username;
-      final response = await DioClient().dio.get('https://leno-api-heracle.portos.cloud/api/user/$cleanUsername/posts');
+      final response = await DioClient().dio.get('/api/user/$cleanUsername/posts');
       
       if (response.data is List) {
         return List<Map<String, dynamic>>.from(response.data);
