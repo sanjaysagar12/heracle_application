@@ -60,31 +60,41 @@ class _ProfilePageState extends State<ProfilePage> {
       // 1. Get profile first to get ID
       final profile = await _repository.getUserProfile(targetUsername);
       
-      // 2. Fetch independent data in parallel
+      if (mounted) {
+        setState(() {
+          _profile = profile;
+        });
+      }
+      
+      // 2. Fetch independent data in parallel with error handling
       final results = await Future.wait([
-        _repository.getUserFeed(profile.id), // Use new feed endpoint
-        _repository.getSessions(username: targetUsername),
-        _repository.getPosts(targetUsername),
+        _repository.getUserFeed(profile.id).catchError((_) => <DiscoverStory>[]),
+        _repository.getSessions(username: targetUsername).catchError((_) => <Session>[]),
+        _repository.getPosts(targetUsername).catchError((_) => <FeedPost>[]),
       ]);
 
-      setState(() {
-        _profile = profile;
-        _discoverStories = results[0] as List<DiscoverStory>; // Feed items directly as DiscoverStory
-        _sessions = results[1] as List<Session>;
-        _posts = results[2] as List<FeedPost>;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _discoverStories = results[0] as List<DiscoverStory>;
+          _sessions = results[1] as List<Session>;
+          _posts = results[2] as List<FeedPost>;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load profile: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // Only show error if profile itself failed to load
+        if (_profile == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to load profile used: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
