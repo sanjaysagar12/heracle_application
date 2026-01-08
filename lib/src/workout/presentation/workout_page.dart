@@ -3,7 +3,7 @@ import '../../../widgets/app_bar.dart';
 import '../../home/data/profile_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/bar_chart_widget.dart';
-import '../data/progress_repository.dart'; // new import
+import '../../home/data/progress_repository.dart'; // Corrected import
 import './tab/select_workouts_tab.dart'; // navigation target
 import '../widgets/sessions_section.dart'; // added
 import '../data/session_repository.dart'; // add import
@@ -11,6 +11,7 @@ import 'tab/workout_logs_tab.dart';
 import 'package:heracle/route.dart';
 import '../../feed/data/stories_repository.dart';
 import '../../feed/presentation/tab/my_story_viewer.dart';
+import '../storage/streak_storage.dart'; // Added
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -23,10 +24,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
   final ProfileRepository _profileRepository = ProfileRepository();
   final ProgressRepository _progressRepository = ProgressRepository();
   final StoriesRepository _storiesRepository = StoriesRepository();
+  final StreakStorage _streakStorage = StreakStorage(); // Added
   Profile? _profile;
   bool _isLoading = true;
   List<ChartData> _chartData = [];
   int _refreshKey = 0;
+  int _streakCount = 0; // Added
 
   @override
   void initState() {
@@ -41,12 +44,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
         _progressRepository.getWeeklyActivity(),
         _progressRepository.getTodayNutrition(),
         _progressRepository.getMonthlyProgress(),
+        _streakStorage.getStreak(), // Added
       ]);
 
       final profile = results[0] as Profile;
       final weeklyValues = results[1] as List<double>;
       final nutritionValues = results[2] as Map<String, double>;
       final monthlyValues = results[3] as List<double>;
+      final streak = results[4] as int; // Added
 
       const weeklyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const monthlyLabels = ['W1', 'W2', 'W3', 'W4'];
@@ -77,6 +82,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       setState(() {
         _profile = profile;
         _chartData = [weeklyData, nutritionData, monthlyData];
+        _streakCount = streak;
         _isLoading = false;
       });
     } catch (_) {
@@ -123,6 +129,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         );
                       },
                       onStoryTap: _handleStoryTap,
+                      streakCount: _streakCount, // Added
                     ),
                   // bar chart carousel showing multiple progress charts
                   BarChartCard(charts: _chartData),

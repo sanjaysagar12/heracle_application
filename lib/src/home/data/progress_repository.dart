@@ -2,6 +2,7 @@ import '../../core/network/cache_manager.dart';
 import '../api/progress_service.dart';
 import '../service/steps_counter.dart';
 import '../storage/daily_nutrition_storage.dart'; // Added
+import '../../workout/storage/workout_logs_storage.dart'; // Added
 import 'targets_repository.dart';
 
 class ProgressCard {
@@ -87,9 +88,65 @@ class ProgressRepository {
   final TargetsRepository _targetsRepository = TargetsRepository();
   final CacheManager _cacheManager = CacheManager();
   final DailyNutritionStorage _nutritionStorage = DailyNutritionStorage(); // Added
+  final WorkoutLogsStorage _logsStorage = WorkoutLogsStorage.instance; // Added
 
   ProgressRepository({ProgressService? progressService})
       : _progressService = progressService ?? ProgressService();
+
+  Future<List<double>> getWeeklyActivity() async {
+    final logs = await _logsStorage.getAllWorkoutLogs(limit: 50); // Fetch recent logs
+    final now = DateTime.now();
+    // Start of week (Monday)
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+    
+    // Initialize 7 days with 0.0
+    List<double> dailyVolume = List.filled(7, 0.0);
+
+    for (var log in logs) {
+      if (log.completedAt.isAfter(startOfWeek.subtract(const Duration(days: 1))) && 
+          log.completedAt.isBefore(endOfWeek.add(const Duration(days: 1)))) {
+        // day of week 1 (Mon) -> index 0
+        int index = log.completedAt.weekday - 1; 
+        if (index >= 0 && index < 7) {
+          dailyVolume[index] += log.totalVolume.toDouble();
+        }
+      }
+    }
+    return dailyVolume;
+  }
+
+  Future<Map<String, double>> getTodayNutrition() async {
+    final data = await _nutritionStorage.getTodayNutrition();
+    return {
+      'calories': (data['calories'] ?? 0).toDouble(),
+      'protein': (data['protein'] ?? 0).toDouble(),
+      'carbs': (data['carbs'] ?? 0).toDouble(),
+      'fats': (data['fats'] ?? 0).toDouble(),
+    };
+  }
+
+  Future<List<double>> getMonthlyProgress() async {
+     final logs = await _logsStorage.getAllWorkoutLogs(limit: 100);
+     final now = DateTime.now();
+     // Last 4 weeks
+     List<double> weeklyVolume = List.filled(4, 0.0);
+     
+     for (var log in logs) {
+       final difference = now.difference(log.completedAt).inDays;
+       if (difference < 28) { // 4 weeks * 7 days
+         int weekIndex = (difference / 7).floor();
+         // weekIndex 0 is this week (latest), usually charts show Left->Right (Past->Present) or Week 1->4
+         // If Week 1 is oldest, we need to invert index.
+         // Let's assume index 3 is current week, 0 is 4 weeks ago.
+         int chartIndex = 3 - weekIndex;
+         if (chartIndex >= 0 && chartIndex < 4) {
+           weeklyVolume[chartIndex] += log.totalVolume.toDouble();
+         }
+       }
+     }
+     return weeklyVolume;
+  }
 
   Future<ProgressCard> getTodayProgress() async {
     try {
@@ -166,4 +223,4 @@ class ProgressRepository {
   Future<void> stopStepTracking() async {
     await _stepsCounter.stopListening();
   }
-}
+} // End of class

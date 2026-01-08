@@ -4,6 +4,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../app.dart';
 import '../data/session_repository.dart';
 
+import '../storage/streak_storage.dart';
+
 class ViewSessionPage extends StatefulWidget {
   final Session session;
 
@@ -15,7 +17,58 @@ class ViewSessionPage extends StatefulWidget {
 
 class _ViewSessionPageState extends State<ViewSessionPage> {
   final SessionRepository _sessionRepository = SessionRepository();
+  final StreakStorage _streakStorage = StreakStorage();
   bool _isCopying = false;
+
+  Future<void> _handleFinishWorkout() async {
+    try {
+      await _streakStorage.incrementStreak();
+
+      // Calculate simple stats for the log
+      int totalSets = 0;
+      int totalVolume = 0;
+      
+      for (var exercise in widget.session.exercises) {
+        final sets = (exercise['sets'] as List<dynamic>?) ?? [];
+        totalSets += sets.length;
+        for (var s in sets) {
+           final weight = int.tryParse(s['kg']?.toString() ?? '0') ?? 0;
+           final reps = int.tryParse(s['reps']?.toString() ?? '0') ?? 0;
+           totalVolume += (weight * reps);
+        }
+      }
+
+      final log = WorkoutLog(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        sessionId: widget.session.id,
+        title: widget.session.title,
+        completedAt: DateTime.now(),
+        duration: 45 * 60, // Dummy duration ~45 mins
+        totalVolume: totalVolume,
+        totalSets: totalSets,
+        exercisesCount: widget.session.exercisesCount,
+        exercises: widget.session.exercises,
+      );
+
+      await _sessionRepository.saveWorkoutLogToDb(log);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Workout Finished! Streak updated.'),
+            backgroundColor: AppColors.primary,
+             behavior: SnackBarBehavior.floating,
+             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+        Navigator.pop(context, true); // Return to refresh
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error finishing workout: $e')));
+      }
+    }
+  }
 
   Future<void> _handleCopySession() async {
     setState(() {
@@ -106,20 +159,17 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
                 },
               ),
             ),
-            // Copy Session Button
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.black,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: SizedBox(
+          ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Copy Session Button
+              SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton.icon(
@@ -143,6 +193,30 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.white60,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Finish Workout Button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: _handleFinishWorkout,
+                  icon: const Icon(Icons.check_circle, color: Colors.black),
+                  label: const Text(
+                    'Finish Workout',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
@@ -150,8 +224,8 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
