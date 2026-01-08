@@ -51,6 +51,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
   List<String> _existingCategories = [];
   bool _showCategorySuggestions = false;
   bool _isReordering = false;
+  bool _isSaving = false; // Added state
   bool get _isEditMode => widget.sessionToEdit != null;
 
   @override
@@ -159,8 +160,9 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       });
     }
   }
-
   Future<void> _saveSession() async {
+    if (_isSaving) return;
+
     final sessionName = _sessionNameController.text.trim();
     final description = _descriptionController.text.trim();
     final category = _categoryController.text.trim();
@@ -182,6 +184,10 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter at least one category')));
       return;
     }
+
+    setState(() {
+      _isSaving = true;
+    });
 
     // build Session from _exerciseLogs
     final exercises = _exerciseLogs.map((ex) {
@@ -218,6 +224,12 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_isEditMode ? 'Update' : 'Save'} failed: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -494,17 +506,24 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: _saveSession,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.save, color: Colors.black, size: 20),
-                    const SizedBox(width: 8),
-                    Text(_isEditMode ? 'Save Session' : 'Create Session', style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
-                  ],
-                ),
+                onPressed: _isSaving ? null : _saveSession,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.save, color: Colors.black, size: 20),
+                          const SizedBox(width: 8),
+                          Text(_isEditMode ? 'Save Session' : 'Create Session', style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+                        ],
+                      ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
                   shape: const StadiumBorder(),
                 ),
               ),

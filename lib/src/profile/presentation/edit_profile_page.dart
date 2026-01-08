@@ -127,6 +127,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _submit() async {
+    if (_isSaving) return;
+
     if (_formKey.currentState!.validate() && (_originalUsername == _usernameController.text || _isUsernameAvailable)) {
       try {
         setState(() => _isSaving = true);

@@ -155,52 +155,58 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: AppColors.black,
       body: _isLoading
           ? const SkeletonLoading()
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  if (_profile != null)
-                    CustomAppBar(
-                      name: _profile!.name,
-                      age: _profile!.age,
-                      profileImageUrl: _profile!.profileImageUrl,
-                      hasStory: _profile!.hasStory,
-                      onProfileTap: () {
-                        Navigator.pushNamed(
-                          context, 
-                          AppRoutes.profile,
-                          arguments: _profile!.username,
-                        );
-                      },
-                      onStoryTap: _handleStoryTap,
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              backgroundColor: AppColors.black100,
+              color: const Color(0xFFD4FC79),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(), // Ensure scroll even if content is short
+                child: Column(
+                  children: [
+                    if (_profile != null)
+                      CustomAppBar(
+                        name: _profile!.name,
+                        age: _profile!.age,
+                        profileImageUrl: _profile!.profileImageUrl,
+                        hasStory: _profile!.hasStory,
+                        onProfileTap: () {
+                          Navigator.pushNamed(
+                            context, 
+                            AppRoutes.profile,
+                            arguments: _profile!.username,
+                          );
+                        },
+                        onStoryTap: _handleStoryTap,
+                      ),
+                    if (_progress != null)
+                      TodayProgressCard(
+                        workoutsLeft: _progress!.workoutsLeft,
+                        steps: _progress!.steps,
+                        calsBurned: _progress!.calsBurned,
+                        calsTaken: _progress!.calsTaken,
+                        proteinTaken: _progress!.proteinTaken,
+                        stepsProgress: _progress!.stepsProgress,
+                        calsBurnedProgress: _progress!.calsBurnedProgress,
+                        calsTakenProgress: _progress!.calsTakenProgress,
+                        proteinTakenProgress: _progress!.proteinTakenProgress,
+                        onTargetUpdate: _handleTargetUpdate,
+                        onRefresh: _loadData, // Pass refresh callback
+                        actualSteps: _progress!.actualSteps,
+                        actualCalsBurned: _progress!.actualCalsBurned,
+                        actualCalsTaken: _progress!.actualCalsTaken,
+                        actualProteinTaken: _progress!.actualProteinTaken,
+                        targets: _progress!.targets,
+                      ),
+                    TrackMutualsSection(
+                      posts: _posts,
+                      onLike: _handleLike,
+                      onComment: _handleCommentClick,
+                      onLikesClick: _handleLikesClick,
+                      onDeletePost: _handleDeletePost,
+                      onEditPost: _handleEditPost,
                     ),
-                  if (_progress != null)
-                    TodayProgressCard(
-                      workoutsLeft: _progress!.workoutsLeft,
-                      steps: _progress!.steps,
-                      calsBurned: _progress!.calsBurned,
-                      calsTaken: _progress!.calsTaken,
-                      proteinTaken: _progress!.proteinTaken,
-                      stepsProgress: _progress!.stepsProgress,
-                      calsBurnedProgress: _progress!.calsBurnedProgress,
-                      calsTakenProgress: _progress!.calsTakenProgress,
-                      proteinTakenProgress: _progress!.proteinTakenProgress,
-                      onTargetUpdate: _handleTargetUpdate,
-                      onRefresh: _loadData, // Pass refresh callback
-                      actualSteps: _progress!.actualSteps,
-                      actualCalsBurned: _progress!.actualCalsBurned,
-                      actualCalsTaken: _progress!.actualCalsTaken,
-                      actualProteinTaken: _progress!.actualProteinTaken,
-                      targets: _progress!.targets,
-                    ),
-                  TrackMutualsSection(
-                    posts: _posts,
-                    onLike: _handleLike,
-                    onComment: _handleCommentClick,
-                    onLikesClick: _handleLikesClick,
-                    onDeletePost: _handleDeletePost,
-                    onEditPost: _handleEditPost,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
     );

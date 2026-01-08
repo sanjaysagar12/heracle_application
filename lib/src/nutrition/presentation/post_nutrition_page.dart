@@ -39,6 +39,8 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
   final List<XFile> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
 
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -60,9 +62,11 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking images: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking images: $e')),
+        );
+      }
     }
   }
 
@@ -255,13 +259,15 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () => _saveLog(shouldPost: false), // Reuse saveLog but it will detect edit mode
+                        onPressed: _isSaving ? null : () => _saveLog(shouldPost: false),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: AppColors.black,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                         ),
-                        child: const Text('Update Caption', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: _isSaving
+                            ? const CircularProgressIndicator(color: AppColors.black)
+                            : const Text('Update Caption', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                     )
                   : Row(
@@ -270,7 +276,7 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
                           child: SizedBox(
                             height: 56,
                             child: OutlinedButton(
-                              onPressed: () => _saveLog(shouldPost: false),
+                              onPressed: _isSaving ? null : () => _saveLog(shouldPost: false),
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(color: AppColors.white60),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -284,13 +290,15 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
                           child: SizedBox(
                             height: 56,
                             child: ElevatedButton(
-                              onPressed: () => _saveLog(shouldPost: true),
+                              onPressed: _isSaving ? null : () => _saveLog(shouldPost: true),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: AppColors.black,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                               ),
-                              child: const Text('Post Workout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              child: _isSaving
+                                  ? const CircularProgressIndicator(color: AppColors.black)
+                                  : const Text('Post Workout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                             ),
                           ),
                         ),
@@ -304,6 +312,12 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
   }
 
   Future<void> _saveLog({required bool shouldPost}) async {
+    if (_isSaving) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
     try {
       // HANDLE EDIT MODE
       if (widget.sessionId != null) {
@@ -408,6 +422,12 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
       }
     }
   }
