@@ -2,6 +2,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:heracle/core/network/dio_client.dart';
 import 'package:heracle/core/helper/constants.dart';
+import 'dart:io';
 import 'package:dio/dio.dart';
 
 class AuthService {
@@ -145,12 +146,33 @@ class AuthService {
     }
   }
 
-  Future<void> updateProfile(Map<String, dynamic> data) async {
+  Future<void> updateProfile(Map<String, dynamic> data, {File? image}) async {
     try {
+      final formData = FormData();
+
+      // Add fields
+      data.forEach((key, value) {
+        formData.fields.add(MapEntry(key, value.toString()));
+      });
+
+      // Add image if present
+      if (image != null) {
+        formData.files.add(MapEntry(
+          'image',
+          await MultipartFile.fromFile(image.path),
+        ));
+      }
+
       final res = await _dio.patch(
         "/api/user/profile",
-        data: data,
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        ),
       );
+
       if (res.statusCode != 200 && res.statusCode != 201) {
         throw Exception("Failed to update profile");
       }

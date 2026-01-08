@@ -5,6 +5,7 @@ import '../data/profile_repository.dart';
 class ProfileHeader extends StatelessWidget {
   final UserProfile profile;
   final VoidCallback? onFollowTap;
+  final VoidCallback? onEditTap; // Added
   final VoidCallback? onProfileImageTap;
   final VoidCallback? onFollowersTap;
   final VoidCallback? onFollowingTap;
@@ -13,6 +14,7 @@ class ProfileHeader extends StatelessWidget {
     super.key,
     required this.profile,
     this.onFollowTap,
+    this.onEditTap, // Added
     this.onProfileImageTap,
     this.onFollowersTap,
     this.onFollowingTap,
@@ -153,8 +155,32 @@ class ProfileHeader extends StatelessWidget {
                 ],
               ),
               
-              // Follow Button
-              if (onFollowTap != null) ...[
+              // Follow or Edit Button
+              if (onEditTap != null) ...[
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: onEditTap,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.white40),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: const Text(
+                      'Edit Profile',
+                      style: TextStyle(
+                        color: AppColors.pureWhite,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ] else if (onFollowTap != null) ...[
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,

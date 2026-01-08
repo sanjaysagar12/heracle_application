@@ -19,6 +19,7 @@ import '../../home/widgets/workout_post_card.dart';
 import '../../home/widgets/nutrition_post_card.dart';
 import '../../workout/data/post_workout_repository.dart'; // Added
 import '../../workout/presentation/tab/post_workout_screen.dart'; // Added
+import 'edit_profile_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final String? username;
@@ -112,6 +113,16 @@ class _ProfilePageState extends State<ProfilePage> {
           });
         }
       });
+    }
+  }
+
+  void _onEditProfile() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => EditProfilePage()),
+    );
+    if (result == true) {
+      _loadData();
     }
   }
 
@@ -487,6 +498,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ProfileHeader(
                             profile: _profile!,
                             onFollowTap: _profile!.isViewer ? null : _onFollowTap,
+                            onEditTap: _profile!.isViewer ? _onEditProfile : null, // Added edit handler
                             onFollowersTap: () {
                               Navigator.push(
                                 context,
