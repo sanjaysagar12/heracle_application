@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/profile_repository.dart';
+import '../../home/data/profile_repository.dart' as home_repo;
 import '../widgets/profile_header.dart';
 import '../widgets/profile_tab_bar.dart';
 import '../widgets/highlight_grid.dart';
@@ -365,27 +366,43 @@ class _ProfilePageState extends State<ProfilePage> {
             minChildSize: 0.5,
             maxChildSize: 0.95,
             expand: false,
-            builder: (context, scrollController) => CommentsBottomSheet(
-              comments: comments,
-              isLoading: isLoading,
-              onAddComment: (content) async {
-                await _handleAddComment(postId, content);
-                setModalState(() {});
-              },
-              onAddReply: (commentId, content) async {
-                await _handleAddReply(postId, commentId, content);
-                setModalState(() {});
-              },
-              onOptimisticCommentAdd: (comment) {
-                _handleOptimisticCommentAdd(postId, comment);
-                setModalState(() {});
-              },
-              onOptimisticReplyAdd: (commentId, reply) {
-                _handleOptimisticReplyAdd(postId, commentId, reply);
-                setModalState(() {});
-              },
-            ),
+            builder: (context, scrollController) {
+              // Map UserProfile to home_repo.Profile
+              home_repo.Profile? userProfile;
+              if (mounted && _profile != null) {
+                userProfile = home_repo.Profile(
+                  name: _profile!.name,
+                  username: _profile!.username,
+                  age: 0, // ProfilePage doesn't have age, default to 0
+                  profileImageUrl: _profile!.profileImageUrl,
+                  hasStory: _profile!.hasStory,
+                );
+              }
+
+              return CommentsBottomSheet(
+                comments: comments,
+                isLoading: isLoading,
+                onAddComment: (content) async {
+                  await _handleAddComment(postId, content);
+                  setModalState(() {});
+                },
+                onAddReply: (commentId, content) async {
+                  await _handleAddReply(postId, commentId, content);
+                  setModalState(() {});
+                },
+                onOptimisticCommentAdd: (comment) {
+                  _handleOptimisticCommentAdd(postId, comment);
+                  setModalState(() {});
+                },
+                onOptimisticReplyAdd: (commentId, reply) {
+                  _handleOptimisticReplyAdd(postId, commentId, reply);
+                  setModalState(() {});
+                },
+                currentUserProfile: userProfile,
+              );
+            },
           );
+
         },
       ),
     );
