@@ -340,47 +340,84 @@ class _HomePageState extends State<HomePage> {
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => CommentsBottomSheet(
-        comments: _commentsCache[postId] ?? [],
-        isLoading: _loadingComments[postId] ?? false,
-        onAddComment: (content) => _handleAddComment(postId, content, isMeal: isMeal),
-        onAddReply: (commentId, content) => _handleAddReply(postId, commentId, content, isMeal: isMeal),
-        onOptimisticCommentAdd: (comment) => _handleOptimisticCommentAdd(postId, comment),
-        onOptimisticReplyAdd: (commentId, reply) => _handleOptimisticReplyAdd(postId, commentId, reply),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final comments = _commentsCache[postId] ?? [];
+          final bool isLoading = _loadingComments[postId] ?? false;
+
+          // If not loaded and not loading, trigger load
+          if (!_commentsCache.containsKey(postId) && !isLoading) {
+            // We need to trigger load, but we can't await here directly in build
+            // Use post frame callback or just call it (it handles async)
+            // But we need to pass setModalState to it so it can update this sheet.
+            // Or better: define a local load function or modify _loadComments
+            
+            // Calling _loadCommentsAndRefreshSheet here
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+               _loadCommentsAndRefreshSheet(postId, isMeal, setModalState);
+            });
+          }
+
+          return CommentsBottomSheet(
+            comments: comments,
+            isLoading: isLoading,
+            onAddComment: (content) async {
+              await _handleAddComment(postId, content, isMeal: isMeal);
+              setModalState(() {});
+            },
+            onAddReply: (commentId, content) async {
+              await _handleAddReply(postId, commentId, content, isMeal: isMeal);
+              setModalState(() {});
+            },
+            onOptimisticCommentAdd: (comment) {
+              _handleOptimisticCommentAdd(postId, comment);
+              setModalState(() {});
+            },
+            onOptimisticReplyAdd: (commentId, reply) {
+              _handleOptimisticReplyAdd(postId, commentId, reply);
+              setModalState(() {});
+            },
+            currentUserProfile: _profile,
+          );
+        },
       ),
     );
-
-    // Load comments if not already cached/loading
-    if (_commentsCache[postId] == null ) {
-      _loadComments(postId, isMeal: isMeal);
-    }
   }
 
-  Future<void> _loadComments(String postId, {bool isMeal = false}) async {
+  Future<void> _loadCommentsAndRefreshSheet(String postId, bool isMeal, StateSetter setModalState) async {
+    // Check if already loading to prevent loop if logic above isn't strict
+    if (_loadingComments[postId] == true) return;
+
     setState(() {
       _loadingComments[postId] = true;
     });
+    setModalState(() {});
 
     try {
-      final comments = await _mutualFeedRepository.getComments(postId, isMeal: isMeal); // Fixed method name
-      setState(() {
-        _commentsCache[postId] = comments;
-        _loadingComments[postId] = false;
-      });
+      final comments = await _mutualFeedRepository.getComments(postId, isMeal: isMeal);
+      if (mounted) {
+        setState(() {
+          _commentsCache[postId] = comments;
+          _loadingComments[postId] = false;
+        });
+        setModalState(() {});
+      }
     } catch (e) {
       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load comments: $e')));
+        setState(() {
+          _loadingComments[postId] = false;
+        });
+        setModalState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load comments: $e')));
       }
-      setState(() {
-        _loadingComments[postId] = false;
-      });
     }
   }
 
+
+
   Future<void> _handleAddComment(String postId, String content, {bool isMeal = false}) async {
-    final currentUser = await _profileRepository.getProfile();
+    final currentUser = _profile ?? await _profileRepository.getProfile();
     final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
 
     final tempComment = Comment(

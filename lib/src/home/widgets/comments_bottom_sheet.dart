@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
+import '../data/profile_repository.dart';
 
 class CommentsBottomSheet extends StatefulWidget {
   final List<Comment>? comments;
   final Future<void> Function(String) onAddComment;
   final Future<void> Function(String, String) onAddReply;
   final bool isLoading;
-  final Function(Comment)? onOptimisticCommentAdd; // Add this
-  final Function(String, Comment)? onOptimisticReplyAdd; // Add this
+  final Function(Comment)? onOptimisticCommentAdd;
+  final Function(String, Comment)? onOptimisticReplyAdd;
+  final Profile? currentUserProfile; // Added
 
   const CommentsBottomSheet({
     super.key,
@@ -16,8 +18,9 @@ class CommentsBottomSheet extends StatefulWidget {
     required this.onAddComment,
     required this.onAddReply,
     this.isLoading = false,
-    this.onOptimisticCommentAdd, // Add this
-    this.onOptimisticReplyAdd, // Add this
+    this.onOptimisticCommentAdd,
+    this.onOptimisticReplyAdd,
+    this.currentUserProfile, // Added
   });
 
   @override
@@ -29,7 +32,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   String? _replyingToId;
   String? _replyingToUsername;
   bool _isAddingComment = false;
-  List<Comment> _localComments = []; // Add this for local state
+  List<Comment> _localComments = [];
+
+  // Removed internal ProfileRepository usage
 
   @override
   void initState() {
@@ -60,13 +65,18 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     });
 
     try {
+      // Use passed profile or fallback
+      final username = widget.currentUserProfile?.username ?? 'User';
+      final handle = widget.currentUserProfile != null ? '@${widget.currentUserProfile!.username}' : '@user';
+      final profileImage = widget.currentUserProfile?.profileImageUrl ?? 'https://ui-avatars.com/api/?name=User&background=random';
+
       if (_replyingToId != null) {
         // Create optimistic reply
         final optimisticReply = Comment(
           id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-          username: 'Eren Yeager',
-          handle: '@eren_yeager',
-          profileImage: 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
+          username: username,
+          handle: handle,
+          profileImage: profileImage,
           timeAgo: 'Just now',
           content: content,
           replies: [],
@@ -89,9 +99,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         // Create optimistic comment
         final optimisticComment = Comment(
           id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-          username: 'Eren Yeager',
-          handle: '@eren_yeager',
-          profileImage: 'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
+          username: username,
+          handle: handle,
+          profileImage: profileImage,
           timeAgo: 'Just now',
           content: content,
           replies: [],
@@ -439,7 +449,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           CircleAvatar(
             radius: 18,
             backgroundImage: NetworkImage(
-              'https://tse3.mm.bing.net/th/id/OIP.dvSVSBNTSG_uMW_J4J5pWwHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3',
+              widget.currentUserProfile?.profileImageUrl ?? 'https://ui-avatars.com/api/?name=User&background=random',
             ),
           ),
           const SizedBox(width: 12),
