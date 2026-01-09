@@ -40,7 +40,7 @@ class _CameraPageState extends State<CameraPage>
   cawesome.CaptureMode _captureMode = cawesome.CaptureMode.photo;
   bool _postSwitchRecord = false;
   int _currentIndex = 1;
-  _CameraMode _selectedMode = _CameraMode.story; // Default mode
+  _CameraMode _selectedMode = _CameraMode.calAI; // Default mode
 
   String? _currentVideoPath;
 
