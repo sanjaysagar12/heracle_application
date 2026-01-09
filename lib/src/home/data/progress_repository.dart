@@ -122,7 +122,8 @@ class ProgressRepository {
       'calories': (data['calories'] ?? 0).toDouble(),
       'protein': (data['protein'] ?? 0).toDouble(),
       'carbs': (data['carbs'] ?? 0).toDouble(),
-      'fats': (data['fats'] ?? 0).toDouble(),
+      'fat': (data['fat'] ?? 0).toDouble(),
+      'fiber': (data['fiber'] ?? 0).toDouble(),
     };
   }
 

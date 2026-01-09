@@ -18,7 +18,8 @@ import '../../feed/data/stories_repository.dart';
 import '../../feed/presentation/tab/my_story_viewer.dart';
 import '../widgets/workout_post_card.dart'; // Ensure this is imported if not already relative, wait, line 16 is imports. 
 import '../widgets/nutrition_post_card.dart';
-import '../../../core/services/notification_service.dart'; // Added
+import '../../../core/services/notification_service.dart';
+import '../widgets/daily_macro_chart.dart'; // Added
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -35,6 +36,7 @@ class _HomePageState extends State<HomePage> {
   final StoriesRepository _storiesRepository = StoriesRepository();
   Profile? _profile;
   ProgressCard? _progress;
+  Map<String, double>? _todayNutrition; // Added
   List<FeedPost> _posts = [];
   bool _isLoading = true;
   Map<String, List<Comment>> _commentsCache = {};
@@ -199,6 +201,13 @@ class _HomePageState extends State<HomePage> {
                         actualProteinTaken: _progress!.actualProteinTaken,
                         targets: _progress!.targets,
                       ),
+                    if (_todayNutrition != null)
+                      DailyMacroChart(
+                        protein: _todayNutrition!['protein'] ?? 0,
+                        carbs: _todayNutrition!['carbs'] ?? 0,
+                        fat: _todayNutrition!['fat'] ?? 0,
+                        fiber: _todayNutrition!['fiber'] ?? 0,
+                      ),
                     TrackMutualsSection(
                       posts: _posts,
                       onLike: _handleLike,
@@ -273,6 +282,7 @@ class _HomePageState extends State<HomePage> {
         _profileRepository.getProfile(),
         _progressRepository.getTodayProgress(),
         _mutualFeedRepository.getMutualFeed(),
+        _progressRepository.getTodayNutrition(), // Added
       ]);
 
       print('HomePage: Data loaded successfully');
@@ -284,6 +294,7 @@ class _HomePageState extends State<HomePage> {
         _profile = results[0] as Profile;
         _progress = results[1] as ProgressCard;
         _posts = results[2] as List<FeedPost>;
+        _todayNutrition = results[3] as Map<String, double>; // Added
         _isLoading = false;
       });
     } catch (e, stackTrace) {

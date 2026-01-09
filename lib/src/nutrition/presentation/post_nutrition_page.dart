@@ -374,10 +374,16 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
 
       final response = await NutritionApiService().saveMeal(formData);
 
+      // Calculate total fiber as it's not passed to the widget
+      final totalFiber = widget.items.fold(0.0, (sum, item) => sum + item.fiber);
+
       // Update local storage instantly
       await DailyNutritionStorage().addNutrition(
         widget.totalCalories, 
-        widget.totalProtein.toInt()
+        widget.totalProtein.toInt(),
+        fat: widget.totalFat.toInt(),
+        carbs: widget.totalCarbs.toInt(),
+        fiber: totalFiber.toInt(),
       );
 
       if (!mounted) return;
