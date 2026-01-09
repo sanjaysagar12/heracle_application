@@ -6,7 +6,8 @@ import 'package:dio/dio.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../nutrition/data/diet_log_item.dart';
 import '../../nutrition/api/nutrition_service.dart';
-import '../../home/storage/daily_nutrition_storage.dart'; // Added
+import '../../home/storage/daily_nutrition_storage.dart';
+import '../../../core/services/notification_service.dart'; // Added
 
 class PostNutritionPage extends StatefulWidget {
   final List<DietLogItem> items;
@@ -391,6 +392,13 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Saved and Posted successfully!')),
+              );
+              
+              // Show Local Notification
+              NotificationService().showNotification(
+                id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                title: 'Post Successful',
+                body: 'Your diet log has been posted to your feed!',
               );
             }
           } else {

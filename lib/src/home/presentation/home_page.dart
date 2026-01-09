@@ -18,6 +18,7 @@ import '../../feed/data/stories_repository.dart';
 import '../../feed/presentation/tab/my_story_viewer.dart';
 import '../widgets/workout_post_card.dart'; // Ensure this is imported if not already relative, wait, line 16 is imports. 
 import '../widgets/nutrition_post_card.dart';
+import '../../../core/services/notification_service.dart'; // Added
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -48,6 +49,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadData();
     _initializeStepTracking();
+    NotificationService().requestPermissions();
   }
 
   // ... (keeping existing methods)
