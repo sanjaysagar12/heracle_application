@@ -1,8 +1,9 @@
 import '../../core/network/cache_manager.dart';
 import '../api/progress_service.dart';
 import '../service/steps_counter.dart';
-import '../storage/daily_nutrition_storage.dart'; // Added
-import '../../workout/storage/workout_logs_storage.dart'; // Added
+import '../storage/daily_nutrition_storage.dart';
+import '../../workout/storage/workout_logs_storage.dart';
+import '../../workout/storage/streak_storage.dart'; // Added
 import 'targets_repository.dart';
 
 class ProgressCard {
@@ -20,6 +21,9 @@ class ProgressCard {
   final int actualCalsBurned;
   final int actualCalsTaken;
   final int actualProteinTaken;
+  final int streak; // Added
+  final int breakDaysUsed; // Added
+  final int maxBreakDays; // Added
   final Map<String, int> targets;
 
   ProgressCard({
@@ -36,6 +40,9 @@ class ProgressCard {
     required this.actualCalsBurned,
     required this.actualCalsTaken,
     required this.actualProteinTaken,
+    this.streak = 0, // Added
+    this.breakDaysUsed = 0, // Added
+    this.maxBreakDays = 3, // Added
     required this.targets,
   });
 
@@ -59,6 +66,8 @@ class ProgressCard {
       actualCalsBurned: calsBurnedValue,
       actualCalsTaken: calsTakenValue,
       actualProteinTaken: proteinTakenValue,
+      streak: json['streak'] as int? ?? 0, // Added
+      breakDaysUsed: json['breakDaysUsed'] as int? ?? 0, // Added
       targets: targets,
     );
   }
@@ -89,6 +98,7 @@ class ProgressRepository {
   final CacheManager _cacheManager = CacheManager();
   final DailyNutritionStorage _nutritionStorage = DailyNutritionStorage(); // Added
   final WorkoutLogsStorage _logsStorage = WorkoutLogsStorage.instance; // Added
+  final StreakStorage _streakStorage = StreakStorage(); // Added
 
   ProgressRepository({ProgressService? progressService})
       : _progressService = progressService ?? ProgressService();
@@ -155,29 +165,35 @@ class ProgressRepository {
         _progressService.getTodayProgress(), // 0
         _targetsRepository.getAllTargets(),  // 1
         _nutritionStorage.getTodayNutrition(), // 2
+        _streakStorage.getStreak(), // 3
+        _streakStorage.getBreakDaysUsed(), // 4
       ]);
 
       final data = results[0] as Map<String, dynamic>;
       final targets = results[1] as Map<String, int>;
-      final localNutrition = results[2] as Map<String, int>; // Added
+      final localNutrition = results[2] as Map<String, int>;
+      final streak = results[3] as int;
+      final breakDaysUsed = results[4] as int;
 
       // Cache the successful API response
       await _cacheManager.cacheData('progress_today', data);
 
-      return _buildProgressCard(data, targets, localNutrition); // Pass localNutrition
+      return _buildProgressCard(data, targets, localNutrition, streak, breakDaysUsed); 
     } catch (e) {
       // Try to load from cache
       final cachedData = await _cacheManager.getCachedData('progress_today');
       if (cachedData != null) {
-        final targets = await _targetsRepository.getAllTargets(); // Targets are local SQLite, safe to call
-        final localNutrition = await _nutritionStorage.getTodayNutrition(); // Get local even on error
-        return _buildProgressCard(cachedData, targets, localNutrition);
+        final targets = await _targetsRepository.getAllTargets(); 
+        final localNutrition = await _nutritionStorage.getTodayNutrition();
+        final streak = await _streakStorage.getStreak();
+        final breakDaysUsed = await _streakStorage.getBreakDaysUsed();
+        return _buildProgressCard(cachedData, targets, localNutrition, streak, breakDaysUsed);
       }
       throw Exception('Failed to load progress: $e');
     }
   }
 
-  ProgressCard _buildProgressCard(Map<String, dynamic> data, Map<String, int> targets, [Map<String, int>? localNutrition]) {
+  ProgressCard _buildProgressCard(Map<String, dynamic> data, Map<String, int> targets, [Map<String, int>? localNutrition, int streak = 0, int breakDaysUsed = 0]) {
      final realTimeSteps = _stepsCounter.currentSteps;
       final calsBurned = _calculateCaloriesBurned(realTimeSteps);
 
@@ -190,6 +206,9 @@ class ProgressRepository {
         progressData['calsTaken'] = localNutrition['calories'];
         progressData['proteinTaken'] = localNutrition['protein'];
       }
+      
+      progressData['streak'] = streak; // Populate streak
+      progressData['breakDaysUsed'] = breakDaysUsed; // Populate breakDaysUsed
 
       return ProgressCard.fromJson(progressData, targets);
   }

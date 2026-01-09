@@ -11,7 +11,6 @@ import 'tab/workout_logs_tab.dart';
 import 'package:heracle/route.dart';
 import '../../feed/data/stories_repository.dart';
 import '../../feed/presentation/tab/my_story_viewer.dart';
-import '../storage/streak_storage.dart'; // Added
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -25,12 +24,10 @@ class WorkoutPageState extends State<WorkoutPage> { // Made public
   final ProfileRepository _profileRepository = ProfileRepository();
   final ProgressRepository _progressRepository = ProgressRepository();
   final StoriesRepository _storiesRepository = StoriesRepository();
-  final StreakStorage _streakStorage = StreakStorage();
   Profile? _profile;
   bool _isLoading = true;
   List<ChartData> _chartData = [];
   int _refreshKey = 0;
-  int _streakCount = 0;
 
   @override
   void initState() {
@@ -44,20 +41,29 @@ class WorkoutPageState extends State<WorkoutPage> { // Made public
   }
 
   Future<void> _loadData() async {
+    // 1. Load Profile First
+    try {
+      final profile = await _profileRepository.getProfile();
+      if (mounted) {
+        setState(() {
+          _profile = profile;
+        });
+      }
+    } catch (e) {
+      print('WorkoutPage: Failed to load profile: $e');
+    }
+
+    // 2. Load Stats
     try {
       final results = await Future.wait([
-        _profileRepository.getProfile(),
         _progressRepository.getWeeklyActivity(),
         _progressRepository.getTodayNutrition(),
         _progressRepository.getMonthlyProgress(),
-        _streakStorage.getStreak(), // Added
       ]);
 
-      final profile = results[0] as Profile;
-      final weeklyValues = results[1] as List<double>;
-      final nutritionValues = results[2] as Map<String, double>;
-      final monthlyValues = results[3] as List<double>;
-      final streak = results[4] as int; // Added
+      final weeklyValues = results[0] as List<double>;
+      final nutritionValues = results[1] as Map<String, double>;
+      final monthlyValues = results[2] as List<double>;
 
       const weeklyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const monthlyLabels = ['W1', 'W2', 'W3', 'W4'];
@@ -85,14 +91,19 @@ class WorkoutPageState extends State<WorkoutPage> { // Made public
         type: ChartType.area,
       );
 
-      setState(() {
-        _profile = profile;
-        _chartData = [weeklyData, nutritionData, monthlyData];
-        _streakCount = streak;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _chartData = [weeklyData, nutritionData, monthlyData];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('WorkoutPage: Failed to load stats: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -135,7 +146,6 @@ class WorkoutPageState extends State<WorkoutPage> { // Made public
                         );
                       },
                       onStoryTap: _handleStoryTap,
-                      streakCount: _streakCount, // Added
                     ),
                   // bar chart carousel showing multiple progress charts
                   BarChartCard(charts: _chartData),

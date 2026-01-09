@@ -8,7 +8,6 @@ class CustomAppBar extends StatelessWidget {
   final String profileImageUrl;
   final VoidCallback? onProfileTap;
   final VoidCallback? onStoryTap;
-  final int streakCount;
   final bool hasStory;
 
   const CustomAppBar({
@@ -19,7 +18,6 @@ class CustomAppBar extends StatelessWidget {
     this.onProfileTap,
     this.onStoryTap,
     this.hasStory = false,
-    this.streakCount = 0,
   });
 
   @override
@@ -111,39 +109,6 @@ class CustomAppBar extends StatelessWidget {
                   width: 24,
                   height: 24,
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Adjusted padding
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.black100, // Or keep gradient but adjust shape
-                borderRadius: BorderRadius.circular(20), // Pill shape
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF76B40), Color(0xFFFFB937)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                   SvgPicture.asset(
-                    'assets/icons/fire.svg',
-                    width: 20, // Slightly smaller
-                    height: 20,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    streakCount.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
               ),
             ),
           ],

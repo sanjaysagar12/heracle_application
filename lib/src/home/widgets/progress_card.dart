@@ -4,23 +4,27 @@ import '../../../core/theme/app_colors.dart';
 import '../../nutrition/presentation/track_calories_page.dart';
 import 'target_settings_bottom_sheet.dart';
 
+import '../../workout/storage/streak_storage.dart'; // Added
+
 class TodayProgressCard extends StatelessWidget {
   final String workoutsLeft;
   final String steps;
   final String calsBurned;
   final String calsTaken;
-  final String proteinTaken;
+  // removed proteinTaken string, but keeping it in constructor if needed for compatibility or just ignoring it
   final double stepsProgress;
   final double calsBurnedProgress;
   final double calsTakenProgress;
-  final double proteinTakenProgress;
-  final Function(String, int)? onTargetUpdate; // Restored
-  final VoidCallback? onRefresh; // Added callback
-  // Add these new properties
+  // removed proteinTakenProgress
+  final Function(String, int)? onTargetUpdate;
+  final VoidCallback? onRefresh;
   final int actualSteps;
   final int actualCalsBurned;
   final int actualCalsTaken;
-  final int actualProteinTaken;
+  // params for streak
+  final int streak;
+  final int breakDaysUsed;
+  final int maxBreakDays;
   final Map<String, int> targets;
 
   const TodayProgressCard({
@@ -29,17 +33,20 @@ class TodayProgressCard extends StatelessWidget {
     this.steps = '0',
     this.calsBurned = '0',
     this.calsTaken = '0',
-    this.proteinTaken = '0',
+    String proteinTaken = '0', // Keep for compatibility but don't use
     this.stepsProgress = 0.0,
     this.calsBurnedProgress = 0.0,
     this.calsTakenProgress = 0.0,
-    this.proteinTakenProgress = 0.0,
+    double proteinTakenProgress = 0.0, // Keep for compatibility
     this.onTargetUpdate,
-    this.onRefresh, // Added
+    this.onRefresh,
     this.actualSteps = 0,
     this.actualCalsBurned = 0,
     this.actualCalsTaken = 0,
-    this.actualProteinTaken = 0,
+    int actualProteinTaken = 0, // Keep
+    this.streak = 0, // Added
+    this.breakDaysUsed = 0, // Added
+    this.maxBreakDays = 3, // Added
     this.targets = const {},
   });
 
@@ -63,6 +70,98 @@ class TodayProgressCard extends StatelessWidget {
       ),
     );
   }
+  
+  Future<void> _handleStreakTap(BuildContext context) async {
+    // Show dialog to set break day
+    final bool? result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.black100,
+          title: const Text('Streak & Break Days', style: TextStyle(color: AppColors.pureWhite)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Current Streak: $streak days',
+                style: const TextStyle(color: AppColors.primary, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Break Days Used:',
+                style: TextStyle(color: AppColors.white60),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: List.generate(maxBreakDays, (index) {
+                  final isUsed = index < breakDaysUsed;
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: isUsed ? Colors.redAccent : AppColors.greyDark,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isUsed ? Icons.close : Icons.check,
+                      color: AppColors.pureWhite,
+                      size: 16,
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '$breakDaysUsed / $maxBreakDays break days used this week.',
+                style: const TextStyle(color: AppColors.white60, fontSize: 12),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Need a break today? You can take up to 3 break days a week to maintain your streak.',
+                style: TextStyle(color: AppColors.white60),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.white60)),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (breakDaysUsed >= maxBreakDays) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No break days remaining for this week!')),
+                  );
+                  Navigator.pop(context);
+                  return;
+                }
+                
+                final success = await StreakStorage().setBreakDay();
+                if (success) {
+                   if (context.mounted) Navigator.pop(context, true);
+                } else {
+                   if (context.mounted) {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Cannot set break day (Already worked out or limit reached)')),
+                     );
+                     Navigator.pop(context);
+                   }
+                }
+              },
+              child: const Text('Take Break Day', style: TextStyle(color: AppColors.primary)),
+            ),
+          ],
+        );
+      },
+    );
+    
+    if (result == true) {
+      onRefresh?.call();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +179,68 @@ class TodayProgressCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(child: _buildStatCard(context, 'Cals Taken', calsTaken, Icons.restaurant, calsTaken != '0', calsTakenProgress, actualCalsTaken, targets['cals_taken'] ?? 2000)),
               const SizedBox(width: 12),
-              Expanded(child: _buildStatCard(context, 'Protein Taken', proteinTaken, Icons.egg, proteinTaken != '0', proteinTakenProgress, actualProteinTaken, targets['protein_taken'] ?? 150, unit: 'g')),
+              // Replaced Protein with Streak
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _handleStreakTap(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.black100,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$streak',
+                          style: const TextStyle(
+                            color: AppColors.pureWhite,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Streak',
+                          style: TextStyle(
+                            color: AppColors.white60,
+                            fontSize: 10,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                         Center(
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: CircularProgressIndicator(
+                                  value: 1.0, // Always full circle or use break days?
+                                  // Maybe show break days remaining progress?
+                                  // Or just show fire icon?
+                                  // Let's show break days *usage* as inverse progress? 
+                                  // Or just show 1.0 for "active".
+                                  strokeWidth: 2.5,
+                                  backgroundColor: AppColors.greyLight,
+                                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.local_fire_department_outlined, // Streak icon
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

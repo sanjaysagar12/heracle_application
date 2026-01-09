@@ -199,6 +199,9 @@ class _HomePageState extends State<HomePage> {
                         actualCalsBurned: _progress!.actualCalsBurned,
                         actualCalsTaken: _progress!.actualCalsTaken,
                         actualProteinTaken: _progress!.actualProteinTaken,
+                        streak: _progress!.streak, // Added
+                        breakDaysUsed: _progress!.breakDaysUsed, // Added
+                        maxBreakDays: _progress!.maxBreakDays, // Added
                         targets: _progress!.targets,
                       ),
                     if (_todayNutrition != null)
@@ -256,6 +259,9 @@ class _HomePageState extends State<HomePage> {
               actualCalsBurned: calsBurned,
               actualCalsTaken: _progress!.actualCalsTaken,
               actualProteinTaken: _progress!.actualProteinTaken,
+              streak: _progress!.streak, // Added
+              breakDaysUsed: _progress!.breakDaysUsed, // Added
+              maxBreakDays: _progress!.maxBreakDays, // Added
               targets: targets,
             );
           });
