@@ -133,6 +133,7 @@ class WorkoutSessionStorage {
         'description': exercise['desc']?.toString() ?? '',
         'image_url': exercise['image']?.toString() ?? '',
         'category': exercise['category']?.toString() ?? '',
+        'tracking_type': exercise['trackingType']?.toString() ?? 'WEIGHT_AND_REPS',
         'created_at': createdAt,
       };
       
@@ -161,7 +162,7 @@ class WorkoutSessionStorage {
       final db = await _dbHelper.database;
       final rows = await db.rawQuery('''
         SELECT se.exercise_id, se.sets_data, se.position,
-               e.name, e.description, e.image_url, e.category
+               e.name, e.description, e.image_url, e.category, e.tracking_type
         FROM session_exercises se
         LEFT JOIN exercises e ON se.exercise_id = e.id
         WHERE se.session_id = ?
@@ -376,6 +377,7 @@ class WorkoutSessionStorage {
       'desc': row['description'] as String? ?? '',
       'image': row['image_url'] as String? ?? '',
       'category': row['category'] as String? ?? '',
+      'trackingType': row['tracking_type'] as String? ?? 'WEIGHT_AND_REPS',
       'sets': sets,
     };
   }

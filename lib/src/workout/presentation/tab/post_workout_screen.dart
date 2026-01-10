@@ -516,20 +516,21 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          const Text('Weight', style: TextStyle(color: AppColors.white60, fontSize: 14)),
-                          const SizedBox(width: 8),
-                          _buildValueBadge('${set['kg'] ?? 0}'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 14)),
-                          const SizedBox(width: 8),
-                          _buildValueBadge('${set['reps'] ?? 0}'),
+                          if ((set['time'] ?? 0) > 0) ...[
+                            const Text('Time', style: TextStyle(color: AppColors.white60, fontSize: 14)),
+                            const SizedBox(width: 8),
+                            _buildValueBadge('${set['time']}s'),
+                          ] else ...[
+                            if (set.containsKey('kg') && (set['kg'] ?? 0) > 0) ...[
+                              const Text('Weight', style: TextStyle(color: AppColors.white60, fontSize: 14)),
+                              const SizedBox(width: 8),
+                              _buildValueBadge('${set['kg'] ?? 0}'),
+                              const SizedBox(width: 24),
+                            ],
+                            const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 14)),
+                            const SizedBox(width: 8),
+                            _buildValueBadge('${set['reps'] ?? 0}'),
+                          ]
                         ],
                       ),
                     ),

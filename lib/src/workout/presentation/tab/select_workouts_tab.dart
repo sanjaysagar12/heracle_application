@@ -42,16 +42,14 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
 
   Future<void> _loadExercises() async {
     try {
-      final data = await _exerciseRepository.getExercises();
-      final cats = <String>{};
-      for (var it in data) {
-        final cat = it['category'] ?? 'Other';
-        cats.add(cat);
-      }
+      final categoriesData = await _exerciseRepository.getCategories();
+      final exercisesData = await _exerciseRepository.getExercises();
+
       setState(() {
-        _items = data;
-        _filters = ['All', ...cats.toList()];
-        // keep selected filter 'All' by default
+        _items = exercisesData;
+        _filters = ['All', ...categoriesData.map((c) => c['name']!).toList()];
+        // ensure unique filters if any overlap or duplicates
+        _filters = _filters.toSet().toList();
       });
     } catch (_) {
       // keep defaults on error
@@ -229,6 +227,7 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
                             'name': e['name'],
                             'desc': e['desc'],
                             'image': e['image'],
+                            'trackingType': e['trackingType'] ?? 'WEIGHT_AND_REPS', // Pass trackingType
                           }).toList(),
                         ),
                       ),

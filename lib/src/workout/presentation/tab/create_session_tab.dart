@@ -24,7 +24,8 @@ class CreateSessionTab extends StatefulWidget {
 class _SetLog {
   String kg;
   String reps;
-  _SetLog({this.kg = '', this.reps = ''});
+  String time;
+  _SetLog({this.kg = '', this.reps = '', this.time = ''});
 }
 
 class _ExerciseLog {
@@ -32,12 +33,14 @@ class _ExerciseLog {
   final String name;
   final String desc;
   final String image;
+  final String trackingType;
   List<_SetLog> sets;
   _ExerciseLog({
     required this.id,
     required this.name,
     required this.desc,
     required this.image,
+    this.trackingType = 'WEIGHT_AND_REPS',
     required this.sets,
   });
 }
@@ -91,7 +94,8 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
           name: e['name'] ?? '',
           desc: e['desc'] ?? '',
           image: e['image'] ?? '',
-          sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')), // start with 3 sets
+          trackingType: e['trackingType'] ?? 'WEIGHT_AND_REPS',
+          sets: List.generate(3, (_) => _SetLog(kg: '', reps: '', time: '')), // start with 3 sets
         );
       }).toList();
     }
@@ -154,7 +158,8 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
             name: ex['name'] ?? '',
             desc: ex['desc'] ?? '',
             image: ex['image'] ?? '',
-            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')),
+            trackingType: ex['trackingType'] ?? 'WEIGHT_AND_REPS',
+            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '', time: '')),
           ));
         }
       });
@@ -196,7 +201,12 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
         'name': ex.name,
         'desc': ex.desc,
         'image': ex.image,
-        'sets': ex.sets.map((s) => {'kg': int.tryParse(s.kg) ?? 0, 'reps': int.tryParse(s.reps) ?? 0}).toList(),
+        'trackingType': ex.trackingType,
+        'sets': ex.sets.map((s) => {
+          'kg': int.tryParse(s.kg) ?? 0, 
+          'reps': int.tryParse(s.reps) ?? 0,
+          'time': int.tryParse(s.time) ?? 0
+        }).toList(),
       };
     }).toList();
 
@@ -293,7 +303,8 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
             name: selectedExercise['name'] ?? '',
             desc: selectedExercise['desc'] ?? '',
             image: selectedExercise['image'] ?? '',
-            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')),
+            trackingType: selectedExercise['trackingType'] ?? 'WEIGHT_AND_REPS',
+            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '', time: '')),
           );
         }
       });
@@ -671,57 +682,111 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                       child: Text('Set ${si + 1}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
                     ),
                     const SizedBox(width: 4),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          const Text('Kg', style: TextStyle(color: AppColors.white60, fontSize: 12)),
-                          const SizedBox(width: 4),
-                          SizedBox(
-                            width: 50,
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: '0',
-                                hintStyle: const TextStyle(color: AppColors.white60),
-                                filled: true,
-                                fillColor: AppColors.greyDark,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    if (ex.trackingType == 'WEIGHT_AND_REPS') ...[
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Text('Kg', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 50,
+                              child: TextField(
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: '0',
+                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  filled: true,
+                                  fillColor: AppColors.greyDark,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                                style: const TextStyle(color: AppColors.pureWhite),
+                                onChanged: (v) => setState(() => set.kg = v),
+                                controller: TextEditingController(text: set.kg)..selection = TextSelection.fromPosition(TextPosition(offset: set.kg.length)),
                               ),
-                              style: const TextStyle(color: AppColors.pureWhite),
-                              onChanged: (v) => setState(() => set.kg = v),
-                              controller: TextEditingController(text: set.kg)..selection = TextSelection.fromPosition(TextPosition(offset: set.kg.length)),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
-                          const SizedBox(width: 4),
-                          SizedBox(
-                            width: 50,
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: '0',
-                                hintStyle: const TextStyle(color: AppColors.white60),
-                                filled: true,
-                                fillColor: AppColors.greyDark,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 50,
+                              child: TextField(
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: '0',
+                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  filled: true,
+                                  fillColor: AppColors.greyDark,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                                style: const TextStyle(color: AppColors.pureWhite),
+                                onChanged: (v) => setState(() => set.reps = v),
+                                controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
                               ),
-                              style: const TextStyle(color: AppColors.pureWhite),
-                              onChanged: (v) => setState(() => set.reps = v),
-                              controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                    ] else if (ex.trackingType == 'REPS_ONLY') ...[
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 50,
+                              child: TextField(
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: '0',
+                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  filled: true,
+                                  fillColor: AppColors.greyDark,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                                style: const TextStyle(color: AppColors.pureWhite),
+                                onChanged: (v) => setState(() => set.reps = v),
+                                controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else if (ex.trackingType == 'TIME') ...[
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Text('Time (s)', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 60,
+                              child: TextField(
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: '0',
+                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  filled: true,
+                                  fillColor: AppColors.greyDark,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                                style: const TextStyle(color: AppColors.pureWhite),
+                                onChanged: (v) => setState(() => set.time = v),
+                                controller: TextEditingController(text: set.time)..selection = TextSelection.fromPosition(TextPosition(offset: set.time.length)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: 8),
                     IconButton(
                       onPressed: () => _removeSet(ex, si),

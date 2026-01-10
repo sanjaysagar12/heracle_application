@@ -54,6 +54,7 @@ class DatabaseHelper {
         description TEXT,
         image_url TEXT,
         category TEXT,
+        tracking_type TEXT,
         created_at INTEGER NOT NULL
       )
     ''');

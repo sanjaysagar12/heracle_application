@@ -28,15 +28,19 @@ class LogWorkoutTab extends StatefulWidget {
 class _SetLog {
   String kg;
   String reps;
+  String time;
   bool completed;
   String? placeholderKg; // placeholder from saved session
   String? placeholderReps; // placeholder from saved session
+  String? placeholderTime; 
   _SetLog({
     this.kg = '',
     this.reps = '',
+    this.time = '', 
     this.completed = false,
     this.placeholderKg,
     this.placeholderReps,
+    this.placeholderTime,
   });
 }
 
@@ -45,12 +49,14 @@ class _ExerciseLog {
   final String name;
   final String desc;
   final String image;
+  final String trackingType;
   List<_SetLog> sets;
   _ExerciseLog({
     required this.id,
     required this.name,
     required this.desc,
     required this.image,
+    this.trackingType = 'WEIGHT_AND_REPS',
     required this.sets,
   });
 }
@@ -76,21 +82,25 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           final sMap = s as Map<String, dynamic>;
           final savedKg = sMap['kg']?.toString() ?? '';
           final savedReps = sMap['reps']?.toString() ?? '';
+          final savedTime = sMap['time']?.toString() ?? '';
           return _SetLog(
             kg: '', // keep empty - user will enter new values
             reps: '', // keep empty
+            time: '',
             placeholderKg: savedKg.isNotEmpty && savedKg != '0' ? savedKg : null,
             placeholderReps: savedReps.isNotEmpty && savedReps != '0' ? savedReps : null,
+            placeholderTime: savedTime.isNotEmpty && savedTime != '0' ? savedTime : null,
           );
         }).toList();
       } else {
-        sets = List.generate(3, (_) => _SetLog(kg: '', reps: ''));
+        sets = List.generate(3, (_) => _SetLog(kg: '', reps: '', time: ''));
       }
       return _ExerciseLog(
         id: e['id'] ?? '',
         name: e['name'] ?? '',
         desc: e['desc'] ?? '',
         image: e['image'] ?? '',
+        trackingType: e['trackingType'] ?? 'WEIGHT_AND_REPS',
         sets: sets,
       );
     }).toList();
@@ -121,7 +131,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
 
   void _addSet(_ExerciseLog ex) {
     setState(() {
-      ex.sets.add(_SetLog(kg: '', reps: ''));
+      ex.sets.add(_SetLog(kg: '', reps: '', time: ''));
     });
   }
 
@@ -141,7 +151,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
     setState(() {
       // reset all sets to default
       for (var ex in _exerciseLogs) {
-        ex.sets = [for (var i = 0; i < 3; i++) _SetLog(kg: '', reps: '')];
+        ex.sets = [for (var i = 0; i < 3; i++) _SetLog(kg: '', reps: '', time: '')];
       }
       _startTime = DateTime.now();
     });
@@ -164,7 +174,8 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
             name: ex['name'] ?? '',
             desc: ex['desc'] ?? '',
             image: ex['image'] ?? '',
-            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')),
+            trackingType: ex['trackingType'] ?? 'WEIGHT_AND_REPS',
+            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '', time: '')),
           ));
         }
       });
@@ -206,7 +217,12 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           'name': ex.name,
           'desc': ex.desc,
           'image': ex.image,
-          'sets': ex.sets.map((s) => {'kg': int.tryParse(s.kg) ?? 0, 'reps': int.tryParse(s.reps) ?? 0}).toList(),
+          'trackingType': ex.trackingType,
+          'sets': ex.sets.map((s) => {
+            'kg': int.tryParse(s.kg) ?? 0, 
+            'reps': int.tryParse(s.reps) ?? 0,
+            'time': int.tryParse(s.time) ?? 0
+          }).toList(),
         };
       }).toList();
 
@@ -234,12 +250,17 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
             for (var s in ex.sets) {
               final kg = int.tryParse(s.kg) ?? 0;
               final reps = int.tryParse(s.reps) ?? 0;
-              if (kg == 0 && reps == 0) continue;
+              final time = int.tryParse(s.time) ?? 0;
+              
+              if (ex.trackingType == 'WEIGHT_AND_REPS' && kg == 0 && reps == 0) continue;
+              if (ex.trackingType == 'REPS_ONLY' && reps == 0) continue;
+              if (ex.trackingType == 'TIME' && time == 0) continue;
 
               validSets.add({
                 'setNumber': setIndex++,
                 'kg': kg,
                 'reps': reps,
+                'time': time,
                 'restSeconds': 0,
               });
             }
@@ -338,7 +359,8 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
             name: selectedExercise['name'] ?? '',
             desc: selectedExercise['desc'] ?? '',
             image: selectedExercise['image'] ?? '',
-            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '')),
+            trackingType: selectedExercise['trackingType'] ?? 'WEIGHT_AND_REPS',
+            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '', time: '')),
           );
         }
       });
@@ -627,7 +649,15 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           Column(
             children: List.generate(ex.sets.length, (si) {
               final set = ex.sets[si];
-              final hasValues = set.kg.isNotEmpty && set.reps.isNotEmpty;
+              
+              bool hasValues = false;
+              if (ex.trackingType == 'WEIGHT_AND_REPS') {
+                hasValues = set.kg.isNotEmpty && set.reps.isNotEmpty;
+              } else if (ex.trackingType == 'REPS_ONLY') {
+                hasValues = set.reps.isNotEmpty;
+              } else if (ex.trackingType == 'TIME') {
+                hasValues = set.time.isNotEmpty;
+              }
               
               // Auto-complete when both values are entered
               if (hasValues && !set.completed) {
@@ -647,57 +677,111 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                       child: Text('Set ${si + 1}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
                     ),
                     const SizedBox(width: 4),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          const Text('Kg', style: TextStyle(color: AppColors.white60, fontSize: 12)),
-                          const SizedBox(width: 4),
-                          SizedBox(
-                            width: 50,
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: set.placeholderKg ?? '',
-                                hintStyle: const TextStyle(color: AppColors.white60),
-                                filled: true,
-                                fillColor: AppColors.greyDark,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    if (ex.trackingType == 'WEIGHT_AND_REPS') ...[
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Text('Kg', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 50,
+                              child: TextField(
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: set.placeholderKg ?? '',
+                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  filled: true,
+                                  fillColor: AppColors.greyDark,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                                style: const TextStyle(color: AppColors.pureWhite),
+                                onChanged: (v) => setState(() => set.kg = v),
+                                controller: TextEditingController(text: set.kg)..selection = TextSelection.fromPosition(TextPosition(offset: set.kg.length)),
                               ),
-                              style: const TextStyle(color: AppColors.pureWhite),
-                              onChanged: (v) => setState(() => set.kg = v),
-                              controller: TextEditingController(text: set.kg)..selection = TextSelection.fromPosition(TextPosition(offset: set.kg.length)),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
-                          const SizedBox(width: 4),
-                          SizedBox(
-                            width: 50,
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: set.placeholderReps ?? '',
-                                hintStyle: const TextStyle(color: AppColors.white60),
-                                filled: true,
-                                fillColor: AppColors.greyDark,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 50,
+                              child: TextField(
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: set.placeholderReps ?? '',
+                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  filled: true,
+                                  fillColor: AppColors.greyDark,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                                style: const TextStyle(color: AppColors.pureWhite),
+                                onChanged: (v) => setState(() => set.reps = v),
+                                controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
                               ),
-                              style: const TextStyle(color: AppColors.pureWhite),
-                              onChanged: (v) => setState(() => set.reps = v),
-                              controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                    ] else if (ex.trackingType == 'REPS_ONLY') ...[
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 50,
+                              child: TextField(
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: set.placeholderReps ?? '',
+                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  filled: true,
+                                  fillColor: AppColors.greyDark,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                                style: const TextStyle(color: AppColors.pureWhite),
+                                onChanged: (v) => setState(() => set.reps = v),
+                                controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else if (ex.trackingType == 'TIME') ...[
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Text('Time (s)', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 60,
+                              child: TextField(
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  hintText: set.placeholderTime ?? '',
+                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  filled: true,
+                                  fillColor: AppColors.greyDark,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                ),
+                                style: const TextStyle(color: AppColors.pureWhite),
+                                onChanged: (v) => setState(() => set.time = v),
+                                controller: TextEditingController(text: set.time)..selection = TextSelection.fromPosition(TextPosition(offset: set.time.length)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: 8),
                     IconButton(
                       onPressed: hasValues ? () => _toggleComplete(set) : () => _removeSet(ex, si),

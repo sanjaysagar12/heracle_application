@@ -96,11 +96,15 @@ class PostWorkoutService {
         if (!set.containsKey('setNumber') || set['setNumber'] is! int) {
           throw const FormatException('Missing or invalid setNumber');
         }
-        if (!set.containsKey('kg') || set['kg'] is! num) {
-          throw const FormatException('Missing or invalid kg');
+        // Optional fields validation if present
+        if (set.containsKey('kg') && set['kg'] is! num) {
+          throw const FormatException('Invalid kg format');
         }
-        if (!set.containsKey('reps') || set['reps'] is! int) {
-          throw const FormatException('Missing or invalid reps');
+        if (set.containsKey('reps') && set['reps'] is! int) {
+          throw const FormatException('Invalid reps format');
+        }
+        if (set.containsKey('time') && set['time'] is! int) {
+          throw const FormatException('Invalid time format');
         }
         if (!set.containsKey('restSeconds') || set['restSeconds'] is! int) {
           throw const FormatException('Missing or invalid restSeconds');

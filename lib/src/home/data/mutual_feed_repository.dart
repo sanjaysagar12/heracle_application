@@ -73,19 +73,50 @@ abstract class FeedPost {
   FeedPost copyWith({bool? isLiked, int? likes, int? commentCount});
 }
 
+class ExerciseSet {
+  final int setNumber;
+  final num kg;
+  final int reps;
+  final int time;
+  final int restSeconds;
+
+  ExerciseSet({
+    required this.setNumber,
+    required this.kg,
+    required this.reps,
+    required this.time,
+    required this.restSeconds,
+  });
+
+  factory ExerciseSet.fromJson(Map<String, dynamic> json) {
+    return ExerciseSet(
+      setNumber: json['setNumber'] as int? ?? 0,
+      kg: json['kg'] as num? ?? 0,
+      reps: json['reps'] as int? ?? 0,
+      time: json['time'] as int? ?? 0,
+      restSeconds: json['restSeconds'] as int? ?? 0,
+    );
+  }
+}
+
 class Exercise {
   final String name;
   final String imageUrl;
+  final List<ExerciseSet> sets;
 
   Exercise({
     required this.name,
     required this.imageUrl,
+    this.sets = const [],
   });
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
     return Exercise(
-      name: json['name'] as String,
-      imageUrl: json['imageUrl'] as String,
+      name: json['name'] as String? ?? json['exercise'] as String? ?? '',
+      imageUrl: json['imageUrl'] as String? ?? '',
+      sets: (json['sets'] as List? ?? [])
+          .map((e) => ExerciseSet.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
