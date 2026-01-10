@@ -620,7 +620,12 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     
     return Column(
-      children: _posts.map<Widget>((post) {
+      children: _posts.map<Widget>((originalPost) {
+        // Enforce isOwnPost if we are viewing our own profile
+        final post = (_profile?.isViewer ?? false) 
+            ? originalPost.copyWith(isOwnPost: true) 
+            : originalPost;
+
         if (post is WorkoutPost) {
           return WorkoutPostCard(
             username: post.username,

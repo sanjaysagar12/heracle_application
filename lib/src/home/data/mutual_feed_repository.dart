@@ -70,7 +70,7 @@ abstract class FeedPost {
     required this.commentCount,
   });
 
-  FeedPost copyWith({bool? isLiked, int? likes, int? commentCount});
+  FeedPost copyWith({bool? isLiked, int? likes, int? commentCount, bool? isOwnPost});
 }
 
 class ExerciseSet {
@@ -172,7 +172,7 @@ class WorkoutPost extends FeedPost {
   }
 
   @override
-  WorkoutPost copyWith({bool? isLiked, int? likes, int? commentCount}) {
+  WorkoutPost copyWith({bool? isLiked, int? likes, int? commentCount, bool? isOwnPost}) {
     return WorkoutPost(
       id: id,
       username: username,
@@ -189,7 +189,7 @@ class WorkoutPost extends FeedPost {
       likes: likes ?? this.likes,
       likedBy: likedBy,
       isLiked: isLiked ?? this.isLiked,
-      isOwnPost: isOwnPost,
+      isOwnPost: isOwnPost ?? this.isOwnPost,
       commentCount: commentCount ?? this.commentCount,
     );
   }
@@ -300,7 +300,8 @@ class NutritionPost extends FeedPost {
     bool? isLiked,
     int? likes,
     int? commentCount,
-    List<NutritionMeal>? meals, // Added
+    List<NutritionMeal>? meals,
+    bool? isOwnPost,
   }) {
     return NutritionPost(
       id: id,
@@ -313,7 +314,7 @@ class NutritionPost extends FeedPost {
       likes: likes ?? this.likes,
       likedBy: likedBy,
       isLiked: isLiked ?? this.isLiked,
-      isOwnPost: isOwnPost,
+      isOwnPost: isOwnPost ?? this.isOwnPost,
       commentCount: commentCount ?? this.commentCount,
       meals: meals ?? this.meals, // Updated
     );
