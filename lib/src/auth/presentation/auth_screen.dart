@@ -4,7 +4,8 @@ import '../../../route.dart'; // Added import for AppRoutes constants
 import 'package:dio/dio.dart';
 import 'package:heracle/core/storage/local_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'onboarding_page.dart'; // Added
+import 'onboarding_page.dart';
+import 'terms_and_conditions_page.dart'; // Added // Added
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
@@ -129,53 +130,53 @@ class AuthScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 
-                // Login Link
+                // Terms and Conditions
                 Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Don\'t have an account? ',
-                        style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          // Handle login navigation or logic if different from signup
-                           // Re-using the same action for now as often "Log in" and "Sign up" 
-                           // with Google are the same flow.
-                           // Or purely visual as per request "make the ui like in the image"
-                           // But usually implies a different route. For now leaving as a visual element 
-                           // triggering the same auth or just a print for now to avoid breaking flow.
-                           // Actually the design says "Sign up" button and "Log in" text.
-                           // The user asked to remove dev login.
-                           // I will attach the google sign in to this text as well for convenience 
-                           // or just leave it as a placeholder if no separate login route exists.
-                           // Given the instruction "make the ui like in the image", I'll just keep the text.
-                           // I'll make it trigger Google Sign in too for better UX if they are the same.
-                           AuthRepository().signInWithGoogle().then((_) {
-                              if (context.mounted) {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const OnboardingPage()),
-                                );
-                              }
-                           }).catchError((e) {
-                             if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Signin Failed: $e')),
-                                );
-                             }
-                           });
-                        },
-                        child: const Text(
-                          'Log in',
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const TermsAndConditionsPage()),
+                        );
+                      },
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'By continuing, you agree to our ',
                           style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: 12,
+                            height: 1.5,
                           ),
+                          children: [
+                            TextSpan(
+                              text: 'Terms of Service',
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const TextSpan(
+                              text: ' and ',
+                            ),
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const TextSpan(
+                              text: '.',
+                            ),
+                          ],
                         ),
+                        textAlign: TextAlign.center,
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
