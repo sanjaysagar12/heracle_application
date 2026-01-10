@@ -10,13 +10,15 @@ import '../presentation/view_session_page.dart';
 class SessionsSection extends StatefulWidget {
   final SessionRepository? repository;
   final List<Session>? sessions; // Allow passing sessions directly
-  final bool isViewOnly; // Add this
+  final bool isViewOnly; 
+  final VoidCallback? onRefreshData; // Callback to refresh parent data
 
   const SessionsSection({
     super.key, 
     this.repository,
     this.sessions,
-    this.isViewOnly = false, // Default to false
+    this.isViewOnly = false,
+    this.onRefreshData,
   });
 
   @override
@@ -106,6 +108,7 @@ class _SessionsSectionState extends State<SessionsSection> {
     if (result == true) {
       // Refresh the sessions list after successful edit
       _loadSessions();
+      widget.onRefreshData?.call();
     }
   }
 
@@ -154,6 +157,7 @@ class _SessionsSectionState extends State<SessionsSection> {
 
           // Refresh the sessions list
           _loadSessions();
+          widget.onRefreshData?.call(); // Notify parent
         }
       } catch (e) {
         if (mounted) {

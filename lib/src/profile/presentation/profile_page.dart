@@ -20,6 +20,7 @@ import '../../home/widgets/nutrition_post_card.dart';
 import '../../workout/data/post_workout_repository.dart'; // Added
 import '../../workout/presentation/tab/post_workout_screen.dart'; // Added
 import 'edit_profile_page.dart';
+import '../data/profile_session_repository.dart';
 
 class ProfilePage extends StatefulWidget {
   final String? username;
@@ -46,6 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, List<Comment>> _commentsCache = {};
   final Set<String> _likeInProgress = {};
   final PostWorkoutRepository _postWorkoutRepository = PostWorkoutRepository(); // Added
+  final ProfileSessionRepository _profileSessionRepository = ProfileSessionRepository();
 
   @override
   void initState() {
@@ -596,6 +598,8 @@ class _ProfilePageState extends State<ProfilePage> {
     return SessionsSection(
       sessions: _sessions,
       isViewOnly: !_profile!.isViewer,
+      repository: _profileSessionRepository,
+      onRefreshData: _loadData, // Reload profile data on session change
     );
   }
 
