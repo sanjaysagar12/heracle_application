@@ -1,10 +1,19 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling a background message: ${message.messageId}");
+  await NotificationService.saveNotification(
+    title: message.notification?.title ?? "New Notification",
+    body: message.notification?.body ?? "",
+    payload: message.data['route'],
+    time: DateTime.now(),
+  );
 }
 
 class NotificationService {
@@ -64,12 +73,19 @@ class NotificationService {
     }
 
     // Foreground message handler
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       print('Got a message whilst in the foreground!');
       print('Message data: ${message.data}');
 
       if (message.notification != null) {
-        print('Message also contained a notification: ${message.notification}');
+        // Save notification to local storage
+        await saveNotification(
+          title: message.notification!.title ?? 'New Notification',
+          body: message.notification!.body ?? '',
+          payload: message.data['route'], 
+          time: DateTime.now(),
+        );
+
         showNotification(
           id: message.notification.hashCode,
           title: message.notification!.title ?? 'New Notification',
@@ -78,6 +94,65 @@ class NotificationService {
         );
       }
     });
+    
+    // Check initial unread status
+    await checkUnreadStatus();
+  }
+
+  ValueNotifier<bool> hasUnreadNotifications = ValueNotifier(false);
+
+  Future<void> checkUnreadStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Simple check: do we have any unread flag?
+    // Or we can just use a boolean flag in prefs 'has_unread_notifications'
+    // Let's use a simpler boolean flag for badge
+    final hasUnread = prefs.getBool('has_unread_notifications') ?? false;
+    hasUnreadNotifications.value = hasUnread;
+  }
+
+  Future<void> markAsRead() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_unread_notifications', false);
+    hasUnreadNotifications.value = false;
+  }
+
+  static Future<void> saveNotification({
+    required String title,
+    required String body,
+    String? payload,
+    required DateTime time,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> notifications = prefs.getStringList('notifications') ?? [];
+      
+      final newNotification = {
+        'title': title,
+        'body': body,
+        'payload': payload,
+        'time': time.toIso8601String(),
+        'isRead': false,
+      };
+      
+      notifications.insert(0, jsonEncode(newNotification));
+      // Limit to last 50 notifications
+      if (notifications.length > 50) {
+        notifications.removeRange(50, notifications.length);
+      }
+      
+      await prefs.setStringList('notifications', notifications);
+      await prefs.setBool('has_unread_notifications', true);
+      
+      // We can't access instance members from static method easily without instance
+      // But we can check if instance is created
+      // Or make this method non-static if possible, or static with instance access
+      // Since _instance is static, we can try to access it if initialized? 
+      // Actually _instance is available.
+      _instance.hasUnreadNotifications.value = true;
+
+    } catch (e) {
+      print('Failed to save notification: $e');
+    }
   }
 
   Future<void> showNotification({

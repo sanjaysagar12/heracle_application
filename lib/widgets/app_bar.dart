@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../core/theme/app_colors.dart';
+import '../src/home/presentation/notification_page.dart';
+import '../core/services/notification_service.dart';
 
 class CustomAppBar extends StatelessWidget {
   final String name;
@@ -96,19 +98,51 @@ class CustomAppBar extends StatelessWidget {
                 ),
               ),
             ),
-            Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: AppColors.black100,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: SvgPicture.asset(
-                  'assets/icons/bell.svg',
-                  width: 24,
-                  height: 24,
-                ),
+            GestureDetector(
+              onTap: () {
+                 Navigator.push(
+                   context,
+                   MaterialPageRoute(builder: (context) => const NotificationPage()),
+                 );
+              },
+              child: ValueListenableBuilder<bool>(
+                valueListenable: NotificationService().hasUnreadNotifications,
+                builder: (context, hasUnread, child) {
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: AppColors.black100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/icons/bell.svg',
+                            width: 24,
+                            height: 24,
+                          ),
+                        ),
+                      ),
+                      if (hasUnread)
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary, // Green dot (using primary color which is green-ish)
+                              shape: BoxShape.circle,
+                              border: Border.fromBorderSide(BorderSide(color: AppColors.black, width: 1.5)),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                }
               ),
             ),
           ],
