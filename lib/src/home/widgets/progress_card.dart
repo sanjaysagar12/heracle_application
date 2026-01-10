@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../nutrition/presentation/track_calories_page.dart';
+import '../../nutrition/presentation/diet_history_page.dart';
+import '../presentation/steps_history_page.dart';
 import 'target_settings_bottom_sheet.dart';
 
 import '../../workout/storage/streak_storage.dart'; // Added
@@ -66,6 +68,20 @@ class TodayProgressCard extends StatelessWidget {
           if (onTargetUpdate != null) {
             await onTargetUpdate!(targetType.toLowerCase().replaceAll(' ', '_'), newTarget);
           }
+        },
+        onHistoryTap: () {
+            // Determine which history page to show
+            if (targetType == 'Steps' || targetType == 'Cals Burned') {
+               Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const StepsHistoryPage()),
+              );
+            } else if (targetType == 'Cals Taken') {
+               Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DietHistoryPage()),
+              );
+            }
         },
       ),
     );

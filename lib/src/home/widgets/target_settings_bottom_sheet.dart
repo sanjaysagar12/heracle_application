@@ -9,6 +9,7 @@ class TargetSettingsBottomSheet extends StatefulWidget {
   final String unit;
   final IconData icon;
   final Function(int) onSave;
+  final VoidCallback? onHistoryTap; // Optional history callback
 
   const TargetSettingsBottomSheet({
     super.key,
@@ -18,7 +19,10 @@ class TargetSettingsBottomSheet extends StatefulWidget {
     required this.unit,
     required this.icon,
     required this.onSave,
+    this.onHistoryTap,
   });
+
+
 
   @override
   State<TargetSettingsBottomSheet> createState() => _TargetSettingsBottomSheetState();
@@ -111,43 +115,60 @@ class _TargetSettingsBottomSheetState extends State<TargetSettingsBottomSheet> {
           const SizedBox(height: 24),
           
           // Header with icon and title
-          Row(
+          Stack(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  widget.icon,
-                  color: AppColors.primary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${widget.targetType} Target',
-                      style: const TextStyle(
-                        color: AppColors.pureWhite,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    Text(
-                      'Current: ${widget.currentValue}${widget.unit}',
-                      style: const TextStyle(
-                        color: AppColors.white60,
-                        fontSize: 14,
-                      ),
+                    child: Icon(
+                      widget.icon,
+                      color: AppColors.primary,
+                      size: 24,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${widget.targetType} Target',
+                          style: const TextStyle(
+                            color: AppColors.pureWhite,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Current: ${widget.currentValue}${widget.unit}',
+                          style: const TextStyle(
+                            color: AppColors.white60,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
+              if (widget.onHistoryTap != null)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      widget.onHistoryTap!();
+                    },
+                    icon: const Icon(Icons.history, color: AppColors.pureWhite),
+                    tooltip: 'View History',
+                  ),
+                ),
             ],
           ),
           
@@ -252,6 +273,8 @@ class _TargetSettingsBottomSheetState extends State<TargetSettingsBottomSheet> {
           
           // Add bottom padding for keyboard
           SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+          
+
         ],
       ),
     );
