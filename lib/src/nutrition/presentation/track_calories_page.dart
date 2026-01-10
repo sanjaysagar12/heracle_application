@@ -71,22 +71,7 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
     });
   }
 
-  void _updateItem(int index, {String? name, int? qty, int? cals, double? prot, double? fat, double? carbs, String? foodId, int? origCals, double? origProt, double? origFat, double? origCarbs}) {
-    setState(() {
-      final item = _items[index];
-      if (name != null) item.name = name;
-      if (qty != null) item.quantity = qty;
-      if (cals != null) item.calories = cals;
-      if (prot != null) item.protein = prot;
-      if (fat != null) item.fat = fat;
-      if (carbs != null) item.carbs = carbs;
-      if (foodId != null) item.foodId = foodId;
-      if (origCals != null) item.originalCalories = origCals;
-      if (origProt != null) item.originalProtein = origProt;
-      if (origFat != null) item.originalFat = origFat;
-      if (origCarbs != null) item.originalCarbs = origCarbs;
-    });
-  }
+
 
   Future<void> _initiateAnalysis(DietLogItem item) async {
     final description = await _showDescriptionDialog();
@@ -346,250 +331,11 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
   }
 
   Widget _buildFoodItemCard(int index) {
-    final item = _items[index];
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.black100,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            children: [
-              // Display captured image if present
-              if (item.imagePath != null)
-                Container(
-                  height: 150,
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    image: DecorationImage(
-                      image: FileImage(File(item.imagePath!)),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-
-              // Loading Indicator
-              if (item.isLoading)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 16),
-                  child: LinearProgressIndicator(
-                    backgroundColor: AppColors.greyDark,
-                    color: AppColors.primary,
-                  ),
-                ),
-
-              // Name and Qty
-              Row(
-                children: [
-                  Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return RawAutocomplete<FoodItem>(
-                        optionsBuilder: (TextEditingValue textEditingValue) async {
-                          if (textEditingValue.text.length < 2) {
-                            return const Iterable<FoodItem>.empty();
-                          }
-                          return await NutritionApiService().searchFoods(textEditingValue.text);
-                        },
-                        displayStringForOption: (FoodItem option) => option.name,
-                        onSelected: (FoodItem selection) {
-                          _updateItem(
-                            index,
-                            name: selection.name,
-                            cals: selection.calories,
-                            prot: selection.protein,
-                            fat: selection.fat,
-                            carbs: selection.carbs,
-                            foodId: selection.id,
-                            origCals: selection.calories,
-                            origProt: selection.protein,
-                            origFat: selection.fat,
-                            origCarbs: selection.carbs,
-                          );
-                        },
-                        fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
-                          // Sync controller with item name if needed, but carefully to avoid loops
-                          if (item.name.isNotEmpty && textEditingController.text != item.name) {
-                             textEditingController.text = item.name;
-                          }
-                          
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: AppColors.greyDark.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: TextField(
-                              controller: textEditingController,
-                              focusNode: focusNode,
-                              onChanged: (val) => _updateItem(index, name: val),
-                              style: const TextStyle(color: AppColors.pureWhite),
-                              decoration: const InputDecoration(
-                                hintText: 'What did you eat?',
-                                hintStyle: TextStyle(color: AppColors.white40),
-                                border: InputBorder.none,
-                              ),
-                            ),
-                          );
-                        },
-                        optionsViewBuilder: (BuildContext context, AutocompleteOnSelected<FoodItem> onSelected, Iterable<FoodItem> options) {
-                          return Align(
-                            alignment: Alignment.topLeft,
-                            child: Material(
-                              elevation: 4.0,
-                              color: AppColors.black100, // Match card color or slightly lighter
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
-                              ),
-                              child: Container(
-                                width: constraints.maxWidth,
-                                constraints: const BoxConstraints(maxHeight: 200),
-                                decoration: BoxDecoration(
-                                   color: AppColors.black100,
-                                   borderRadius: BorderRadius.circular(12),
-                                   border: Border.all(color: AppColors.greyDark),
-                                ),
-                                child: ListView.builder(
-                                  padding: EdgeInsets.zero,
-                                  shrinkWrap: true,
-                                  itemCount: options.length,
-                                  itemBuilder: (BuildContext context, int index) {
-                                    final FoodItem option = options.elementAt(index);
-                                    return InkWell(
-                                      onTap: () => onSelected(option),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(16.0),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(option.name, style: const TextStyle(color: AppColors.pureWhite, fontWeight: FontWeight.bold)),
-                                            Text(
-                                              '${option.calories} kcal • P: ${option.protein} • F: ${option.fat} • C: ${option.carbs}',
-                                              style: const TextStyle(color: AppColors.white60, fontSize: 12),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    }
-                  ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 60,
-                    padding: const EdgeInsets.symmetric(horizontal: 0),
-                    decoration: BoxDecoration(
-                      color: AppColors.greyDark.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: TextField(
-                      textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
-                      controller: TextEditingController(text: item.quantity.toString())
-                         ..selection = TextSelection.fromPosition(TextPosition(offset: item.quantity.toString().length)),
-                      onChanged: (val) => _updateItem(index, qty: int.tryParse(val) ?? 1),
-                      style: const TextStyle(color: AppColors.pureWhite),
-                      decoration: const InputDecoration(
-                        hintText: 'Qty',
-                        hintStyle: TextStyle(color: AppColors.white40),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              
-              // Macros Inputs
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildMacroInput('Calories', item.calories.toString(), 'Cal', AppColors.primary, (val) => _updateItem(index, cals: int.tryParse(val) ?? 0)),
-                  _buildMacroInput('Protein', item.protein.toString(), 'g', AppColors.primary, (val) => _updateItem(index, prot: double.tryParse(val) ?? 0)),
-                  _buildMacroInput('Fat', item.fat.toString(), 'g', AppColors.primary, (val) => _updateItem(index, fat: double.tryParse(val) ?? 0)),
-                  _buildMacroInput('Carbs', item.carbs.toString(), 'g', AppColors.primary, (val) => _updateItem(index, carbs: double.tryParse(val) ?? 0)),
-                ],
-              ),
-            ],
-          ),
-        ),
-        if (_items.length > 1 && index == _items.length - 1)
-          Positioned(
-            top: -10,
-            right: -10,
-            child: GestureDetector(
-              onTap: () => _removeItem(index),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Colors.redAccent,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildMacroInput(String label, String value, String unit, Color color, Function(String) onChanged) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Icon(Icons.local_fire_department, size: 12, color: color), // Placeholder icons
-            const SizedBox(width: 4),
-            Text(label, style: InputDecorationTheme().labelStyle?.copyWith(color: color) ?? TextStyle(color: color, fontSize: 12)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: 70,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.greyDark.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: TextField(
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  controller: TextEditingController(text: value == '0' || value == '0.0' ? '' : value),
-                  onChanged: onChanged,
-                  style: const TextStyle(color: AppColors.white60, fontSize: 13, fontWeight: FontWeight.bold),
-                  decoration: InputDecoration(
-                    hintText: '0$unit',
-                    hintStyle: const TextStyle(color: AppColors.white40, fontSize: 13),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+    return FoodItemCard(
+      key: ValueKey(_items[index]), // Key helps maintain state if items reordered/removed
+      item: _items[index],
+      onUpdate: () => setState(() {}),
+      onRemove: () => _removeItem(index),
     );
   }
 
@@ -647,6 +393,383 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class FoodItemCard extends StatefulWidget {
+  final DietLogItem item;
+  final VoidCallback onUpdate;
+  final VoidCallback onRemove;
+
+  const FoodItemCard({
+    super.key,
+    required this.item,
+    required this.onUpdate,
+    required this.onRemove,
+  });
+
+  @override
+  State<FoodItemCard> createState() => _FoodItemCardState();
+}
+
+class _FoodItemCardState extends State<FoodItemCard> {
+  late TextEditingController _nameController;
+  late TextEditingController _qtyController;
+  late TextEditingController _calsController;
+  late TextEditingController _protController;
+  late TextEditingController _fatController;
+  late TextEditingController _carbsController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.item.name);
+    _qtyController = TextEditingController(text: widget.item.quantity.toString());
+    _calsController = TextEditingController(text: _formatInt(widget.item.calories));
+    _protController = TextEditingController(text: _formatDouble(widget.item.protein));
+    _fatController = TextEditingController(text: _formatDouble(widget.item.fat));
+    _carbsController = TextEditingController(text: _formatDouble(widget.item.carbs));
+  }
+  
+  String _formatInt(int val) => val == 0 ? '' : val.toString();
+  String _formatDouble(double val) => val == 0.0 ? '' : val.toString();
+
+  @override
+  void didUpdateWidget(FoodItemCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.item != oldWidget.item) {
+      // Sync controllers if data changed externally (e.g. from AI analysis)
+      // Check if values differ from controller to avoid overwriting user trying to edit
+      if (_nameController.text != widget.item.name) {
+         _nameController.text = widget.item.name;
+      }
+      // For numbers, be careful about "0" vs "" vs "0.0"
+      if ((int.tryParse(_calsController.text) ?? 0) != widget.item.calories) {
+         _calsController.text = _formatInt(widget.item.calories);
+      }
+      // ... similar checks could be added for others, 
+      // but simpler to strictly update if the item reference/values changed significantly 
+      // and rely on the fact that internal updates sync to item immediately.
+      
+      // Actually, since we mutate the SAME item object in parent list, 
+      // widget.item is the same instance. 
+      // So didUpdateWidget might not trigger on internal mutations unless parent rebuilds with new list?
+      // No, parent setState rebuilds this widget with same item instance.
+      // So we have to rely on checking values.
+      
+      _updateControllerIfChanged(_qtyController, widget.item.quantity.toString());
+      _updateControllerIfChanged(_calsController, _formatInt(widget.item.calories));
+      _updateControllerIfChanged(_protController, _formatDouble(widget.item.protein));
+      _updateControllerIfChanged(_fatController, _formatDouble(widget.item.fat));
+      _updateControllerIfChanged(_carbsController, _formatDouble(widget.item.carbs));
+    }
+  }
+
+  void _updateControllerIfChanged(TextEditingController controller, String newVal) {
+    if (controller.text != newVal) {
+       // Only update if it's not what user is currently typing?
+       // It's hard to know. But generally if local state matches model, no op.
+       // If model changed (e.g. Reset to 0), we update.
+       // If user typed "5", model has 5. newVal is "5". No change.
+       // If user typed "", model has 0. newVal is "". No change.
+       controller.text = newVal;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _qtyController.dispose();
+    _calsController.dispose();
+    _protController.dispose();
+    _fatController.dispose();
+    _carbsController.dispose();
+    super.dispose();
+  }
+
+  void _onNameChanged(String val) {
+    widget.item.name = val;
+    // Don't call onUpdate needed for name change? Maybe not affecting totals.
+  }
+
+  void _onQtyChanged(String val) {
+    widget.item.quantity = int.tryParse(val) ?? 1;
+    widget.onUpdate();
+  }
+
+  void _onMacroChanged(String val, String type) {
+    final dVal = double.tryParse(val) ?? 0.0;
+    final iVal = int.tryParse(val) ?? 0;
+    
+    setState(() {
+      switch (type) {
+        case 'cals': widget.item.calories = iVal; break;
+        case 'prot': widget.item.protein = dVal; break;
+        case 'fat': widget.item.fat = dVal; break;
+        case 'carbs': widget.item.carbs = dVal; break;
+      }
+    });
+    widget.onUpdate();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.black100,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: [
+              if (item.imagePath != null)
+                Container(
+                  height: 150,
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: FileImage(File(item.imagePath!)),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+
+              if (item.isLoading)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: LinearProgressIndicator(
+                    backgroundColor: AppColors.greyDark,
+                    color: AppColors.primary,
+                  ),
+                ),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return RawAutocomplete<FoodItem>(
+                          optionsBuilder: (TextEditingValue textEditingValue) async {
+                            if (textEditingValue.text.length < 2) {
+                              return const Iterable<FoodItem>.empty();
+                            }
+                            return await NutritionApiService().searchFoods(textEditingValue.text);
+                          },
+                          displayStringForOption: (FoodItem option) => option.name,
+                          onSelected: (FoodItem selection) {
+                            // Update item
+                            setState(() {
+                              item.name = selection.name;
+                              item.calories = selection.calories;
+                              item.protein = selection.protein;
+                              item.fat = selection.fat;
+                              item.carbs = selection.carbs;
+                              item.foodId = selection.id;
+                              item.originalCalories = selection.calories;
+                              item.originalProtein = selection.protein;
+                              item.originalFat = selection.fat;
+                              item.originalCarbs = selection.carbs;
+                            });
+                            
+                            // Update controllers
+                            _nameController.text = selection.name;
+                            _calsController.text = _formatInt(selection.calories);
+                            _protController.text = _formatDouble(selection.protein);
+                            _fatController.text = _formatDouble(selection.fat);
+                            _carbsController.text = _formatDouble(selection.carbs);
+                            
+                            widget.onUpdate();
+                          },
+                          fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
+                            // We need to use our persistent controller, but Autocomplete wants to provide one.
+                            // Solution: Use Autocomplete's controller but sync with ours? 
+                            // Or better, pass our controller to Autocomplete if RawAutocomplete supported it (it doesn't directly in constructor easily without hook).
+                            
+                            // Actually RawAutocomplete `textEditingController` param can take our controller.
+                            if (textController.text != _nameController.text) {
+                              textController.text = _nameController.text;
+                              textController.selection = _nameController.selection;
+                            }
+                            
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: AppColors.greyDark.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: TextField(
+                                controller: textController,
+                                focusNode: focusNode,
+                                onChanged: (val) {
+                                   _nameController.text = val;
+                                   _onNameChanged(val);
+                                },
+                                style: const TextStyle(color: AppColors.pureWhite),
+                                decoration: const InputDecoration(
+                                  hintText: 'What did you eat?',
+                                  hintStyle: TextStyle(color: AppColors.white40),
+                                  border: InputBorder.none,
+                                ),
+                              ),
+                            );
+                          },
+                          optionsViewBuilder: (context, onSelected, options) {
+                             return Align(
+                                alignment: Alignment.topLeft,
+                                child: Material(
+                                  elevation: 4.0,
+                                  color: AppColors.black100,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+                                  ),
+                                  child: Container(
+                                    width: constraints.maxWidth,
+                                    constraints: const BoxConstraints(maxHeight: 200),
+                                    decoration: BoxDecoration(
+                                       color: AppColors.black100,
+                                       borderRadius: BorderRadius.circular(12),
+                                       border: Border.all(color: AppColors.greyDark),
+                                    ),
+                                    child: ListView.builder(
+                                      padding: EdgeInsets.zero,
+                                      shrinkWrap: true,
+                                      itemCount: options.length,
+                                      itemBuilder: (context, index) {
+                                        final FoodItem option = options.elementAt(index);
+                                        return InkWell(
+                                          onTap: () => onSelected(option),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(option.name, style: const TextStyle(color: AppColors.pureWhite, fontWeight: FontWeight.bold)),
+                                                Text(
+                                                  '${option.calories} kcal • P: ${option.protein} • F: ${option.fat} • C: ${option.carbs}',
+                                                  style: const TextStyle(color: AppColors.white60, fontSize: 12),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              );
+                          },
+                        );
+                      }
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 60,
+                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                    decoration: BoxDecoration(
+                      color: AppColors.greyDark.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TextField(
+                      textAlign: TextAlign.center,
+                      keyboardType: TextInputType.number,
+                      controller: _qtyController,
+                      onChanged: _onQtyChanged,
+                      style: const TextStyle(color: AppColors.pureWhite),
+                      decoration: const InputDecoration(
+                        hintText: 'Qty',
+                        hintStyle: TextStyle(color: AppColors.white40),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildMacroInput('Calories', _calsController, 'Cal', AppColors.primary, (v) => _onMacroChanged(v, 'cals')),
+                  _buildMacroInput('Protein', _protController, 'g', AppColors.primary, (v) => _onMacroChanged(v, 'prot')),
+                  _buildMacroInput('Fat', _fatController, 'g', AppColors.primary, (v) => _onMacroChanged(v, 'fat')),
+                  _buildMacroInput('Carbs', _carbsController, 'g', AppColors.primary, (v) => _onMacroChanged(v, 'carbs')),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          top: -10,
+          right: -10,
+          child: GestureDetector(
+            onTap: widget.onRemove,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.redAccent,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMacroInput(String label, TextEditingController controller, String unit, Color color, Function(String) onChanged) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(Icons.local_fire_department, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(label, style: TextStyle(color: color, fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: 70,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.greyDark.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: TextField(
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  controller: controller, // Use persistent controller
+                  onChanged: onChanged,
+                  style: const TextStyle(color: AppColors.white60, fontSize: 13, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    hintText: '0$unit',
+                    hintStyle: const TextStyle(color: AppColors.white40, fontSize: 13),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
