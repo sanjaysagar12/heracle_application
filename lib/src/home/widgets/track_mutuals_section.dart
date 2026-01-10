@@ -106,13 +106,13 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
     }).toList();
 
     if (displayPosts.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 32),
-        child: Center(
-          child: Text(
-            'No posts found',
-            style: TextStyle(color: AppColors.white60),
-          ),
+      return Container(
+        height: 150,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: const Text(
+          'No posts found',
+          style: TextStyle(color: AppColors.white60),
         ),
       );
     }

@@ -16,15 +16,15 @@ class HighlightGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (highlights.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(40),
-          child: Text(
-            'No highlights yet',
-            style: TextStyle(
-              color: AppColors.white60,
-              fontSize: 16,
-            ),
+      return Container(
+        height: 150,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(40),
+        child: const Text(
+          'No highlights yet',
+          style: TextStyle(
+            color: AppColors.white60,
+            fontSize: 16,
           ),
         ),
       );

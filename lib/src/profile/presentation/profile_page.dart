@@ -595,21 +595,21 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildSessionsTab() {
     return SessionsSection(
       sessions: _sessions,
-      isViewOnly: true,
+      isViewOnly: !_profile!.isViewer,
     );
   }
 
   Widget _buildPostsTab() {
     if (_posts.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(40),
-          child: Text(
-            'No posts yet',
-            style: TextStyle(
-              color: AppColors.white60,
-              fontSize: 16,
-            ),
+      return Container(
+        height: 200,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(40),
+        child: const Text(
+          'No posts yet',
+          style: TextStyle(
+            color: AppColors.white60,
+            fontSize: 16,
           ),
         ),
       );

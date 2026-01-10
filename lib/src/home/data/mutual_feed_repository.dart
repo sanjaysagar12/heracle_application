@@ -396,14 +396,26 @@ class MutualFeedRepository {
 
   List<FeedPost> _mapFeedData(List<Map<String, dynamic>> data) {
     return data.map((json) {
-      final type = json['type'] as String? ?? 'workout'; // Default to workout if missing
-      
-      if (type == 'nutrition') {
-        return NutritionPost.fromJson(json);
-      } else {
-        return WorkoutPost.fromJson(json);
+      try {
+        final type = json['type'] as String? ?? 'workout';
+        
+        if (type == 'nutrition') {
+           // Basic validation to ensure we don't return an empty/broken nutrition post
+           // if the structure is actually a workout (has exercises but no meals)
+           if (json['meals'] == null && json['exercises'] != null) {
+              // This is likely a mislabeled workout post
+              return WorkoutPost.fromJson(json);
+           }
+           return NutritionPost.fromJson(json);
+        } else {
+          return WorkoutPost.fromJson(json);
+        }
+      } catch (e) {
+        print('Error parsing feed post: $e');
+        print('JSON: $json');
+        return null; 
       }
-    }).toList();
+    }).where((post) => post != null).cast<FeedPost>().toList();
   }
 
   Future<void> likePost(String postId, {bool isMeal = false}) async {

@@ -14,71 +14,126 @@ class PieChartWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: CustomPaint(
-            size: Size.infinite,
-            painter: _PieChartPainter(data: data),
-          ),
-        ),
-        const SizedBox(width: 24),
-        Expanded(
-          flex: 2,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: data.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                final color = _getPieColor(index, item.label);
-                final unit = _getUnit(item.label);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                        ),
+    // Separate calories from other data
+    final calorieData = data.firstWhere(
+      (d) => d.label.toLowerCase() == 'calories',
+      orElse: () => const PieChartData(label: 'Calories', value: 0),
+    );
+    
+    final displayData = data.where((d) => d.label.toLowerCase() != 'calories').toList();
+
+    return SizedBox(
+      height: height,
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CustomPaint(
+                  size: Size.infinite,
+                  painter: _PieChartPainter(data: displayData),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      calorieData.value.toInt().toString(),
+                      style: const TextStyle(
+                        color: AppColors.pureWhite,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.label,
-                              style: const TextStyle(
-                                color: AppColors.pureWhite,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              '${item.value.toInt()}$unit',
-                              style: const TextStyle(
-                                color: AppColors.white60,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
+                    ),
+                    const Text(
+                      'kcal',
+                      style: TextStyle(
+                        color: AppColors.white60,
+                        fontSize: 12,
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+          const SizedBox(width: 24),
+          Expanded(
+            flex: 2,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: displayData.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  final color = _getPieColor(index, item.label);
+                  final unit = _getUnit(item.label);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.label,
+                                style: const TextStyle(
+                                  color: AppColors.pureWhite,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                '${item.value.toInt()}$unit${_getCaloriesText(item.label, item.value)}',
+                                style: const TextStyle(
+                                  color: AppColors.white60,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  String _getCaloriesText(String label, double value) {
+    int multiplier = 0;
+    switch (label.toLowerCase()) {
+      case 'protein':
+      case 'carbs':
+        multiplier = 4;
+        break;
+      case 'fats':
+        multiplier = 9;
+        break;
+    }
+    
+    if (multiplier > 0) {
+      final cals = (value * multiplier).toInt();
+      return '  ${cals}kcal';
+    }
+    return '';
   }
 
   String _getUnit(String label) {

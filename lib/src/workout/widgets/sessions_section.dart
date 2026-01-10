@@ -211,17 +211,18 @@ class _SessionsSectionState extends State<SessionsSection> {
                                ),
                           ],
                           const Spacer(), // Push to right
-                          IconButton(
-                            icon: const Icon(Icons.history, color: AppColors.primary),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const WorkoutLogsTab(),
-                                ),
-                              );
-                            },
-                          ),
+                          if (!widget.isViewOnly)
+                            IconButton(
+                              icon: const Icon(Icons.history, color: AppColors.primary),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const WorkoutLogsTab(),
+                                  ),
+                                );
+                              },
+                            ),
                         ],
                       ),
                       const SizedBox(height: 12),

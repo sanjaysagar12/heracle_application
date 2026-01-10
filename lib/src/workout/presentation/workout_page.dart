@@ -77,10 +77,10 @@ class WorkoutPageState extends State<WorkoutPage> { // Made public
       final nutritionData = ChartData(
         title: "Today's Nutrition",
         data: [
-          BarData(label: 'Calories', value: nutritionValues['calories']!),
-          BarData(label: 'Protein', value: nutritionValues['protein']!),
-          BarData(label: 'Carbs', value: nutritionValues['carbs']!),
-          BarData(label: 'Fats', value: nutritionValues['fats']!),
+          BarData(label: 'Calories', value: nutritionValues['calories'] ?? 0),
+          BarData(label: 'Protein', value: nutritionValues['protein'] ?? 0),
+          BarData(label: 'Carbs', value: nutritionValues['carbs'] ?? 0),
+          BarData(label: 'Fats', value: nutritionValues['fat'] ?? 0),
         ],
         type: ChartType.pie,
       );

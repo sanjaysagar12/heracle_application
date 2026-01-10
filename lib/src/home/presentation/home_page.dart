@@ -204,13 +204,7 @@ class _HomePageState extends State<HomePage> {
                         maxBreakDays: _progress!.maxBreakDays, // Added
                         targets: _progress!.targets,
                       ),
-                    if (_todayNutrition != null)
-                      DailyMacroChart(
-                        protein: _todayNutrition!['protein'] ?? 0,
-                        carbs: _todayNutrition!['carbs'] ?? 0,
-                        fat: _todayNutrition!['fat'] ?? 0,
-                        fiber: _todayNutrition!['fiber'] ?? 0,
-                      ),
+
                     TrackMutualsSection(
                       posts: _posts,
                       onLike: _handleLike,
@@ -287,7 +281,10 @@ class _HomePageState extends State<HomePage> {
       final results = await Future.wait([
         _profileRepository.getProfile(),
         _progressRepository.getTodayProgress(),
-        _mutualFeedRepository.getMutualFeed(),
+        _mutualFeedRepository.getMutualFeed().catchError((e) {
+            print('HomePage: Feed load failed: $e');
+            return <FeedPost>[]; // Return empty list on failure to allow other data to load
+        }),
         _progressRepository.getTodayNutrition(), // Added
       ]);
 
