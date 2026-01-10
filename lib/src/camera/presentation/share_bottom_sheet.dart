@@ -29,11 +29,6 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
       'icon': Icons.person,
     },
     {
-      'title': 'Share as Story (Mutuals)',
-      'subtitle': '12+ People',
-      'icon': Icons.people,
-    },
-    {
       'title': 'Share as Spotlight',
       'subtitle': 'Public Post',
       'icon': Icons.star,

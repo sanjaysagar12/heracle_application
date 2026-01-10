@@ -7,9 +7,9 @@ class StoryRepository {
   StoryRepository({StoryService? service})
       : _service = service ?? StoryService();
 
-  Future<void> createStory(File file, String caption) async {
+  Future<void> createStory(File file, String caption, {bool isHighlighted = false}) async {
     try {
-      await _service.createStory(file, caption);
+      await _service.createStory(file, caption, isHighlighted: isHighlighted);
     } catch (e) {
       throw Exception('Failed to create story: $e');
     }

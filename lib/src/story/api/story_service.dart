@@ -5,7 +5,7 @@ import '../../../../core/network/dio_client.dart';
 class StoryService {
   final DioClient _dioClient = DioClient();
 
-  Future<void> createStory(File file, String caption) async {
+  Future<void> createStory(File file, String caption, {bool isHighlighted = false}) async {
     try {
       String fileName = file.path.split('/').last;
       
@@ -15,6 +15,7 @@ class StoryService {
           filename: fileName,
         ),
         'caption': caption,
+        'isHighlighted': isHighlighted.toString(),
       });
 
       final response = await _dioClient.dio.post(

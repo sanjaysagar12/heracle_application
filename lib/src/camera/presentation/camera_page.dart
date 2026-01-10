@@ -301,7 +301,15 @@ class _CameraPageState extends State<CameraPage>
 
       // 3. Upload
       final repository = StoryRepository();
-      await repository.createStory(fileToUpload, _captionController.text);
+      // index 0: Public Story (isHighlighted = false)
+      // index 1: Spotlight (isHighlighted = true)
+      final bool isHighlighted = index == 1;
+      
+      await repository.createStory(
+        fileToUpload, 
+        _captionController.text, 
+        isHighlighted: isHighlighted
+      );
 
       if (mounted) {
         Navigator.pop(context); // Dismiss loading
