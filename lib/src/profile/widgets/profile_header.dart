@@ -134,6 +134,15 @@ class ProfileHeader extends StatelessWidget {
                   ],
                 ],
               ),
+              const SizedBox(height: 4),
+              Text(
+                '@${profile.username}',
+                style: const TextStyle(
+                  color: AppColors.white60,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
               const SizedBox(height: 24),
               // Stats Row
               Row(
