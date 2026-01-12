@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/profile_repository.dart';
 import '../../home/data/profile_repository.dart' as home_repo;
@@ -17,10 +19,11 @@ import '../../home/widgets/comments_bottom_sheet.dart';
 import '../../home/widgets/likes_bottom_sheet.dart';
 import '../../home/widgets/workout_post_card.dart';
 import '../../home/widgets/nutrition_post_card.dart';
-import '../../workout/data/post_workout_repository.dart'; // Added
-import '../../workout/presentation/tab/post_workout_screen.dart'; // Added
+import '../../workout/data/post_workout_repository.dart';
+import '../../workout/presentation/tab/post_workout_screen.dart';
 import 'edit_profile_page.dart';
 import '../data/profile_session_repository.dart';
+import 'package:heracle/core/network/dio_client.dart';
 
 class ProfilePage extends StatefulWidget {
   final String? username;
@@ -136,6 +139,226 @@ class _ProfilePageState extends State<ProfilePage> {
     if (result == true) {
       _loadData();
     }
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF212121), // Dark background
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                 Color(0xFF212121),
+                 Color(0xFF1a1a1a),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3), // Yellow glow
+                blurRadius: 20,
+                spreadRadius: 2,
+              )
+            ],
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.5),
+              width: 1.5,
+            ),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.primary, // Yellow accent
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Remove Account",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Are you sure you want to remove your account? This action cannot be undone immediately.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.grey,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text("Cancel"),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context); // Close confirmation
+                        _sendDeleteRequest();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.black, // Black text on Yellow
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text("Yes, Remove"),
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _sendDeleteRequest() async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+    );
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final email = user?.email ?? 'unknown@example.com';
+      final name = user?.displayName ?? _profile?.name ?? 'Unknown User';
+      
+      final dio = Dio();
+      final response = await dio.post(
+        'https://dharshan--smtp-portfolio--9hk6jmk926rf.code.run/api/contact/submit/',
+        data: {
+          "name": name,
+          "email": email,
+          "message": "User requested account deletion. UID: ${user?.uid}",
+        },
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+          },
+        ),
+      );
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _showSuccessDialog();
+      } else {
+        throw Exception('Failed to send request');
+      }
+
+    } catch (e) {
+      if (mounted) Navigator.pop(context); // Close loading if error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to request deletion: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF212121),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.green.withOpacity(0.5),
+              width: 1.5,
+            ),
+             boxShadow: [
+              BoxShadow(
+                color: Colors.green.withOpacity(0.2),
+                blurRadius: 20,
+                spreadRadius: 2,
+              )
+            ],
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.check_circle_outline,
+                color: Colors.green,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Request Sent",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Before 48 hrs your account will be terminated and you will be backed up for one month.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white70,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text("OK"),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // _convertToDiscoverStories removed as we now fetch DiscoverStory directly
@@ -555,6 +778,27 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                           ),
+                          if (_profile!.isViewer)
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: Material(
+                                color: Colors.black38,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: _handleDeleteAccount,
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Icon(
+                                      Icons.delete_outline,
+                                      color: AppColors.primary,
+                                      size: 22,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ProfileTabBar(
@@ -664,4 +908,5 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
+
 
