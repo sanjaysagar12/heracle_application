@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../../core/theme/app_colors.dart';
 
 class ReportPage extends StatefulWidget {
@@ -14,6 +16,8 @@ class ReportPage extends StatefulWidget {
 class _ReportPageState extends State<ReportPage> {
   final TextEditingController _messageController = TextEditingController();
   final Dio _dio = Dio();
+  final ImagePicker _picker = ImagePicker();
+  List<XFile> _selectedImages = [];
   bool _isLoading = false;
 
   @override
@@ -22,11 +26,56 @@ class _ReportPageState extends State<ReportPage> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    if (_selectedImages.length >= 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum 2 images allowed')),
+      );
+      return;
+    }
+
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80, 
+      );
+
+      if (image != null) {
+        final int sizeInBytes = await image.length();
+        final double sizeInMb = sizeInBytes / (1024 * 1024);
+
+        if (sizeInMb > 10) {
+          if (mounted) {
+             ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Image size must be less than 10MB')),
+            );
+          }
+          return;
+        }
+        
+        setState(() {
+          _selectedImages.add(image);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to pick image')),
+      );
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
+  }
+
   Future<void> _submitReport() async {
     final message = _messageController.text.trim();
-    if (message.isEmpty) {
+    if (message.isEmpty && _selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please describe the issue')),
+        const SnackBar(content: Text('Please describe the issue or attach an image')),
       );
       return;
     }
@@ -48,17 +97,33 @@ class _ReportPageState extends State<ReportPage> {
       final email = user?.email ?? 'unknown@example.com';
       final uid = user?.uid ?? 'unknown_uid';
 
+      // Prepare FormData
+      final formData = FormData.fromMap({
+        "name": name,
+        "email": email,
+        "message": "BUG REPORT from $name ($email):\n\nUID: $uid\n\nIssue:\n$message",
+      });
+
+      // Attach images if any
+      if (_selectedImages.isNotEmpty) {
+        for (var image in _selectedImages) {
+          formData.files.add(MapEntry(
+            "attachments", // 'files' is a common key, or 'attachments' depending on backend
+            await MultipartFile.fromFile(
+              image.path,
+              filename: image.name,
+            ),
+          ));
+        }
+      }
+
       final response = await _dio.post(
         'https://dharshan--smtp-portfolio--9hk6jmk926rf.code.run/api/contact/submit/',
-        data: {
-          "name": name,
-          "email": email,
-          "message": "BUG REPORT from $name ($email):\n\nUID: $uid\n\nIssue:\n$message",
-        },
+        data: formData,
         options: Options(
-          headers: {
-            "Content-Type": "application/json",
-          },
+          // explicit content-type is usually not needed for FormData as Dio sets it automatically with boundary,
+          // but if your backend strictly expects something specific, adjust here.
+          // headers: { "Content-Type": "multipart/form-data" }, 
         ),
       );
 
@@ -199,7 +264,7 @@ class _ReportPageState extends State<ReportPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                   const Text(
                     'We are sorry to hear that.',
                     style: TextStyle(
                       color: Colors.white,
@@ -216,18 +281,20 @@ class _ReportPageState extends State<ReportPage> {
                     ),
                   ),
                   const SizedBox(height: 32),
+                  
+                  // Text Input
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.greyDark.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.greyLight,
+                        color: AppColors.greyLight.withOpacity(0.3),
                       ),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: TextField(
                       controller: _messageController,
-                      maxLines: 8,
+                      maxLines: 6,
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
@@ -236,7 +303,115 @@ class _ReportPageState extends State<ReportPage> {
                       ),
                     ),
                   ),
+                  
+                  const SizedBox(height: 24),
+
+                  // Image Attachments Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                       const Text(
+                         "Attachments",
+                         style: TextStyle(
+                           color: Colors.white,
+                           fontSize: 16,
+                           fontWeight: FontWeight.w600,
+                         ),
+                       ),
+                       Text(
+                         "${_selectedImages.length}/2",
+                         style: const TextStyle(color: Colors.grey),
+                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Horizontal List of Images + Add Button
+                  SizedBox(
+                    height: 100,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        // Add Button (Show only if < 2 images)
+                        if (_selectedImages.length < 2)
+                          GestureDetector(
+                            onTap: _pickImage,
+                            child: Container(
+                              width: 100,
+                              margin: const EdgeInsets.only(right: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.greyDark.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.greyLight.withOpacity(0.5),
+                                  style: BorderStyle.solid,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(Icons.add_a_photo_outlined, color: AppColors.primary),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    "Add Image",
+                                    style: TextStyle(
+                                      color: Colors.grey, 
+                                      fontSize: 10
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                        // Selected Images
+                        ..._selectedImages.asMap().entries.map((entry) {
+                           final index = entry.key;
+                           final image = entry.value;
+                           return Stack(
+                             clipBehavior: Clip.none,
+                             children: [
+                               Container(
+                                 width: 100,
+                                 margin: const EdgeInsets.only(right: 12),
+                                 decoration: BoxDecoration(
+                                   borderRadius: BorderRadius.circular(12),
+                                   image: DecorationImage(
+                                     image: FileImage(File(image.path)),
+                                     fit: BoxFit.cover,
+                                   ),
+                                 ),
+                               ),
+                               Positioned(
+                                 top: -8,
+                                 right: 4,
+                                 child: GestureDetector(
+                                   onTap: () => _removeImage(index),
+                                   child: Container(
+                                     padding: const EdgeInsets.all(4),
+                                     decoration: const BoxDecoration(
+                                       color: Colors.red,
+                                       shape: BoxShape.circle,
+                                     ),
+                                     child: const Icon(Icons.close, color: Colors.white, size: 14),
+                                   ),
+                                 ),
+                               ),
+                             ],
+                           );
+                        }).toList(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Max 2 images, 10MB each.",
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+
                   const Spacer(),
+                  
+                  // Submit Button
                   SizedBox(
                     width: double.infinity,
                     height: 56,
