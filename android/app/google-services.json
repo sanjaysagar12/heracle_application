@@ -53,6 +53,13 @@
             {
               "client_id": "435524159526-kjsck9t15sgg3j22721719p2m1givfag.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "435524159526-m7rpg583g7uuc6e7qjuiqbhta06fbkd5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.heracle"
+              }
             }
           ]
         }
