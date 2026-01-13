@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:dio/dio.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../auth/presentation/auth_screen.dart';
@@ -48,13 +49,13 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.3), // Yellow glow
+                color: Colors.red.withOpacity(0.3), // Red glow
                 blurRadius: 20,
                 spreadRadius: 2,
               )
             ],
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.5),
+              color: Colors.red.withOpacity(0.5),
               width: 1.5,
             ),
           ),
@@ -64,7 +65,7 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               const Icon(
                 Icons.warning_amber_rounded,
-                color: AppColors.primary, // Yellow accent
+                color: Colors.red, // Red accent
                 size: 48,
               ),
               const SizedBox(height: 16),
@@ -106,8 +107,8 @@ class _SettingsPageState extends State<SettingsPage> {
                         _sendDeleteRequest();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.black, // Black text on Yellow
+                        backgroundColor: Colors.red, // Red Button
+                        foregroundColor: Colors.white, // White text
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -321,11 +322,13 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildSettingsItem(
               icon: Icons.description_outlined,
               title: 'Terms and Conditions',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const TermsAndConditionsPage()),
-                );
+              onTap: () async {
+                 final url = Uri.parse('https://heracle.fit/privacy-policy');
+                 if (await canLaunchUrl(url)) {
+                   await launchUrl(url, mode: LaunchMode.externalApplication);
+                 } else {
+                   debugPrint("Could not launch $url");
+                 }
               },
             ),
 
@@ -369,17 +372,17 @@ class _SettingsPageState extends State<SettingsPage> {
             TextButton(
               onPressed: _handleDeleteAccount,
               style: TextButton.styleFrom(
-                foregroundColor: Colors.redAccent,
+                foregroundColor: Colors.red,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.delete_outline, color: AppColors.primary, size: 20),
+                  const Icon(Icons.delete_outline, color: Colors.red, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     'Delete Account',
                     style: TextStyle(
-                      color: AppColors.primary,
+                      color: Colors.red,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
