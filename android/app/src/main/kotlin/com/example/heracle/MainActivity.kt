@@ -1,4 +1,4 @@
-package com.example.heracle
+package com.heracle.fit
 
 import io.flutter.embedding.android.FlutterActivity
 
