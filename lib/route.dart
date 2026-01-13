@@ -15,7 +15,14 @@ class AppRoutes {
       case home:
         return MaterialPageRoute(builder: (_) => const AppPage());
       case auth:
-        return MaterialPageRoute(builder: (_) => const AuthScreen());
+        return PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const AuthScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 400),
+        );
       case profile:
         final username = settings.arguments as String?;
         return MaterialPageRoute(
