@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCdwnD3mzdfVxsEtLl1nNP_5R3CNCHBtuw',
-    appId: '1:435524159526:android:fe8d2d85353887cb74bee7',
+    appId: '1:435524159526:android:24655c9e638a5e7674bee7',
     messagingSenderId: '435524159526',
     projectId: 'heracle-78c85',
     storageBucket: 'heracle-78c85.firebasestorage.app',
@@ -59,12 +59,13 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA3PyWdb4OsrOqupypXwL3ngFl2BE2KY04',
-    appId: '1:435524159526:ios:01a2d135f7d0076e74bee7',
+    appId: '1:435524159526:ios:21a2ef6d33eeecf374bee7',
     messagingSenderId: '435524159526',
     projectId: 'heracle-78c85',
     storageBucket: 'heracle-78c85.firebasestorage.app',
-    androidClientId: '435524159526-pr61mi3bau3h3bpq79kvod4cch9phb0i.apps.googleusercontent.com',
-    iosClientId: '435524159526-m7rpg583g7uuc6e7qjuiqbhta06fbkd5.apps.googleusercontent.com',
+    androidClientId: '435524159526-c0mkhnappst0h64ovagb77aue6fp9f4g.apps.googleusercontent.com',
+    iosClientId: '435524159526-obm23b0o4a5aek2p4vprud6b7e17idbo.apps.googleusercontent.com',
     iosBundleId: 'com.heracle.fit',
   );
+
 }
