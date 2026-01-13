@@ -550,7 +550,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             },
                           ),
                           Positioned(
-                            top: 12,
+                            top: MediaQuery.of(context).size.height * 0.05,
                             left: 12,
                             child: Material(
                               color: Colors.black38,
@@ -572,7 +572,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           if (_profile!.isViewer)
                             Positioned(
-                              top: 12,
+                              top: MediaQuery.of(context).size.height * 0.05,
                               right: 12,
                               child: Material(
                                 color: Colors.black38,
