@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/profile_repository.dart';
 import '../../home/data/profile_repository.dart' as home_repo;
@@ -17,10 +19,12 @@ import '../../home/widgets/comments_bottom_sheet.dart';
 import '../../home/widgets/likes_bottom_sheet.dart';
 import '../../home/widgets/workout_post_card.dart';
 import '../../home/widgets/nutrition_post_card.dart';
-import '../../workout/data/post_workout_repository.dart'; // Added
-import '../../workout/presentation/tab/post_workout_screen.dart'; // Added
+import '../../workout/data/post_workout_repository.dart';
+import '../../workout/presentation/tab/post_workout_screen.dart';
 import 'edit_profile_page.dart';
 import '../data/profile_session_repository.dart';
+import 'package:heracle/core/network/dio_client.dart';
+import 'settings_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final String? username;
@@ -136,6 +140,17 @@ class _ProfilePageState extends State<ProfilePage> {
     if (result == true) {
       _loadData();
     }
+  }
+
+  void _handleSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SettingsPage(
+        name: _profile?.name,
+        email: FirebaseAuth.instance.currentUser?.email,
+        uid: FirebaseAuth.instance.currentUser?.uid,
+      )),
+    );
   }
 
   // _convertToDiscoverStories removed as we now fetch DiscoverStory directly
@@ -555,6 +570,27 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                           ),
+                          if (_profile!.isViewer)
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: Material(
+                                color: Colors.black38,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: _handleSettings,
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Icon(
+                                      Icons.settings_outlined,
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ProfileTabBar(
@@ -664,4 +700,5 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
+
 
