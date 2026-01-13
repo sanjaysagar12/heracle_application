@@ -11,10 +11,34 @@ import 'core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await dotenv.load(fileName: ".env");
-  await LocalStorageService().init();
-  await NotificationService().init();
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase init error: $e');
+  }
+
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('Dotenv load error: $e');
+    // Continue without .env - use fallback values
+  }
+
+  try {
+    await LocalStorageService().init();
+  } catch (e) {
+    debugPrint('LocalStorage init error: $e');
+  }
+
+  try {
+    await NotificationService().init();
+  } catch (e) {
+    debugPrint('NotificationService init error: $e');
+  }
+
   runApp(const MyApp());
 }
 
