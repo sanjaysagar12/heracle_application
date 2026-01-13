@@ -65,6 +65,6 @@ class DefaultFirebaseOptions {
     storageBucket: 'heracle-78c85.firebasestorage.app',
     androidClientId: '435524159526-pr61mi3bau3h3bpq79kvod4cch9phb0i.apps.googleusercontent.com',
     iosClientId: '435524159526-m7rpg583g7uuc6e7qjuiqbhta06fbkd5.apps.googleusercontent.com',
-    iosBundleId: 'com.example.heracle',
+    iosBundleId: 'com.heracle.fit',
   );
 }
