@@ -14,8 +14,6 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-
-
 class _SplashPageState extends State<SplashPage> {
   final _storage = LocalStorageService();
   final _dio = DioClient().dio;
@@ -23,16 +21,26 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_){
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _initApp();
     });
   }
 
   Future<void> _initApp() async {
     final shouldProceed = await _checkAppVersion();
-    if (shouldProceed) {
-      _checkTokenAndNavigate();
+    if (!shouldProceed) return;
+    final isFirstLaunch = _storage.isFirstLaunch();
+    if (isFirstLaunch) {
+      _goToOnboarding();
+      return;
     }
+
+    _checkTokenAndNavigate();
+  }
+
+  void _goToOnboarding() {
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
   }
 
   Future<bool> _checkAppVersion() async {
@@ -43,17 +51,14 @@ class _SplashPageState extends State<SplashPage> {
 
       final res = await _dio.get(
         '/api/version',
-        queryParameters: {
-          'version': currentVersion,
-          'platform': platform,
-        },
+        queryParameters: {'version': currentVersion, 'platform': platform},
       );
 
       if (res.statusCode == 200) {
         final data = res.data;
         final bool updateRequired = data['updateRequired'] ?? false;
         final bool updateAvailable = data['updateAvailable'] ?? false;
-        
+
         // Only show dialog if update is available or required
         if (updateAvailable || updateRequired) {
           if (!mounted) return false;
@@ -70,41 +75,44 @@ class _SplashPageState extends State<SplashPage> {
 
   Future<bool> _showUpdateDialog(bool isRequired, String? latestVersion) async {
     return await showDialog<bool>(
-      context: context,
-      barrierDismissible: !isRequired,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Update Available'),
-          content: Text(
-            isRequired
-                ? 'A critical update ($latestVersion) is required to continue. Please update the app.'
-                : 'A new version ($latestVersion) is available. Would you like to update?',
-          ),
-          actions: [
-            if (!isRequired)
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true), // Continue without update
-                child: const Text('Later'),
+          context: context,
+          barrierDismissible: !isRequired,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Update Available'),
+              content: Text(
+                isRequired
+                    ? 'A critical update ($latestVersion) is required to continue. Please update the app.'
+                    : 'A new version ($latestVersion) is available. Would you like to update?',
               ),
-            TextButton(
-              onPressed: () {
-                // Here we would open the store url. 
-                // For now, if required, we don't dismiss or we exit. 
-                // Since we don't have url_launcher setup in this task, we just log it.
-                 debugPrint("User clicked Update");
-                 // typically launchUrl(Uri.parse(storeUrl));
-              },
-              child: const Text('Update Now'),
-            ),
-          ],
-        );
-      },
-    ) ?? !isRequired; // If dialog dismissed (and allowed), return true (proceed)
+              actions: [
+                if (!isRequired)
+                  TextButton(
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pop(true), // Continue without update
+                    child: const Text('Later'),
+                  ),
+                TextButton(
+                  onPressed: () {
+                    // Here we would open the store url.
+                    // For now, if required, we don't dismiss or we exit.
+                    // Since we don't have url_launcher setup in this task, we just log it.
+                    debugPrint("User clicked Update");
+                    // typically launchUrl(Uri.parse(storeUrl));
+                  },
+                  child: const Text('Update Now'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        !isRequired; // If dialog dismissed (and allowed), return true (proceed)
   }
 
   Future<void> _checkTokenAndNavigate() async {
     try {
-      final token =  _storage.getAuthToken();
+      final token = _storage.getAuthToken();
 
       if (token == null) {
         _goToAuth();
@@ -143,10 +151,7 @@ class _SplashPageState extends State<SplashPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/images/login_image.jpg',
-            fit: BoxFit.cover,
-          ),
+          Image.asset('assets/images/login_image.jpg', fit: BoxFit.cover),
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(

@@ -74,6 +74,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "435524159526-8237ntbnkch0om9cdkgmfdrh5laj65kc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.heracle.fit",
+            "certificate_hash": "16e65819d7eef6905ab821115f5a2e41bf9d5783"
+          }
+        },
+        {
           "client_id": "435524159526-c0mkhnappst0h64ovagb77aue6fp9f4g.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
