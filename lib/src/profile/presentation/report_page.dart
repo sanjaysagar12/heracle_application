@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/network/dio_client.dart';
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
@@ -15,7 +16,7 @@ class ReportPage extends StatefulWidget {
 
 class _ReportPageState extends State<ReportPage> {
   final TextEditingController _messageController = TextEditingController();
-  final Dio _dio = Dio();
+  final Dio _dio = DioClient().dio; // Use centralized DioClient
   final ImagePicker _picker = ImagePicker();
   List<XFile> _selectedImages = [];
   bool _isLoading = false;
@@ -92,23 +93,17 @@ class _ReportPageState extends State<ReportPage> {
     );
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      final name = user?.displayName ?? 'Unknown User';
-      final email = user?.email ?? 'unknown@example.com';
-      final uid = user?.uid ?? 'unknown_uid';
-
       // Prepare FormData
+      // Backend expects 'issue' (text) and 'files' (file list)
       final formData = FormData.fromMap({
-        "name": name,
-        "email": email,
-        "message": "BUG REPORT from $name ($email):\n\nUID: $uid\n\nIssue:\n$message",
+        "issue": message,
       });
 
-      // Attach images if any
+      // Attach images
       if (_selectedImages.isNotEmpty) {
         for (var image in _selectedImages) {
           formData.files.add(MapEntry(
-            "attachments", // 'files' is a common key, or 'attachments' depending on backend
+            "files", // Backend expects 'files' array/list
             await MultipartFile.fromFile(
               image.path,
               filename: image.name,
@@ -117,13 +112,12 @@ class _ReportPageState extends State<ReportPage> {
         }
       }
 
+      // DioClient handles BaseURL and Auth Token
       final response = await _dio.post(
-        'https://dharshan--smtp-portfolio--9hk6jmk926rf.code.run/api/contact/submit/',
+        '/api/email/report-bug',
         data: formData,
         options: Options(
-          // explicit content-type is usually not needed for FormData as Dio sets it automatically with boundary,
-          // but if your backend strictly expects something specific, adjust here.
-          // headers: { "Content-Type": "multipart/form-data" }, 
+          // Dio automatically sets multipart/form-data with boundary when data is FormData
         ),
       );
 

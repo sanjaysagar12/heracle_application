@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/storage/local_storage.dart';
+import '../../../core/network/dio_client.dart';
 import '../../auth/presentation/auth_screen.dart';
 import '../../auth/presentation/terms_and_conditions_page.dart';
 import 'report_page.dart';
@@ -138,24 +138,12 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      final email = widget.email ?? user?.email ?? 'unknown@example.com';
-      final name = widget.name ?? user?.displayName ?? 'Unknown User';
-      final uid = widget.uid ?? user?.uid;
+      // Use DioClient to handle BaseURL and Authorization automatically
+      final dio = DioClient().dio;
       
-      final dio = Dio();
       final response = await dio.post(
-        'https://dharshan--smtp-portfolio--9hk6jmk926rf.code.run/api/contact/submit/',
-        data: {
-          "name": name,
-          "email": email,
-          "message": "User requested account deletion. UID: $uid",
-        },
-        options: Options(
-          headers: {
-            "Content-Type": "application/json",
-          },
-        ),
+        '/api/email/request-account-deletion',
+        data: {}, // New endpoint expects empty body or no body
       );
 
       // Close loading dialog
@@ -164,7 +152,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         _showSuccessDialog();
       } else {
-        throw Exception('Failed to send request');
+        throw Exception('Failed to send request. Status: ${response.statusCode}');
       }
 
     } catch (e) {
