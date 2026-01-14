@@ -15,19 +15,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingData> _pages = [
     OnboardingData(
-      image: 'assets/images/splash_page/splash1.png',
+      image: 'assets/images/onboarding_img/splash1.png',
       title: 'Snap. Scan. Track.\nShare. Inspire.',
       description:
           "Snap any meal photo and Heracle's AI instantly detects calories, protein, carbs, and fat in under 2 seconds.",
     ),
     OnboardingData(
-      image: 'assets/images/splash_page/splash2.png',
+      image: 'assets/images/onboarding_img/splash2.png',
       title: 'Log. Lift. Post.\nMotivate. Repeat.',
       description:
           "Complete workouts and instantly post summaries or videos to stories. Share your grind with friends.",
     ),
     OnboardingData(
-      image: 'assets/images/splash_page/splash3.png',
+      image: 'assets/images/onboarding_img/splash3.png',
       title: 'Follow. Copy.\nTransform. Excel.',
       description:
           'One-tap copy any workout plan, meal macro, or exercise session. Adapt proven routines to your level.',
