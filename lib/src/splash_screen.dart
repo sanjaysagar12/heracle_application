@@ -147,36 +147,16 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset('assets/images/login_image.jpg', fit: BoxFit.cover),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.6),
-                  Colors.black.withOpacity(0.9),
-                ],
-              ),
-            ),
-          ),
-          const Center(
-            child: Text(
-              'HERACLE',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 48,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 8,
-              ),
-            ),
-          ),
-        ],
+      backgroundColor: AppColors.cocoBlack,
+      body: Center(
+        child: Column(
+          children: [
+            Image.asset('assets/images/splash_img.png'),
+            const Text("heracle.fit",style: TextStyle(color: AppColors.primary,fontSize: 25,fontWeight: FontWeight.w600),)
+          ],
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+        ),
       ),
     );
   }
