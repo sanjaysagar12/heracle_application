@@ -79,7 +79,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               const SizedBox(height: 12),
               const Text(
-                "Are you sure you want to remove your account? This action cannot be undone immediately.",
+                "Are you sure you want to remove your account? You will be redirected to our website to complete the process.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey,
@@ -128,39 +128,24 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _sendDeleteRequest() async {
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      ),
-    );
-
     try {
-      // Use DioClient to handle BaseURL and Authorization automatically
-      final dio = DioClient().dio;
-      
-      final response = await dio.post(
-        '/api/email/request-account-deletion',
-        data: {}, // New endpoint expects empty body or no body
-      );
-
-      // Close loading dialog
-      if (mounted) Navigator.pop(context);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        _showSuccessDialog();
+      final url = Uri.parse('https://heracle.fit/delete-account');
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
-        throw Exception('Failed to send request. Status: ${response.statusCode}');
+        debugPrint("Could not launch $url");
+      }
+      
+      // Logout after opening the link
+      if (mounted) {
+        _handleLogout();
       }
 
     } catch (e) {
-      if (mounted) Navigator.pop(context); // Close loading if error
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to request deletion: $e'),
+            content: Text('Failed to open link: $e'),
             backgroundColor: Colors.red,
           ),
         );
