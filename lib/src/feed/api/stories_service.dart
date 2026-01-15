@@ -332,7 +332,7 @@ class StoriesService {
   /// Get story details (views, likes)
   Future<Map<String, dynamic>> getStoryDetails(String storyId) async {
     try {
-      final response = await _dioClient.dio.get('/api/story/$storyId/details');
+      final response = await _dioClient.dio.get('/api/story/$storyId/engagement');
       
       if (response.statusCode != 200) {
         throw Exception('Failed to fetch story details: ${response.statusCode}');
