@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
 import '../api/auth_service.dart';
 import '../../../route.dart';
@@ -20,11 +21,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
-  
+
   String? _selectedGender;
   String? _selectedGoal;
   String? _originalUsername;
-  
+
   bool _isLoading = true;
   bool _isCheckingUsername = false;
   bool _isUsernameAvailable = true;
@@ -32,7 +33,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
   String? _name;
 
   final List<String> _genders = ['MALE', 'FEMALE', 'OTHER'];
-  final List<String> _goals = ['Hypertrophy', 'Strength', 'Endurance', 'Flexibility', 'Weight Loss'];
+  final List<String> _goals = [
+    'Hypertrophy',
+    'Strength',
+    'Endurance',
+    'Flexibility',
+    'Weight Loss',
+  ];
 
   @override
   void initState() {
@@ -58,15 +65,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
           _name = data['name'];
           _usernameController.text = data['username'] ?? '';
           _originalUsername = data['username'];
-          _ageController.text = (data['age'] as int? ?? 0) <= 0 ? '' : data['age'].toString();
-          _heightController.text = (data['height'] as num? ?? 0) <= 0 ? '' : data['height'].toString();
-          _weightController.text = (data['weight'] as num? ?? 0) <= 0 ? '' : data['weight'].toString();
-          
+          _ageController.text = (data['age'] as int? ?? 0) <= 0
+              ? ''
+              : data['age'].toString();
+          _heightController.text = (data['height'] as num? ?? 0) <= 0
+              ? ''
+              : data['height'].toString();
+          _weightController.text = (data['weight'] as num? ?? 0) <= 0
+              ? ''
+              : data['weight'].toString();
+
           final gender = data['gender'] as String?;
           if (gender != null && _genders.contains(gender.toUpperCase())) {
             _selectedGender = gender.toUpperCase();
           }
-          
+
           final goal = data['goal'] as String?;
           if (goal != null && _goals.contains(goal)) {
             _selectedGoal = goal;
@@ -90,7 +103,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       });
       return;
     }
-    
+
     // Don't check if user hasn't changed their username
     if (value == _originalUsername) {
       setState(() {
@@ -113,27 +126,33 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _submit() async {
-    if (_formKey.currentState!.validate() && (_originalUsername == _usernameController.text || _isUsernameAvailable)) {
+    if (_formKey.currentState!.validate() &&
+        (_originalUsername == _usernameController.text ||
+            _isUsernameAvailable)) {
       try {
         setState(() => _isLoading = true);
-        
+
         final data = {
           "username": _usernameController.text,
           "age": int.tryParse(_ageController.text) ?? 0,
           "height": double.tryParse(_heightController.text) ?? 0,
           "weight": double.tryParse(_weightController.text) ?? 0,
           "gender": _selectedGender ?? "MALE",
-          "goal": _selectedGoal ?? "Hypertrophy"
+          "goal": _selectedGoal ?? "Hypertrophy",
         };
-        
+
         await _authService.updateProfile(data);
-        
+
         if (mounted) {
-           Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update profile: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update profile: $e')),
+          );
           setState(() => _isLoading = false);
         }
       }
@@ -145,13 +164,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (_isLoading && _name == null) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
       );
     }
 
     return Scaffold(
       backgroundColor: Colors.black,
-      resizeToAvoidBottomInset: false, // Keep background stable, content will scroll or adjust
+      resizeToAvoidBottomInset:
+          false, // Keep background stable, content will scroll or adjust
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -160,7 +182,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             left: 0,
             right: 0,
             bottom: 0,
-            height: MediaQuery.of(context).size.height * 0.6, // Occupy bottom 60%
+            height:
+                MediaQuery.of(context).size.height * 0.6, // Occupy bottom 60%
             child: Image.asset(
               'assets/images/login_image.jpg',
               fit: BoxFit.cover,
@@ -182,13 +205,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
             ),
           ),
-          
+
           SafeArea(
             child: Column(
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -198,9 +224,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           // Header
                           RichText(
                             text: TextSpan(
-                              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                               children: [
-                                TextSpan(text: 'Welcome, ', style: TextStyle(color: AppColors.primary)),
+                                TextSpan(
+                                  text: 'Welcome, ',
+                                  style: TextStyle(color: AppColors.primary),
+                                ),
                                 TextSpan(text: _name ?? 'User'),
                               ],
                             ),
@@ -208,7 +241,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           const SizedBox(height: 8),
                           const Text(
                             'Help us personalize your journey by sharing a bit about yourself. This takes just a moment.',
-                            style: TextStyle(color: AppColors.white60, fontSize: 14),
+                            style: TextStyle(
+                              color: AppColors.white60,
+                              fontSize: 14,
+                            ),
                           ),
                           const SizedBox(height: 32),
 
@@ -219,14 +255,35 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 flex: 3,
                                 child: _buildTextField(
                                   controller: _usernameController,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(
+                                      RegExp(r'[a-zA-Z0-9]'),
+                                    ),
+                                  ],
                                   hint: 'name', // Changed from 'username'
                                   onChanged: _onUsernameChanged,
-                                  suffix: _isCheckingUsername 
-                                      ? const SizedBox(width: 16, height: 16, child: CupertinoActivityIndicator(radius: 8, color: AppColors.primary)) 
-                                      : _usernameController.text.isNotEmpty && _usernameController.text != _originalUsername
-                                          ? Icon(_isUsernameAvailable ? Icons.check_circle : Icons.cancel, 
-                                              color: _isUsernameAvailable ? AppColors.primary : Colors.red, size: 16)
-                                          : null,
+                                  suffix: _isCheckingUsername
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CupertinoActivityIndicator(
+                                            radius: 8,
+                                            color: AppColors.primary,
+                                          ),
+                                        )
+                                      : _usernameController.text.isNotEmpty &&
+                                            _usernameController.text !=
+                                                _originalUsername
+                                      ? Icon(
+                                          _isUsernameAvailable
+                                              ? Icons.check_circle
+                                              : Icons.cancel,
+                                          color: _isUsernameAvailable
+                                              ? AppColors.primary
+                                              : Colors.red,
+                                          size: 16,
+                                        )
+                                      : null,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -236,6 +293,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                   controller: _ageController,
                                   hint: 'age',
                                   keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
                                 ),
                               ),
                             ],
@@ -243,16 +303,79 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              Expanded(child: _buildTextField(controller: _weightController, hint: 'weight (kg)', keyboardType: TextInputType.number)),
+                              Expanded(
+                                child: _buildTextField(
+                                  controller: _weightController,
+                                  hint: 'weight (kg)',
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  inputFormatters: [
+                                    TextInputFormatter.withFunction((
+                                      oldValue,
+                                      newValue,
+                                    ) {
+                                      final text = newValue.text;
+
+                                      // Allow empty (for deletion)
+                                      if (text.isEmpty) return newValue;
+
+                                      // Allow only digits and ONE dot
+                                      final regex = RegExp(
+                                        r'^\d+(\.\d{0,1})?$',
+                                      );
+
+                                      if (!regex.hasMatch(text)) {
+                                        return oldValue;
+                                      }
+
+                                      return newValue;
+                                    }),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(width: 12),
-                              Expanded(child: _buildTextField(controller: _heightController, hint: 'height (cm)', keyboardType: TextInputType.number)),
+                              Expanded(
+                                child: _buildTextField(
+                                  controller: _heightController,
+                                  hint: 'height (cm)',
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  inputFormatters: [
+                                    TextInputFormatter.withFunction((
+                                      oldValue,
+                                      newValue,
+                                    ) {
+                                      final text = newValue.text;
+
+                                      // Allow empty (for deletion)
+                                      if (text.isEmpty) return newValue;
+
+                                      // Allow only digits and ONE dot
+                                      final regex = RegExp(
+                                        r'^\d+(\.\d{0,1})?$',
+                                      );
+
+                                      if (!regex.hasMatch(text)) {
+                                        return oldValue;
+                                      }
+
+                                      return newValue;
+                                    }),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: _buildDropdown(
                                   value: _selectedGender,
                                   hint: 'gender',
                                   items: _genders,
-                                  onChanged: (val) => setState(() => _selectedGender = val),
+                                  onChanged: (val) =>
+                                      setState(() => _selectedGender = val),
                                 ),
                               ),
                             ],
@@ -262,7 +385,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             value: _selectedGoal,
                             hint: 'what\'s your goal?',
                             items: _goals,
-                            onChanged: (val) => setState(() => _selectedGoal = val),
+                            onChanged: (val) =>
+                                setState(() => _selectedGoal = val),
                           ),
                         ],
                       ),
@@ -276,15 +400,23 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: (_isLoading && _name != null) ? null : _submit, 
+                      onPressed: (_isLoading && _name != null) ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
                       child: (_isLoading && _name != null)
-                         ? const CircularProgressIndicator(color: Colors.black)
-                         : const Text('Continue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ? const CircularProgressIndicator(color: Colors.black)
+                          : const Text(
+                              'Continue',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -301,6 +433,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     required String hint,
     TextInputType keyboardType = TextInputType.text,
     Function(String)? onChanged,
+    List<TextInputFormatter>? inputFormatters,
     Widget? suffix,
   }) {
     return TextFormField(
@@ -308,6 +441,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       keyboardType: keyboardType,
       onChanged: onChanged,
       style: const TextStyle(color: Colors.white),
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: hint,
         labelStyle: const TextStyle(color: AppColors.white40),
@@ -318,9 +452,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         suffixIcon: suffix,
-        suffixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 24),
+        suffixIconConstraints: const BoxConstraints(
+          minWidth: 40,
+          minHeight: 24,
+        ),
       ),
       validator: (val) {
         if (val == null || val.isEmpty) return '';
@@ -352,14 +492,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
         onChanged: onChanged,
         items: items.map((item) {
-          return DropdownMenuItem(
-            value: item,
-            child: Text(item),
-          );
+          return DropdownMenuItem(value: item, child: Text(item));
         }).toList(),
       ),
     );
