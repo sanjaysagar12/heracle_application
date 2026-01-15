@@ -8,16 +8,14 @@ import '../../../home/widgets/comments_bottom_sheet.dart';
 class MyStoryViewer extends StatefulWidget {
   final StoryUser myStory;
 
-  const MyStoryViewer({
-    super.key,
-    required this.myStory,
-  });
+  const MyStoryViewer({super.key, required this.myStory});
 
   @override
   State<MyStoryViewer> createState() => _MyStoryViewerState();
 }
 
-class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProviderStateMixin {
+class _MyStoryViewerState extends State<MyStoryViewer>
+    with SingleTickerProviderStateMixin {
   late AnimationController _progressController;
   int _currentStoryIndex = 0;
   bool _isContentLoaded = false;
@@ -40,7 +38,7 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
     });
 
     final currentStory = _stories[_currentStoryIndex];
-    
+
     if (currentStory.type == 'image' && currentStory.imageUrl != null) {
       _preloadImage(currentStory.imageUrl!);
     } else {
@@ -54,26 +52,30 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
 
   void _preloadImage(String imageUrl) {
     final ImageProvider imageProvider = NetworkImage(imageUrl);
-    final ImageStream stream = imageProvider.resolve(const ImageConfiguration());
-    
-    stream.addListener(ImageStreamListener(
-      (ImageInfo info, bool synchronousCall) {
-        if (mounted) {
-          setState(() {
-            _isContentLoaded = true;
-          });
-          _startProgress();
-        }
-      },
-      onError: (exception, stackTrace) {
-        if (mounted) {
-          setState(() {
-            _isContentLoaded = true;
-          });
-          _startProgress();
-        }
-      },
-    ));
+    final ImageStream stream = imageProvider.resolve(
+      const ImageConfiguration(),
+    );
+
+    stream.addListener(
+      ImageStreamListener(
+        (ImageInfo info, bool synchronousCall) {
+          if (mounted) {
+            setState(() {
+              _isContentLoaded = true;
+            });
+            _startProgress();
+          }
+        },
+        onError: (exception, stackTrace) {
+          if (mounted) {
+            setState(() {
+              _isContentLoaded = true;
+            });
+            _startProgress();
+          }
+        },
+      ),
+    );
   }
 
   void _startProgress() {
@@ -105,12 +107,11 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
 
   void _showDetailsBottomSheet() {
     _pauseProgress();
-    
+
     final currentStory = _stories[_currentStoryIndex];
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _MyStoryDetailsSheet(
         storyId: currentStory.id,
@@ -123,7 +124,7 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
 
   Future<void> _handlePublic(StoryContent story) async {
     final newStatus = !story.isHighlighted;
-    
+
     // Optimistic update
     setState(() {
       final index = _stories.indexOf(story);
@@ -137,11 +138,15 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(newStatus ? 'Story highlighted' : 'Story removed from highlights'),
+            content: Text(
+              newStatus ? 'Story highlighted' : 'Story removed from highlights',
+            ),
             backgroundColor: AppColors.primary,
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -168,12 +173,21 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.greyDark,
-        title: const Text('Delete Story?', style: TextStyle(color: AppColors.pureWhite)),
-        content: const Text('Are you sure you want to delete this story?', style: TextStyle(color: AppColors.white60)),
+        title: const Text(
+          'Delete Story?',
+          style: TextStyle(color: AppColors.pureWhite),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this story?',
+          style: TextStyle(color: AppColors.white60),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.white60)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.white60),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -188,24 +202,24 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
         await _storiesRepository.deleteStory(story.id);
         if (mounted) {
           setState(() {
-             _stories.removeAt(_currentStoryIndex);
+            _stories.removeAt(_currentStoryIndex);
           });
-          
+
           if (_stories.isEmpty) {
-             Navigator.pop(context);
+            Navigator.pop(context);
           } else {
-             if (_currentStoryIndex >= _stories.length) {
-               _currentStoryIndex = _stories.length - 1;
-             }
-             _loadCurrentStory();
+            if (_currentStoryIndex >= _stories.length) {
+              _currentStoryIndex = _stories.length - 1;
+            }
+            _loadCurrentStory();
           }
         }
       } catch (e) {
         _resumeProgress();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete story: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to delete story: $e')));
         }
       }
     } else {
@@ -247,7 +261,8 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
       backgroundColor: AppColors.black,
       body: GestureDetector(
         onVerticalDragEnd: (details) {
-          if (details.primaryVelocity! < -500) { // Swipe Up
+          if (details.primaryVelocity! < -500) {
+            // Swipe Up
             _showDetailsBottomSheet();
           }
         },
@@ -275,14 +290,17 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
           children: [
             // Story Content
             Center(
-              child: currentStory.type == 'image' && currentStory.imageUrl != null
+              child:
+                  currentStory.type == 'image' && currentStory.imageUrl != null
                   ? Image.network(
                       currentStory.imageUrl!,
                       fit: BoxFit.contain,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
                         return const Center(
-                          child: CircularProgressIndicator(color: AppColors.primary),
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
                         );
                       },
                       errorBuilder: (context, error, stackTrace) {
@@ -292,7 +310,11 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.error, color: AppColors.pureWhite, size: 50),
+                                Icon(
+                                  Icons.error,
+                                  color: AppColors.pureWhite,
+                                  size: 50,
+                                ),
                                 SizedBox(height: 16),
                                 Text(
                                   'Failed to load image',
@@ -311,7 +333,10 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
                           padding: const EdgeInsets.all(24.0),
                           child: Text(
                             currentStory.text ?? '',
-                            style: const TextStyle(fontSize: 24, color: AppColors.black),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              color: AppColors.black,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -322,9 +347,7 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
             // Loading Indicator
             if (!_isContentLoaded)
               const Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.primary,
-                ),
+                child: CircularProgressIndicator(color: AppColors.primary),
               ),
 
             // Progress bars
@@ -355,7 +378,9 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
                             child: LinearProgressIndicator(
                               value: value,
                               backgroundColor: AppColors.white40,
-                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.pureWhite),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppColors.pureWhite,
+                              ),
                               minHeight: 2,
                             ),
                           );
@@ -410,13 +435,19 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
               right: 16,
               child: Column(
                 children: [
-                  const Icon(Icons.keyboard_arrow_up, color: AppColors.pureWhite),
-                  const Text('Swipe up for details', style: TextStyle(color: AppColors.pureWhite, fontSize: 12)),
+                  const Icon(
+                    Icons.keyboard_arrow_up,
+                    color: AppColors.pureWhite,
+                  ),
+                  const Text(
+                    'Swipe up for details',
+                    style: TextStyle(color: AppColors.pureWhite, fontSize: 12),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                       GestureDetector(
+                      GestureDetector(
                         onTap: () => _handlePublic(currentStory),
                         child: Container(
                           width: 40,
@@ -425,12 +456,16 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
                             color: Colors.black.withOpacity(0.5),
                             shape: BoxShape.circle,
                           ),
-                          padding: const EdgeInsets.all(8), // Add padding for SVG
+                          padding: const EdgeInsets.all(
+                            8,
+                          ), // Add padding for SVG
                           child: SvgPicture.asset(
                             'assets/icons/feed.svg',
                             colorFilter: ColorFilter.mode(
-                              currentStory.isHighlighted ? AppColors.primary : AppColors.pureWhite, 
-                              BlendMode.srcIn
+                              currentStory.isHighlighted
+                                  ? AppColors.primary
+                                  : AppColors.pureWhite,
+                              BlendMode.srcIn,
                             ),
                           ),
                         ),
@@ -445,7 +480,11 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
                             color: Colors.black.withOpacity(0.5),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.delete, color: Colors.red, size: 24),
+                          child: const Icon(
+                            Icons.delete,
+                            color: Colors.red,
+                            size: 24,
+                          ),
                         ),
                       ),
                     ],
@@ -470,7 +509,10 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
         children: [
           Icon(icon, color: AppColors.pureWhite, size: 16),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(color: AppColors.pureWhite, fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(color: AppColors.pureWhite, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -489,7 +531,10 @@ class _MyStoryViewerState extends State<MyStoryViewer> with SingleTickerProvider
           children: [
             Icon(icon, color: AppColors.pureWhite, size: 16),
             const SizedBox(width: 6),
-            Text(label, style: const TextStyle(color: AppColors.pureWhite, fontSize: 12)),
+            Text(
+              label,
+              style: const TextStyle(color: AppColors.pureWhite, fontSize: 12),
+            ),
           ],
         ),
       ),
@@ -507,7 +552,8 @@ class _MyStoryDetailsSheet extends StatefulWidget {
   State<_MyStoryDetailsSheet> createState() => _MyStoryDetailsSheetState();
 }
 
-class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet> with SingleTickerProviderStateMixin {
+class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet>
+    with SingleTickerProviderStateMixin {
   StoryDetails? _details;
   List<Comment> _comments = [];
   bool _isLoading = true;
@@ -532,7 +578,7 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet> with SingleT
         widget.repository.getStoryDetails(widget.storyId),
         widget.repository.getStoryComments(widget.storyId),
       ]);
-      
+
       if (mounted) {
         setState(() {
           _details = results[0] as StoryDetails;
@@ -577,42 +623,58 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet> with SingleT
             ],
           ),
           Expanded(
-            child: _isLoading 
-              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-              : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildViewersList(),
-                    _buildLikesList(),
-                    CommentsBottomSheet(
-                      comments: _comments,
-                      isLoading: _isLoading,
-                      onAddComment: (text) async {
-                         await widget.repository.commentOnStory(widget.storyId, text);
-                      },
-                      onAddReply: (commentId, text) async {
-                        await widget.repository.replyToComment(commentId, text);
-                      },
-                      onOptimisticCommentAdd: (comment) {
-                        setState(() {
-                          _comments.add(comment);
-                        });
-                      },
-                      onOptimisticReplyAdd: (commentId, reply) {
-                        setState(() {
-                          _comments = _addReplyToCommentLocal(_comments, commentId, reply);
-                        });
-                      },
-                    ),
-                  ],
-                ),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  )
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildViewersList(),
+                      _buildLikesList(),
+                      CommentsBottomSheet(
+                        comments: _comments,
+                        isLoading: _isLoading,
+                        onAddComment: (text) async {
+                          await widget.repository.commentOnStory(
+                            widget.storyId,
+                            text,
+                          );
+                        },
+                        onAddReply: (commentId, text) async {
+                          await widget.repository.replyToComment(
+                            commentId,
+                            text,
+                          );
+                        },
+                        onOptimisticCommentAdd: (comment) {
+                          setState(() {
+                            _comments.add(comment);
+                          });
+                        },
+                        onOptimisticReplyAdd: (commentId, reply) {
+                          setState(() {
+                            _comments = _addReplyToCommentLocal(
+                              _comments,
+                              commentId,
+                              reply,
+                            );
+                          });
+                        },
+                      ),
+                    ],
+                  ),
           ),
         ],
       ),
     );
   }
 
-  List<Comment> _addReplyToCommentLocal(List<Comment> comments, String commentId, Comment newReply) {
+  List<Comment> _addReplyToCommentLocal(
+    List<Comment> comments,
+    String commentId,
+    Comment newReply,
+  ) {
     return comments.map((comment) {
       if (comment.id == commentId) {
         return comment.copyWithReply(newReply);
@@ -625,7 +687,11 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet> with SingleT
           profileImage: comment.profileImage,
           timeAgo: comment.timeAgo,
           content: comment.content,
-          replies: _addReplyToCommentLocal(comment.replies, commentId, newReply),
+          replies: _addReplyToCommentLocal(
+            comment.replies,
+            commentId,
+            newReply,
+          ),
         );
       }
       return comment;
@@ -634,7 +700,9 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet> with SingleT
 
   Widget _buildViewersList() {
     if (_details?.viewers.isEmpty ?? true) {
-      return const Center(child: Text('No views yet', style: TextStyle(color: AppColors.white60)));
+      return const Center(
+        child: Text('No views yet', style: TextStyle(color: AppColors.white60)),
+      );
     }
     return ListView.builder(
       itemCount: _details!.viewers.length,
@@ -642,11 +710,19 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet> with SingleT
         final viewer = _details!.viewers[index];
         return ListTile(
           leading: CircleAvatar(
-            backgroundImage: viewer.avatarUrl != null ? NetworkImage(viewer.avatarUrl!) : null,
+            backgroundImage: viewer.avatarUrl != null
+                ? NetworkImage(viewer.avatarUrl!)
+                : null,
             child: viewer.avatarUrl == null ? const Icon(Icons.person) : null,
           ),
-          title: Text(viewer.username, style: const TextStyle(color: AppColors.pureWhite)),
-          subtitle: Text(_formatDate(viewer.viewedAt), style: const TextStyle(color: AppColors.white60, fontSize: 12)),
+          title: Text(
+            viewer.username,
+            style: const TextStyle(color: AppColors.pureWhite),
+          ),
+          subtitle: Text(
+            _formatDate(viewer.viewedAt),
+            style: const TextStyle(color: AppColors.white60, fontSize: 12),
+          ),
         );
       },
     );
@@ -654,7 +730,9 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet> with SingleT
 
   Widget _buildLikesList() {
     if (_details?.likes.isEmpty ?? true) {
-      return const Center(child: Text('No likes yet', style: TextStyle(color: AppColors.white60)));
+      return const Center(
+        child: Text('No likes yet', style: TextStyle(color: AppColors.white60)),
+      );
     }
     return ListView.builder(
       itemCount: _details!.likes.length,
@@ -662,10 +740,15 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet> with SingleT
         final liker = _details!.likes[index];
         return ListTile(
           leading: CircleAvatar(
-            backgroundImage: liker.avatarUrl != null ? NetworkImage(liker.avatarUrl!) : null,
+            backgroundImage: liker.avatarUrl != null
+                ? NetworkImage(liker.avatarUrl!)
+                : null,
             child: liker.avatarUrl == null ? const Icon(Icons.person) : null,
           ),
-          title: Text(liker.username, style: const TextStyle(color: AppColors.pureWhite)),
+          title: Text(
+            liker.username,
+            style: const TextStyle(color: AppColors.pureWhite),
+          ),
           trailing: const Icon(Icons.favorite, color: Colors.red, size: 20),
         );
       },

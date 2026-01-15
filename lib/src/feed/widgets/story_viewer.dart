@@ -26,7 +26,8 @@ class StoryViewer extends StatefulWidget {
   State<StoryViewer> createState() => _StoryViewerState();
 }
 
-class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin {
+class _StoryViewerState extends State<StoryViewer>
+    with TickerProviderStateMixin {
   PageController? _pageController;
   int _currentUserIndex = 0;
   int _currentStoryIndex = 0;
@@ -47,10 +48,10 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     _localStories = List.from(widget.stories);
     _currentUserIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
-    
+
     // Add listener to pause story when typing
     _commentFocus.addListener(_onFocusChange);
-    
+
     _setupProgressController();
     _startCurrentStory();
   }
@@ -90,7 +91,6 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _StoryCommentsSheetWrapper(
         storyId: currentStory.id,
@@ -116,7 +116,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _progressController!, curve: Curves.linear),
     );
-    
+
     _progressController!.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
         _nextStory();
@@ -129,7 +129,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
       _isContentLoaded = false;
       _currentStoryIndex = 0;
     });
-    
+
     _progressController?.reset();
     final currentUser = _localStories[_currentUserIndex];
     if (currentUser.stories.isNotEmpty) {
@@ -179,32 +179,36 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     }
 
     final ImageProvider imageProvider = NetworkImage(imageUrl);
-    final ImageStream stream = imageProvider.resolve(const ImageConfiguration());
-    
-    stream.addListener(ImageStreamListener(
-      (ImageInfo info, bool synchronousCall) {
-        if (mounted) {
-          setState(() {
-            _isContentLoaded = true;
-          });
-          final currentUser = _localStories[_currentUserIndex];
-          if (currentUser.stories.isNotEmpty) {
-            _startTimer(currentUser.stories[_currentStoryIndex]);
+    final ImageStream stream = imageProvider.resolve(
+      const ImageConfiguration(),
+    );
+
+    stream.addListener(
+      ImageStreamListener(
+        (ImageInfo info, bool synchronousCall) {
+          if (mounted) {
+            setState(() {
+              _isContentLoaded = true;
+            });
+            final currentUser = _localStories[_currentUserIndex];
+            if (currentUser.stories.isNotEmpty) {
+              _startTimer(currentUser.stories[_currentStoryIndex]);
+            }
           }
-        }
-      },
-      onError: (exception, stackTrace) {
-        if (mounted) {
-          setState(() {
-            _isContentLoaded = true;
-          });
-          final currentUser = _localStories[_currentUserIndex];
-          if (currentUser.stories.isNotEmpty) {
-            _startTimer(currentUser.stories[_currentStoryIndex]);
+        },
+        onError: (exception, stackTrace) {
+          if (mounted) {
+            setState(() {
+              _isContentLoaded = true;
+            });
+            final currentUser = _localStories[_currentUserIndex];
+            if (currentUser.stories.isNotEmpty) {
+              _startTimer(currentUser.stories[_currentStoryIndex]);
+            }
           }
-        }
-      },
-    ));
+        },
+      ),
+    );
   }
 
   void _initializeVideoPlayer(String videoUrl) async {
@@ -222,7 +226,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     // Use networkUrl instead of network
     final controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
     _videoController = controller;
-    
+
     try {
       await controller.initialize();
       // Check if mounted and if the controller is still the current one (avoid race conditions)
@@ -230,10 +234,10 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
         setState(() {
           _isContentLoaded = true;
         });
-        
+
         controller.addListener(_videoProgressListener);
         await controller.play();
-        
+
         final currentUser = _localStories[_currentUserIndex];
         if (currentUser.stories.isNotEmpty) {
           _startTimer(currentUser.stories[_currentStoryIndex]);
@@ -253,23 +257,22 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   }
 
   void _videoProgressListener() {
-    if (_videoController != null && 
-        _videoController!.value.isInitialized && 
+    if (_videoController != null &&
+        _videoController!.value.isInitialized &&
         _isVideoProgressTracking &&
         mounted) {
-      
       final position = _videoController!.value.position;
       final duration = _videoController!.value.duration;
-      
+
       if (duration.inMilliseconds > 0) {
         final progress = position.inMilliseconds / duration.inMilliseconds;
         _progressController?.value = progress.clamp(0.0, 1.0);
-        
+
         if (progress >= 1.0) {
           _nextStory();
         }
       }
-      
+
       if (_videoController!.value.hasError) {
         _nextStory();
       }
@@ -283,7 +286,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     _storiesRepository.viewStory(story.id).catchError((e) {
       debugPrint('Error recording story view: $e');
     });
-    
+
     if (story.type == 'video' && _videoController != null) {
       _storyDuration = _videoController!.value.duration;
       _isVideoProgressTracking = true;
@@ -300,9 +303,9 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     _progressController?.reset();
     _videoController?.pause();
     _isVideoProgressTracking = false;
-    
+
     final currentUser = _localStories[_currentUserIndex];
-    
+
     if (_currentStoryIndex < currentUser.stories.length - 1) {
       setState(() {
         _currentStoryIndex++;
@@ -318,7 +321,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     _progressController?.reset();
     _videoController?.pause();
     _isVideoProgressTracking = false;
-    
+
     if (_currentStoryIndex > 0) {
       setState(() {
         _currentStoryIndex--;
@@ -333,7 +336,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
 
   void _nextUser() {
     _markCurrentUserAsViewed();
-    
+
     if (_currentUserIndex < widget.stories.length - 1) {
       setState(() {
         _currentUserIndex++;
@@ -370,24 +373,21 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     final currentUser = _localStories[_currentUserIndex];
     if (currentUser.stories.isNotEmpty) {
       final currentStory = currentUser.stories[_currentStoryIndex];
-      
+
       setState(() {
         final updatedStories = currentUser.stories.map((story) {
           if (story.id == currentStory.id) {
             final newIsLiked = !story.isLiked;
             final newLikes = newIsLiked ? story.likes + 1 : story.likes - 1;
-            return story.copyWith(
-              isLiked: newIsLiked,
-              likes: newLikes,
-            );
+            return story.copyWith(isLiked: newIsLiked, likes: newLikes);
           }
           return story;
         }).toList();
-        
+
         final updatedUser = currentUser.copyWith(stories: updatedStories);
         _localStories[_currentUserIndex] = updatedUser;
       });
-      
+
       widget.onStoryLiked?.call(currentStory.id);
     }
   }
@@ -398,12 +398,12 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
       final currentUser = _localStories[_currentUserIndex];
       if (currentUser.stories.isNotEmpty) {
         final currentStory = currentUser.stories[_currentStoryIndex];
-        
+
         widget.onStoryComment?.call(currentStory.id, comment);
-        
+
         _commentController.clear();
         _commentFocus.unfocus();
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Comment sent!'),
@@ -422,10 +422,9 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
       _progressController?.stop();
     }
 
-    Navigator.of(context).pushNamed(
-      AppRoutes.profile,
-      arguments: username,
-    ).then((_) {
+    Navigator.of(
+      context,
+    ).pushNamed(AppRoutes.profile, arguments: username).then((_) {
       if (mounted && _isContentLoaded) {
         if (_isVideoProgressTracking) {
           _videoController?.play();
@@ -452,7 +451,8 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      resizeToAvoidBottomInset: false, // Prevent image resizing when keyboard opens
+      resizeToAvoidBottomInset:
+          false, // Prevent image resizing when keyboard opens
       body: PageView.builder(
         controller: _pageController,
         itemCount: _localStories.length,
@@ -477,7 +477,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
           }
 
           final currentStory = user.stories[_currentStoryIndex];
-          
+
           return GestureDetector(
             onTapUp: (details) {
               // If keyboard is open, close it on tap and do nothing else
@@ -489,7 +489,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
               final screenHeight = MediaQuery.of(context).size.height;
               // Ignore taps in the bottom area (input box area)
               if (details.globalPosition.dy > screenHeight - 120) return;
-              
+
               final screenWidth = MediaQuery.of(context).size.width;
               if (details.globalPosition.dx < screenWidth * 0.3) {
                 _previousStory();
@@ -516,14 +516,12 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
             child: Stack(
               children: [
                 _buildStoryContent(currentStory),
-                
+
                 if (!_isContentLoaded)
                   const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primary,
-                    ),
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   ),
-                
+
                 Positioned(
                   top: 60,
                   left: 16,
@@ -541,32 +539,42 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                           ),
                           child: storyIndex == _currentStoryIndex
                               ? _isVideoProgressTracking
-                                  ? ValueListenableBuilder<VideoPlayerValue>(
-                                      valueListenable: _videoController!,
-                                      builder: (context, value, child) {
-                                        double progress = 0.0;
-                                        if (value.isInitialized && value.duration.inMilliseconds > 0) {
-                                          progress = value.position.inMilliseconds / value.duration.inMilliseconds;
-                                        }
-                                        return LinearProgressIndicator(
-                                          value: progress.clamp(0.0, 1.0),
-                                          backgroundColor: Colors.transparent,
-                                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                                          minHeight: 3,
-                                        );
-                                      },
-                                    )
-                                  : AnimatedBuilder(
-                                      animation: _progressAnimation!,
-                                      builder: (context, child) {
-                                        return LinearProgressIndicator(
-                                          value: _progressAnimation!.value,
-                                          backgroundColor: Colors.transparent,
-                                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                                          minHeight: 3,
-                                        );
-                                      },
-                                    )
+                                    ? ValueListenableBuilder<VideoPlayerValue>(
+                                        valueListenable: _videoController!,
+                                        builder: (context, value, child) {
+                                          double progress = 0.0;
+                                          if (value.isInitialized &&
+                                              value.duration.inMilliseconds >
+                                                  0) {
+                                            progress =
+                                                value.position.inMilliseconds /
+                                                value.duration.inMilliseconds;
+                                          }
+                                          return LinearProgressIndicator(
+                                            value: progress.clamp(0.0, 1.0),
+                                            backgroundColor: Colors.transparent,
+                                            valueColor:
+                                                const AlwaysStoppedAnimation<
+                                                  Color
+                                                >(Colors.white),
+                                            minHeight: 3,
+                                          );
+                                        },
+                                      )
+                                    : AnimatedBuilder(
+                                        animation: _progressAnimation!,
+                                        builder: (context, child) {
+                                          return LinearProgressIndicator(
+                                            value: _progressAnimation!.value,
+                                            backgroundColor: Colors.transparent,
+                                            valueColor:
+                                                const AlwaysStoppedAnimation<
+                                                  Color
+                                                >(Colors.white),
+                                            minHeight: 3,
+                                          );
+                                        },
+                                      )
                               : Container(
                                   decoration: BoxDecoration(
                                     color: storyIndex < _currentStoryIndex
@@ -580,7 +588,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                     ),
                   ),
                 ),
-                
+
                 Positioned(
                   top: 80,
                   left: 16,
@@ -590,12 +598,16 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                       children: [
                         CircleAvatar(
                           radius: 20,
-                          backgroundImage: _isValidUrl(user.profileImage) 
+                          backgroundImage: _isValidUrl(user.profileImage)
                               ? NetworkImage(user.profileImage)
                               : null,
                           backgroundColor: Colors.grey[600],
-                          child: !_isValidUrl(user.profileImage) 
-                              ? const Icon(Icons.person, color: Colors.white, size: 20)
+                          child: !_isValidUrl(user.profileImage)
+                              ? const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 20,
+                                )
                               : null,
                         ),
                         const SizedBox(width: 12),
@@ -613,11 +625,17 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                                 ),
                               ),
                             Text(
-                              user.username.startsWith('@') ? user.username : '@${user.username}',
+                              user.username.startsWith('@')
+                                  ? user.username
+                                  : '@${user.username}',
                               style: TextStyle(
-                                color: user.name.isNotEmpty ? Colors.white70 : Colors.white,
+                                color: user.name.isNotEmpty
+                                    ? Colors.white70
+                                    : Colors.white,
                                 fontSize: user.name.isNotEmpty ? 13 : 16,
-                                fontWeight: user.name.isNotEmpty ? FontWeight.normal : FontWeight.w600,
+                                fontWeight: user.name.isNotEmpty
+                                    ? FontWeight.normal
+                                    : FontWeight.w600,
                               ),
                             ),
                           ],
@@ -626,7 +644,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                     ),
                   ),
                 ),
-                
+
                 Positioned(
                   top: 60,
                   right: 16,
@@ -639,9 +657,11 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                     ),
                   ),
                 ),
-                
+
                 Positioned(
-                  bottom: MediaQuery.of(context).viewInsets.bottom, // Move up with keyboard
+                  bottom: MediaQuery.of(
+                    context,
+                  ).viewInsets.bottom, // Move up with keyboard
                   left: 0,
                   right: 0,
                   child: Container(
@@ -658,7 +678,8 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                     padding: EdgeInsets.only(
                       left: 20,
                       right: 20,
-                      bottom: 16, // Fixed bottom padding, viewInsets handles keyboard
+                      bottom:
+                          16, // Fixed bottom padding, viewInsets handles keyboard
                       top: 20,
                     ),
                     child: Row(
@@ -689,7 +710,8 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 8,
-                                  vertical: 12, // Adjusted for vertical alignment with icon
+                                  vertical:
+                                      12, // Adjusted for vertical alignment with icon
                                 ),
                                 suffixIcon: _commentController.text.isNotEmpty
                                     ? IconButton(
@@ -710,7 +732,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                             ),
                           ),
                         ),
-                        
+
                         if (!_commentFocus.hasFocus) ...[
                           const SizedBox(width: 12),
 
@@ -732,9 +754,9 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(width: 8),
-                          
+
                           GestureDetector(
                             onTap: _toggleLike,
                             child: AnimatedContainer(
@@ -751,9 +773,13 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                                 child: AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 200),
                                   child: Icon(
-                                    currentStory.isLiked ? Icons.favorite : Icons.favorite_border,
+                                    currentStory.isLiked
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
                                     key: ValueKey(currentStory.isLiked),
-                                    color: currentStory.isLiked ? Colors.red : Colors.white,
+                                    color: currentStory.isLiked
+                                        ? Colors.red
+                                        : Colors.white,
                                     size: 22,
                                   ),
                                 ),
@@ -788,7 +814,9 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return const Center(
-                        child: CircularProgressIndicator(color: AppColors.primary),
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
                       );
                     },
                     errorBuilder: (context, error, stackTrace) {
@@ -818,7 +846,11 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.image_not_supported, color: Colors.white, size: 50),
+                      Icon(
+                        Icons.image_not_supported,
+                        color: Colors.white,
+                        size: 50,
+                      ),
                       SizedBox(height: 16),
                       Text(
                         'Invalid image URL',
@@ -828,7 +860,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                   ),
                 ),
               );
-              
+
       case 'video':
         if (!_isValidUrl(story.imageUrl)) {
           return Container(
@@ -848,7 +880,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
             ),
           );
         }
-        
+
         return _videoController != null && _videoController!.value.isInitialized
             ? Container(
                 width: double.infinity,
@@ -876,14 +908,16 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                   child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               );
-              
+
       case 'text':
       default:
         return Container(
           width: double.infinity,
           height: double.infinity,
           color: story.backgroundColor != null
-              ? Color(int.parse(story.backgroundColor!.replaceFirst('#', '0xFF')))
+              ? Color(
+                  int.parse(story.backgroundColor!.replaceFirst('#', '0xFF')),
+                )
               : AppColors.primary,
           child: Center(
             child: Padding(
@@ -908,13 +942,18 @@ class _StoryCommentsSheetWrapper extends StatefulWidget {
   final String storyId;
   final StoriesRepository repository;
 
-  const _StoryCommentsSheetWrapper({required this.storyId, required this.repository});
+  const _StoryCommentsSheetWrapper({
+    required this.storyId,
+    required this.repository,
+  });
 
   @override
-  State<_StoryCommentsSheetWrapper> createState() => _StoryCommentsSheetWrapperState();
+  State<_StoryCommentsSheetWrapper> createState() =>
+      _StoryCommentsSheetWrapperState();
 }
 
-class _StoryCommentsSheetWrapperState extends State<_StoryCommentsSheetWrapper> {
+class _StoryCommentsSheetWrapperState
+    extends State<_StoryCommentsSheetWrapper> {
   List<Comment> _comments = [];
   bool _isLoading = true;
 
@@ -948,7 +987,7 @@ class _StoryCommentsSheetWrapperState extends State<_StoryCommentsSheetWrapper> 
       comments: _comments,
       isLoading: _isLoading,
       onAddComment: (text) async {
-         await widget.repository.commentOnStory(widget.storyId, text);
+        await widget.repository.commentOnStory(widget.storyId, text);
       },
       onAddReply: (commentId, text) async {
         await widget.repository.replyToComment(commentId, text);
@@ -966,7 +1005,11 @@ class _StoryCommentsSheetWrapperState extends State<_StoryCommentsSheetWrapper> 
     );
   }
 
-  List<Comment> _addReplyToCommentLocal(List<Comment> comments, String commentId, Comment newReply) {
+  List<Comment> _addReplyToCommentLocal(
+    List<Comment> comments,
+    String commentId,
+    Comment newReply,
+  ) {
     return comments.map((comment) {
       if (comment.id == commentId) {
         return comment.copyWithReply(newReply);
@@ -979,7 +1022,11 @@ class _StoryCommentsSheetWrapperState extends State<_StoryCommentsSheetWrapper> 
           profileImage: comment.profileImage,
           timeAgo: comment.timeAgo,
           content: comment.content,
-          replies: _addReplyToCommentLocal(comment.replies, commentId, newReply),
+          replies: _addReplyToCommentLocal(
+            comment.replies,
+            commentId,
+            newReply,
+          ),
         );
       }
       return comment;

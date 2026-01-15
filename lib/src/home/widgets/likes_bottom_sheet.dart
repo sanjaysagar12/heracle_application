@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
+import '../providers/feed_provider.dart';
 import 'likes_skeleton.dart';
 
 class LikesBottomSheet extends StatefulWidget {
@@ -9,11 +11,13 @@ class LikesBottomSheet extends StatefulWidget {
   // one should be meaningful for the UI.
   final String? postId;
   final List<LikedByUser>? likedByUsers;
+  final bool isMeal;
 
   const LikesBottomSheet({
     super.key,
     this.postId,
     this.likedByUsers,
+    this.isMeal = false,
   });
 
   @override
@@ -33,7 +37,9 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
     super.initState();
     // Initialize following status from the user data (if any provided)
     _likes = widget.likedByUsers ?? [];
-    _followingStatus = { for (var user in _likes) user.username: user.isFollowing };
+    _followingStatus = {
+      for (var user in _likes) user.username: user.isFollowing,
+    };
 
     // Show skeleton immediately. If a postId is provided, fetch from backend;
     // otherwise display the provided likedByUsers immediately.
@@ -49,10 +55,19 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
     setState(() => _isLoading = true);
     try {
       final repo = MutualFeedRepository();
-      final likes = await repo.getPostLikes(widget.postId!);
+      final likes = await repo.getPostLikes(
+        widget.postId!,
+        isMeal: widget.isMeal,
+      );
+
+      // Sync fresh likes data to FeedProvider so the feed card updates
+      if (mounted) {
+        context.read<FeedProvider>().updatePostLikes(widget.postId!, likes);
+      }
+
       setState(() {
         _likes = likes;
-        _followingStatus = { for (var u in _likes) u.username: u.isFollowing };
+        _followingStatus = {for (var u in _likes) u.username: u.isFollowing};
         _isLoading = false;
       });
     } catch (e) {
@@ -114,27 +129,24 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
             // show likes-specific skeleton while likes are loading
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: SizedBox(
-                height: 160,
-                child: LikesSkeleton(),
-              ),
+              child: SizedBox(height: 160, child: LikesSkeleton()),
             )
           else if (_likes.isEmpty)
             const Padding(
               padding: EdgeInsets.all(40),
               child: Text(
                 'No likes yet',
-                style: TextStyle(
-                  color: AppColors.white60,
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: AppColors.white60, fontSize: 16),
               ),
             )
           else
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 itemCount: _likes.length,
                 itemBuilder: (context, index) {
                   return _buildUserItem(_likes[index]);
@@ -194,7 +206,9 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
                   ),
                 ),
                 Text(
-                  user.username.startsWith('@') ? user.username : '@${user.username}',
+                  user.username.startsWith('@')
+                      ? user.username
+                      : '@${user.username}',
                   style: const TextStyle(
                     color: AppColors.white60,
                     fontSize: 14,
@@ -222,7 +236,9 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
       decoration: BoxDecoration(
         color: isFollowing ? Colors.transparent : AppColors.primary,
         borderRadius: BorderRadius.circular(20),
-        border: isFollowing ? Border.all(color: AppColors.white40, width: 1.5) : null,
+        border: isFollowing
+            ? Border.all(color: AppColors.white40, width: 1.5)
+            : null,
       ),
       child: Text(
         isFollowing ? 'Following' : 'Follow',

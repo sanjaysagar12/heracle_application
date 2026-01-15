@@ -178,40 +178,34 @@ class _HomePageState extends State<HomePage> {
     );
     final isMeal = post is NutritionPost;
 
+    // Start loading comments immediately
+    feedProvider.loadComments(postId, isMeal: isMeal);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setModalState) {
-          // Watch provider for comments updates
-          final comments = feedProvider.getComments(postId);
-          final isLoading = feedProvider.isCommentsLoading(postId);
+      builder: (sheetContext) => Consumer<FeedProvider>(
+        builder: (sheetContext, feedProv, child) {
+          final comments = feedProv.getComments(postId);
+          final isLoading = feedProv.isCommentsLoading(postId);
           final profile = context.read<UserProfileProvider>().profile;
-
-          // Load comments if not loaded
-          if (comments.isEmpty && !isLoading) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              feedProvider.loadComments(postId, isMeal: isMeal);
-            });
-          }
 
           return CommentsBottomSheet(
             comments: comments,
             isLoading: isLoading,
             onAddComment: (content) async {
               if (profile != null) {
-                await feedProvider.addComment(
+                await feedProv.addComment(
                   postId,
                   content,
                   profile,
                   isMeal: isMeal,
                 );
               }
-              setModalState(() {});
             },
             onAddReply: (commentId, content) async {
               if (profile != null) {
-                await feedProvider.addReply(
+                await feedProv.addReply(
                   postId,
                   commentId,
                   content,
@@ -219,14 +213,9 @@ class _HomePageState extends State<HomePage> {
                   isMeal: isMeal,
                 );
               }
-              setModalState(() {});
             },
-            onOptimisticCommentAdd: (comment) {
-              setModalState(() {});
-            },
-            onOptimisticReplyAdd: (commentId, reply) {
-              setModalState(() {});
-            },
+            onOptimisticCommentAdd: (comment) {},
+            onOptimisticReplyAdd: (commentId, reply) {},
             currentUserProfile: profile,
           );
         },
@@ -235,6 +224,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _handleLikesClick(String postId) {
+    final feedProvider = context.read<FeedProvider>();
+    final post = feedProvider.posts.firstWhere(
+      (p) => p.id == postId,
+      orElse: () => throw Exception('Post not found'),
+    );
+    final isMeal = post is NutritionPost;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -244,7 +240,7 @@ class _HomePageState extends State<HomePage> {
         minChildSize: 0.4,
         maxChildSize: 0.9,
         builder: (context, scrollController) =>
-            LikesBottomSheet(postId: postId),
+            LikesBottomSheet(postId: postId, isMeal: isMeal),
       ),
     );
   }
