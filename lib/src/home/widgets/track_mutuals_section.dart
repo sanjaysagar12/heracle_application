@@ -74,7 +74,10 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6), // Reduced from horizontal: 20, vertical: 8
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 6,
+        ), // Reduced from horizontal: 20, vertical: 8
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(16), // Reduced from 20 to 16
@@ -118,43 +121,73 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
     }
 
     return Column(
-      children: displayPosts.map<Widget>((post) {
-        if (post is WorkoutPost) {
-          return WorkoutPostCard(
-            username: post.username,
-            handle: post.handle,
-            profileImage: post.profileImage,
-            timeAgo: post.timeAgo,
-            content: post.content,
-            tags: post.tags,
-            images: post.images,
-            duration: post.duration,
-            volume: post.volume,
-            records: post.records,
-            exercises: post.exercises,
-            likes: post.likes,
-            likedBy: post.likedBy,
-            isLiked: post.isLiked,
-            isOwnPost: post.isOwnPost,
-            commentCount: post.commentCount,
-            onLike: () => widget.onLike(post.id),
-            onComment: () => widget.onComment(post.id),
-            onLikesClick: () => widget.onLikesClick(post.id),
-            onDelete: () => widget.onDeletePost(post.id),
-            onEdit: () => widget.onEditPost(post),
-          );
-        } else if (post is NutritionPost) {
-          return NutritionPostCard(
-            post: post,
-            onLike: () => widget.onLike(post.id),
-            onComment: () => widget.onComment(post.id),
-            onLikesClick: () => widget.onLikesClick(post.id),
-            onDelete: () => widget.onDeletePost(post.id),
-            // Nutrition post edit not requested yet
-          );
-        }
-        return const SizedBox.shrink();
-      }).toList(),
+      children: [
+        ...displayPosts.map<Widget>((post) {
+          if (post is WorkoutPost) {
+            return WorkoutPostCard(
+              username: post.username,
+              handle: post.handle,
+              profileImage: post.profileImage,
+              timeAgo: post.timeAgo,
+              content: post.content,
+              tags: post.tags,
+              images: post.images,
+              duration: post.duration,
+              volume: post.volume,
+              records: post.records,
+              exercises: post.exercises,
+              likes: post.likes,
+              likedBy: post.likedBy,
+              isLiked: post.isLiked,
+              isOwnPost: post.isOwnPost,
+              commentCount: post.commentCount,
+              onLike: () => widget.onLike(post.id),
+              onComment: () => widget.onComment(post.id),
+              onLikesClick: () => widget.onLikesClick(post.id),
+              onDelete: () => widget.onDeletePost(post.id),
+              onEdit: () => widget.onEditPost(post),
+            );
+          } else if (post is NutritionPost) {
+            return NutritionPostCard(
+              post: post,
+              onLike: () => widget.onLike(post.id),
+              onComment: () => widget.onComment(post.id),
+              onLikesClick: () => widget.onLikesClick(post.id),
+              onDelete: () => widget.onDeletePost(post.id),
+              // Nutrition post edit not requested yet
+            );
+          }
+          return const SizedBox.shrink();
+        }),
+        // "All caught up" message at the end
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                color: AppColors.primary,
+                size: 48,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "You're all caught up!",
+                style: TextStyle(
+                  color: AppColors.pureWhite,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                "You have seen all the new posts from the past few days.",
+                style: TextStyle(color: AppColors.white60, fontSize: 14),
+              ),
+              const SizedBox(height: 100), // Extra padding for nav bar
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

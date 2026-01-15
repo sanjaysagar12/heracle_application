@@ -10,11 +10,11 @@ import '../presentation/view_session_page.dart';
 class SessionsSection extends StatefulWidget {
   final SessionRepository? repository;
   final List<Session>? sessions; // Allow passing sessions directly
-  final bool isViewOnly; 
+  final bool isViewOnly;
   final VoidCallback? onRefreshData; // Callback to refresh parent data
 
   const SessionsSection({
-    super.key, 
+    super.key,
     this.repository,
     this.sessions,
     this.isViewOnly = false,
@@ -76,13 +76,13 @@ class _SessionsSectionState extends State<SessionsSection> {
   }
 
   void _onReorder(int oldIndex, int newIndex) async {
-    // Reordering should ideally be disabled in viewOnly mode, 
-    // but if it were enabled, it would modify local list. 
+    // Reordering should ideally be disabled in viewOnly mode,
+    // but if it were enabled, it would modify local list.
     // For now, if viewOnly is true, we simply don't persist it or we disable drag handle.
     // However, if displayed via ReorderableListView, dragging is allowed by logic.
     // The parent widget controls whether to update the DB.
-    
-    if (widget.isViewOnly) return; 
+
+    if (widget.isViewOnly) return;
 
     setState(() {
       if (oldIndex < newIndex) {
@@ -104,7 +104,7 @@ class _SessionsSectionState extends State<SessionsSection> {
         builder: (_) => CreateSessionTab(sessionToEdit: session),
       ),
     );
-    
+
     if (result == true) {
       // Refresh the sessions list after successful edit
       _loadSessions();
@@ -136,10 +136,7 @@ class _SessionsSectionState extends State<SessionsSection> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -151,9 +148,9 @@ class _SessionsSectionState extends State<SessionsSection> {
         await repo.deleteSession(session.id);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Deleted "${session.title}"')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Deleted "${session.title}"')));
 
           // Refresh the sessions list
           _loadSessions();
@@ -177,18 +174,23 @@ class _SessionsSectionState extends State<SessionsSection> {
       child: _isLoading
           ? const SizedBox(
               height: 160,
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
             )
           : Builder(
               builder: (context) {
                 final cats = <String>{};
                 for (var s in _sessions) cats.addAll(s.categories);
                 _filters = ['All', ...cats.toList()];
-                if (!_filters.contains(_selectedFilter)) _selectedFilter = 'All';
+                if (!_filters.contains(_selectedFilter))
+                  _selectedFilter = 'All';
 
                 final displayedSessions = _selectedFilter == 'All'
                     ? _sessions
-                    : _sessions.where((s) => s.categories.contains(_selectedFilter)).toList();
+                    : _sessions
+                          .where((s) => s.categories.contains(_selectedFilter))
+                          .toList();
 
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -198,26 +200,37 @@ class _SessionsSectionState extends State<SessionsSection> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          const Text(
-                            'Your Sessions',
-                            style: TextStyle(
+                          Text(
+                            widget.isViewOnly
+                                ? "User's Sessions"
+                                : 'Your Sessions',
+                            style: const TextStyle(
                               color: AppColors.pureWhite,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          if (_selectedFilter == 'All' && _sessions.length > 1 && !widget.isViewOnly) ...[
-                             const SizedBox(width: 8),
-                             if (_isReordering)
-                               TextButton(
-                                 onPressed: () => setState(() => _isReordering = false),
-                                 child: const Text('Done', style: TextStyle(color: AppColors.primary)),
-                               ),
+                          if (_selectedFilter == 'All' &&
+                              _sessions.length > 1 &&
+                              !widget.isViewOnly) ...[
+                            const SizedBox(width: 8),
+                            if (_isReordering)
+                              TextButton(
+                                onPressed: () =>
+                                    setState(() => _isReordering = false),
+                                child: const Text(
+                                  'Done',
+                                  style: TextStyle(color: AppColors.primary),
+                                ),
+                              ),
                           ],
                           const Spacer(), // Push to right
                           if (!widget.isViewOnly)
                             IconButton(
-                              icon: const Icon(Icons.history, color: AppColors.primary),
+                              icon: const Icon(
+                                Icons.history,
+                                color: AppColors.primary,
+                              ),
                               onPressed: () {
                                 Navigator.push(
                                   context,
@@ -240,20 +253,30 @@ class _SessionsSectionState extends State<SessionsSection> {
                             final label = _filters[i];
                             final selected = label == _selectedFilter;
                             return GestureDetector(
-                              onTap: () => setState(() => _selectedFilter = label),
+                              onTap: () =>
+                                  setState(() => _selectedFilter = label),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: selected ? AppColors.primary : AppColors.black100,
+                                  color: selected
+                                      ? AppColors.primary
+                                      : AppColors.black100,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Center(
                                   child: Text(
                                     label,
                                     style: TextStyle(
-                                      color: selected ? AppColors.black : AppColors.white60,
+                                      color: selected
+                                          ? AppColors.black
+                                          : AppColors.white60,
                                       fontSize: 14,
-                                      fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+                                      fontWeight: selected
+                                          ? FontWeight.w700
+                                          : FontWeight.normal,
                                     ),
                                   ),
                                 ),
@@ -264,7 +287,9 @@ class _SessionsSectionState extends State<SessionsSection> {
                       ),
                       const SizedBox(height: 16),
                       // If reordering is allowed and active, use ReorderableListView, otherwise just a column
-                      if (!widget.isViewOnly && _selectedFilter == 'All' && _isReordering)
+                      if (!widget.isViewOnly &&
+                          _selectedFilter == 'All' &&
+                          _isReordering)
                         ReorderableListView(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -276,7 +301,8 @@ class _SessionsSectionState extends State<SessionsSection> {
                             return AnimatedBuilder(
                               animation: animation,
                               builder: (BuildContext context, Widget? child) {
-                                final double animValue = Curves.easeInOut.transform(animation.value);
+                                final double animValue = Curves.easeInOut
+                                    .transform(animation.value);
                                 final double scale = 1.0 + (0.05 * animValue);
                                 return Transform.scale(
                                   scale: scale,
@@ -296,13 +322,21 @@ class _SessionsSectionState extends State<SessionsSection> {
                               Container(
                                 key: ValueKey(s.id),
                                 margin: const EdgeInsets.only(bottom: 12),
-                                child: _buildSessionCard(s, isReorderable: true),
+                                child: _buildSessionCard(
+                                  s,
+                                  isReorderable: true,
+                                ),
                               ),
                           ],
                         )
                       else
                         Column(
-                          children: displayedSessions.map((s) => _buildSessionCard(s, isReorderable: false)).toList(),
+                          children: displayedSessions
+                              .map(
+                                (s) =>
+                                    _buildSessionCard(s, isReorderable: false),
+                              )
+                              .toList(),
                         ),
                     ],
                   ),
@@ -313,11 +347,16 @@ class _SessionsSectionState extends State<SessionsSection> {
   }
 
   Widget _buildSessionCard(Session s, {bool isReorderable = false}) {
-    final images = s.exercises.map((e) => (e['image']?.toString() ?? '')).where((i) => i.isNotEmpty).toList();
-    
+    final images = s.exercises
+        .map((e) => (e['image']?.toString() ?? ''))
+        .where((i) => i.isNotEmpty)
+        .toList();
+
     return Container(
       // margin handled by parent in ReorderableListView, or here if Column
-      margin: (!isReorderable && widget.isViewOnly) ? const EdgeInsets.only(bottom: 12) : null,
+      margin: (!isReorderable && widget.isViewOnly)
+          ? const EdgeInsets.only(bottom: 12)
+          : null,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.black100,
@@ -331,7 +370,11 @@ class _SessionsSectionState extends State<SessionsSection> {
               if (isReorderable && !widget.isViewOnly)
                 const Padding(
                   padding: EdgeInsets.only(right: 12.0),
-                  child: Icon(Icons.drag_indicator, color: AppColors.white60, size: 20),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    color: AppColors.white60,
+                    size: 20,
+                  ),
                 ),
               Expanded(
                 child: Column(
@@ -348,7 +391,10 @@ class _SessionsSectionState extends State<SessionsSection> {
                     const SizedBox(height: 6),
                     Text(
                       s.content,
-                      style: const TextStyle(color: AppColors.white60, fontSize: 13),
+                      style: const TextStyle(
+                        color: AppColors.white60,
+                        fontSize: 13,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -381,7 +427,11 @@ class _SessionsSectionState extends State<SessionsSection> {
                       value: 'reorder',
                       child: Row(
                         children: [
-                          Icon(Icons.swap_vert, color: AppColors.white60, size: 20),
+                          Icon(
+                            Icons.swap_vert,
+                            color: AppColors.white60,
+                            size: 20,
+                          ),
                           SizedBox(width: 12),
                           Text(
                             'Reorder',
@@ -429,7 +479,9 @@ class _SessionsSectionState extends State<SessionsSection> {
                   width: 70,
                   height: 28,
                   child: Stack(
-                    children: images.take(3).toList().asMap().entries.map((entry) {
+                    children: images.take(3).toList().asMap().entries.map((
+                      entry,
+                    ) {
                       final index = entry.key;
                       final imageUrl = entry.value;
                       return Positioned(
@@ -437,7 +489,10 @@ class _SessionsSectionState extends State<SessionsSection> {
                         child: Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.black100, width: 2),
+                            border: Border.all(
+                              color: AppColors.black100,
+                              width: 2,
+                            ),
                           ),
                           child: CircleAvatar(
                             radius: 14,
@@ -458,11 +513,18 @@ class _SessionsSectionState extends State<SessionsSection> {
                   child: const CircleAvatar(
                     radius: 14,
                     backgroundColor: AppColors.greyDark,
-                    child: Icon(Icons.fitness_center, color: AppColors.white60, size: 14),
+                    child: Icon(
+                      Icons.fitness_center,
+                      color: AppColors.white60,
+                      size: 14,
+                    ),
                   ),
                 ),
               const SizedBox(width: 8),
-              Text('${s.exercisesCount} exercises', style: const TextStyle(color: AppColors.white60)),
+              Text(
+                '${s.exercisesCount} exercises',
+                style: const TextStyle(color: AppColors.white60),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -485,7 +547,11 @@ class _SessionsSectionState extends State<SessionsSection> {
                     ),
                     child: const Text(
                       'View Session',
-                      style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   )
                 : ElevatedButton(
@@ -519,7 +585,11 @@ class _SessionsSectionState extends State<SessionsSection> {
                     ),
                     child: const Text(
                       'Start Session',
-                      style: TextStyle(color: AppColors.black, fontSize: 16, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: AppColors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
           ),
