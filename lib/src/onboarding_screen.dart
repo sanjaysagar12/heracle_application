@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:heracle/core/storage/local_storage.dart';
 import 'package:heracle/route.dart';
+import 'package:heracle/core/theme/app_colors.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -141,8 +142,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: ElevatedButton(
                       onPressed: _onNext,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF5A5F),
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.black, // Dark text on yellow button
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
@@ -180,7 +181,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           width: isActive ? 24 : 8,
           decoration: BoxDecoration(
             color: isActive
-                ? const Color(0xFFFF5A5F)
+                ? AppColors.primary
                 : Colors.white.withOpacity(0.4),
             borderRadius: BorderRadius.circular(4),
           ),

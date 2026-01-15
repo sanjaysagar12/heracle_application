@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:heracle/core/storage/local_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'onboarding_page.dart';
+import 'package:heracle/core/theme/app_colors.dart';
 import 'terms_and_conditions_page.dart'; // Added // Added
 
 class AuthScreen extends StatelessWidget {
@@ -98,7 +99,7 @@ class AuthScreen extends StatelessWidget {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
