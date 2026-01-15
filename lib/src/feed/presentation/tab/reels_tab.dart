@@ -196,7 +196,6 @@ class _ReelsTabState extends State<ReelsTab> {
     // Show bottom sheet immediately with loading state
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
@@ -226,31 +225,25 @@ class _ReelsTabState extends State<ReelsTab> {
             });
           }
 
-          return DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            minChildSize: 0.5,
-            maxChildSize: 0.95,
-            builder: (context, scrollController) => CommentsBottomSheet(
-              comments: currentComments,
-              isLoading: isLoadingComments,
-              onAddComment: (content) async {
-                // Add comment via repo and update cache + UI
-                final newComment = await _storiesRepository.commentOnStory(story.id, content);
-                setState(() {
-                  _commentsCache[story.id] = [...(_commentsCache[story.id] ?? []), newComment];
-                });
-                setModalState(() {}); // refresh modal content
-              },
-              onAddReply: (commentId, content) async {
-                final newReply = await _storiesRepository.replyToComment(commentId, content);
-                setState(() {
-                  final current = _commentsCache[story.id] ?? [];
-                  _commentsCache[story.id] = _addReplyToComment(current, commentId, newReply);
-                });
-                setModalState(() {}); // refresh modal content
-              },
-              currentUserProfile: _profile,
-            ),
+          return CommentsBottomSheet(
+            comments: currentComments,
+            isLoading: isLoadingComments,
+            onAddComment: (content) async {
+              final newComment = await _storiesRepository.commentOnStory(story.id, content);
+              setState(() {
+                _commentsCache[story.id] = [...(_commentsCache[story.id] ?? []), newComment];
+              });
+              setModalState(() {});
+            },
+            onAddReply: (commentId, content) async {
+              final newReply = await _storiesRepository.replyToComment(commentId, content);
+              setState(() {
+                final current = _commentsCache[story.id] ?? [];
+                _commentsCache[story.id] = _addReplyToComment(current, commentId, newReply);
+              });
+              setModalState(() {});
+            },
+            currentUserProfile: _profile,
           );
         },
       ),

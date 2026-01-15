@@ -295,6 +295,101 @@ class FeedProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Update a post's likes data with fresh data from the API
+  /// Called when LikesBottomSheet fetches fresh likes to sync the feed
+  void updatePostLikes(String postId, List<LikedByUser> likedByUsers) {
+    final likes = likedByUsers.length;
+
+    // Update in home feed
+    final homeIndex = _posts.indexWhere((p) => p.id == postId);
+    if (homeIndex != -1) {
+      final post = _posts[homeIndex];
+      if (post is WorkoutPost) {
+        _posts[homeIndex] = WorkoutPost(
+          id: post.id,
+          username: post.username,
+          handle: post.handle,
+          profileImage: post.profileImage,
+          timeAgo: post.timeAgo,
+          content: post.content,
+          tags: post.tags,
+          images: post.images,
+          duration: post.duration,
+          volume: post.volume,
+          records: post.records,
+          exercises: post.exercises,
+          likes: likes,
+          likedBy: likedByUsers,
+          isLiked: post.isLiked,
+          isOwnPost: post.isOwnPost,
+          commentCount: post.commentCount,
+        );
+      } else if (post is NutritionPost) {
+        _posts[homeIndex] = NutritionPost(
+          id: post.id,
+          username: post.username,
+          handle: post.handle,
+          profileImage: post.profileImage,
+          timeAgo: post.timeAgo,
+          content: post.content,
+          images: post.images,
+          meals: post.meals,
+          likes: likes,
+          likedBy: likedByUsers,
+          isLiked: post.isLiked,
+          isOwnPost: post.isOwnPost,
+          commentCount: post.commentCount,
+        );
+      }
+    }
+
+    // Update in all user feeds as well
+    for (final username in _userPosts.keys) {
+      final userIndex = _userPosts[username]!.indexWhere((p) => p.id == postId);
+      if (userIndex != -1) {
+        final post = _userPosts[username]![userIndex];
+        if (post is WorkoutPost) {
+          _userPosts[username]![userIndex] = WorkoutPost(
+            id: post.id,
+            username: post.username,
+            handle: post.handle,
+            profileImage: post.profileImage,
+            timeAgo: post.timeAgo,
+            content: post.content,
+            tags: post.tags,
+            images: post.images,
+            duration: post.duration,
+            volume: post.volume,
+            records: post.records,
+            exercises: post.exercises,
+            likes: likes,
+            likedBy: likedByUsers,
+            isLiked: post.isLiked,
+            isOwnPost: post.isOwnPost,
+            commentCount: post.commentCount,
+          );
+        } else if (post is NutritionPost) {
+          _userPosts[username]![userIndex] = NutritionPost(
+            id: post.id,
+            username: post.username,
+            handle: post.handle,
+            profileImage: post.profileImage,
+            timeAgo: post.timeAgo,
+            content: post.content,
+            images: post.images,
+            meals: post.meals,
+            likes: likes,
+            likedBy: likedByUsers,
+            isLiked: post.isLiked,
+            isOwnPost: post.isOwnPost,
+            commentCount: post.commentCount,
+          );
+        }
+      }
+    }
+    notifyListeners();
+  }
+
   /// Update a post locally (after edit)
   void updatePost(FeedPost updatedPost, {String? username}) {
     // Update in home feed

@@ -254,23 +254,19 @@ class _ProfilePageState extends State<ProfilePage> {
     );
     final isMeal = post is NutritionPost;
 
+    // Start loading comments immediately
+    feedProvider.loadComments(postId, isMeal: isMeal);
+
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       enableDrag: true,
       isDismissible: true,
       useSafeArea: true,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setModalState) {
-          final comments = feedProvider.getComments(postId);
-          final isLoading = feedProvider.isCommentsLoading(postId);
-
-          if (comments.isEmpty && !isLoading) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              feedProvider.loadComments(postId, isMeal: isMeal);
-            });
-          }
+      builder: (sheetContext) => Consumer<FeedProvider>(
+        builder: (sheetContext, feedProv, child) {
+          final comments = feedProv.getComments(postId);
+          final isLoading = feedProv.isCommentsLoading(postId);
 
           // Convert to home_repo.Profile for CommentsBottomSheet
           home_repo.Profile? userProfile;
@@ -284,48 +280,34 @@ class _ProfilePageState extends State<ProfilePage> {
             );
           }
 
-          return DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            minChildSize: 0.5,
-            maxChildSize: 0.95,
-            expand: false,
-            builder: (context, scrollController) {
-              return CommentsBottomSheet(
-                comments: comments,
-                isLoading: isLoading,
-                onAddComment: (content) async {
-                  if (userProfile != null) {
-                    await feedProvider.addComment(
-                      postId,
-                      content,
-                      userProfile,
-                      isMeal: isMeal,
-                      username: _targetUsername,
-                    );
-                  }
-                  setModalState(() {});
-                },
-                onAddReply: (commentId, content) async {
-                  if (userProfile != null) {
-                    await feedProvider.addReply(
-                      postId,
-                      commentId,
-                      content,
-                      userProfile,
-                      isMeal: isMeal,
-                    );
-                  }
-                  setModalState(() {});
-                },
-                onOptimisticCommentAdd: (comment) {
-                  setModalState(() {});
-                },
-                onOptimisticReplyAdd: (commentId, reply) {
-                  setModalState(() {});
-                },
-                currentUserProfile: userProfile,
-              );
+          return CommentsBottomSheet(
+            comments: comments,
+            isLoading: isLoading,
+            onAddComment: (content) async {
+              if (userProfile != null) {
+                await feedProv.addComment(
+                  postId,
+                  content,
+                  userProfile,
+                  isMeal: isMeal,
+                  username: _targetUsername,
+                );
+              }
             },
+            onAddReply: (commentId, content) async {
+              if (userProfile != null) {
+                await feedProv.addReply(
+                  postId,
+                  commentId,
+                  content,
+                  userProfile,
+                  isMeal: isMeal,
+                );
+              }
+            },
+            onOptimisticCommentAdd: (comment) {},
+            onOptimisticReplyAdd: (commentId, reply) {},
+            currentUserProfile: userProfile,
           );
         },
       ),

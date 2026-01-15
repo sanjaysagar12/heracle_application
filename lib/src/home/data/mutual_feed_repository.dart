@@ -544,9 +544,14 @@ class MutualFeedRepository {
     }
   }
 
-  Future<List<LikedByUser>> getPostLikes(String postId) async {
+  Future<List<LikedByUser>> getPostLikes(
+    String postId, {
+    bool isMeal = false,
+  }) async {
     try {
-      final data = await _service.getPostLikes(postId);
+      final data = isMeal
+          ? await _service.getMealLikes(postId)
+          : await _service.getPostLikes(postId);
       final likesList = (data['likes'] as List? ?? []);
       return likesList.map((entry) {
         return LikedByUser.fromJson(entry as Map<String, dynamic>);
