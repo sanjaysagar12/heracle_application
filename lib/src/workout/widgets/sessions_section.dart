@@ -178,6 +178,41 @@ class _SessionsSectionState extends State<SessionsSection> {
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
             )
+          : _sessions.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 60),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.fitness_center_outlined,
+                      color: AppColors.white40,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      widget.isViewOnly ? 'No Sessions' : 'No Sessions Yet',
+                      style: const TextStyle(
+                        color: AppColors.white60,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (!widget.isViewOnly) ...[
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Create your first workout session',
+                        style: TextStyle(
+                          color: AppColors.white40,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            )
           : Builder(
               builder: (context) {
                 final cats = <String>{};

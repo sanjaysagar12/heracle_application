@@ -82,7 +82,7 @@ class _MyStoryViewerState extends State<MyStoryViewer>
     if (_stories.isEmpty || !_isContentLoaded) return;
 
     final currentStory = _stories[_currentStoryIndex];
-    _progressController.duration = currentStory.duration;
+    _progressController.duration = Duration(seconds: currentStory.duration);
     _progressController.reset();
     _progressController.forward().then((_) {
       if (_currentStoryIndex < _stories.length - 1) {
