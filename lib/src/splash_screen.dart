@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:heracle/core/theme/app_colors.dart';
 import 'package:heracle/route.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:heracle/core/storage/local_storage.dart';
 import 'dart:io';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:heracle/core/network/dio_client.dart';
+import 'package:heracle/src/auth/providers/auth_provider.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -29,13 +30,25 @@ class _SplashPageState extends State<SplashPage> {
   Future<void> _initApp() async {
     final shouldProceed = await _checkAppVersion();
     if (!shouldProceed) return;
+
     final isFirstLaunch = _storage.isFirstLaunch();
     if (isFirstLaunch) {
       _goToOnboarding();
       return;
     }
 
-    _checkTokenAndNavigate();
+    // Use AuthProvider to check auth status
+    if (!mounted) return;
+    final authProvider = context.read<AuthProvider>();
+    await authProvider.checkAuthStatus();
+
+    if (!mounted) return;
+
+    if (authProvider.isAuthenticated) {
+      _goToHome();
+    } else {
+      _goToAuth();
+    }
   }
 
   void _goToOnboarding() {
@@ -96,8 +109,6 @@ class _SplashPageState extends State<SplashPage> {
                 TextButton(
                   onPressed: () {
                     // Here we would open the store url.
-                    // For now, if required, we don't dismiss or we exit.
-                    // Since we don't have url_launcher setup in this task, we just log it.
                     debugPrint("User clicked Update");
                     // typically launchUrl(Uri.parse(storeUrl));
                   },
@@ -108,28 +119,6 @@ class _SplashPageState extends State<SplashPage> {
           },
         ) ??
         !isRequired; // If dialog dismissed (and allowed), return true (proceed)
-  }
-
-  Future<void> _checkTokenAndNavigate() async {
-    try {
-      final token = _storage.getAuthToken();
-
-      if (token == null) {
-        _goToAuth();
-        return;
-      }
-
-      if (JwtDecoder.isExpired(token)) {
-        await _storage.clearAuthToken();
-        _goToAuth();
-        return;
-      }
-
-      _goToHome();
-    } catch (e) {
-      debugPrint("Token check error: $e");
-      _goToAuth();
-    }
   }
 
   void _goToHome() {
@@ -150,12 +139,19 @@ class _SplashPageState extends State<SplashPage> {
       backgroundColor: AppColors.cocoBlack,
       body: Center(
         child: Column(
-          children: [
-            Image.asset('assets/images/splash_img.png'),
-            const Text("heracle.fit",style: TextStyle(color: AppColors.primary,fontSize: 25,fontWeight: FontWeight.w600),)
-          ],
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset('assets/images/splash_img.png'),
+            const Text(
+              "heracle.fit",
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 25,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

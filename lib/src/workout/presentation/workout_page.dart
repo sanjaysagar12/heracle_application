@@ -1,30 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../widgets/app_bar.dart';
-import '../../home/data/profile_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/bar_chart_widget.dart';
-import '../../home/data/progress_repository.dart'; // Corrected import
-import './tab/select_workouts_tab.dart'; // navigation target
-import '../widgets/sessions_section.dart'; // added
-import '../data/session_repository.dart'; // add import
-import 'tab/workout_logs_tab.dart';
+import '../../home/data/progress_repository.dart';
+import './tab/select_workouts_tab.dart';
+import '../widgets/sessions_section.dart';
+import '../data/session_repository.dart';
 import 'package:heracle/route.dart';
 import '../../feed/data/stories_repository.dart';
 import '../../feed/presentation/tab/my_story_viewer.dart';
+import '../../home/providers/user_profile_provider.dart';
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
 
   @override
-  @override
   State<WorkoutPage> createState() => WorkoutPageState();
 }
 
-class WorkoutPageState extends State<WorkoutPage> { // Made public
-  final ProfileRepository _profileRepository = ProfileRepository();
+class WorkoutPageState extends State<WorkoutPage> {
   final ProgressRepository _progressRepository = ProgressRepository();
   final StoriesRepository _storiesRepository = StoriesRepository();
-  Profile? _profile;
+
   bool _isLoading = true;
   List<ChartData> _chartData = [];
   int _refreshKey = 0;
@@ -35,25 +33,19 @@ class WorkoutPageState extends State<WorkoutPage> { // Made public
     _loadData();
   }
 
-  // Public method to refresh data (called from App scaffold)
+  /// Public method to refresh data (called from App scaffold)
   Future<void> refresh() async {
     await _loadData();
   }
 
   Future<void> _loadData() async {
-    // 1. Load Profile First
-    try {
-      final profile = await _profileRepository.getProfile();
-      if (mounted) {
-        setState(() {
-          _profile = profile;
-        });
-      }
-    } catch (e) {
-      print('WorkoutPage: Failed to load profile: $e');
+    // Load profile via provider
+    final profileProvider = context.read<UserProfileProvider>();
+    if (!profileProvider.hasProfile) {
+      await profileProvider.loadProfile();
     }
 
-    // 2. Load Stats
+    // Load Stats
     try {
       final results = await Future.wait([
         _progressRepository.getWeeklyActivity(),
@@ -70,7 +62,10 @@ class WorkoutPageState extends State<WorkoutPage> { // Made public
 
       final weeklyData = ChartData(
         title: 'Weekly Activity',
-        data: List.generate(weeklyValues.length, (i) => BarData(label: weeklyLabels[i], value: weeklyValues[i])),
+        data: List.generate(
+          weeklyValues.length,
+          (i) => BarData(label: weeklyLabels[i], value: weeklyValues[i]),
+        ),
         type: ChartType.bar,
       );
 
@@ -87,7 +82,10 @@ class WorkoutPageState extends State<WorkoutPage> { // Made public
 
       final monthlyData = ChartData(
         title: 'Monthly Progress',
-        data: List.generate(monthlyValues.length, (i) => BarData(label: monthlyLabels[i], value: monthlyValues[i])),
+        data: List.generate(
+          monthlyValues.length,
+          (i) => BarData(label: monthlyLabels[i], value: monthlyValues[i]),
+        ),
         type: ChartType.area,
       );
 
@@ -98,7 +96,7 @@ class WorkoutPageState extends State<WorkoutPage> { // Made public
         });
       }
     } catch (e) {
-      print('WorkoutPage: Failed to load stats: $e');
+      debugPrint('WorkoutPage: Failed to load stats: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -111,7 +109,7 @@ class WorkoutPageState extends State<WorkoutPage> { // Made public
     try {
       final myStory = await _storiesRepository.getMyStories();
       if (!mounted) return;
-      
+
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -119,124 +117,142 @@ class WorkoutPageState extends State<WorkoutPage> { // Made public
         ),
       );
     } catch (e) {
-      print('Failed to open story: $e');
+      debugPrint('Failed to open story: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.black,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  if (_profile != null)
-                    CustomAppBar(
-                      name: _profile!.name,
-                      age: _profile!.age,
-                      profileImageUrl: _profile!.profileImageUrl,
-                      hasStory: _profile!.hasStory,
-                      onProfileTap: () {
-                        Navigator.pushNamed(
-                          context, 
-                          AppRoutes.profile,
-                          arguments: _profile!.username,
-                        );
-                      },
-                      onStoryTap: _handleStoryTap,
-                    ),
-                  // bar chart carousel showing multiple progress charts
-                  BarChartCard(charts: _chartData),
-                  const SizedBox(height: 16),
-                  // Action buttons
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              // Navigate to select workouts tab/page (start empty session)
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => SelectWorkoutsTab(mode: 'start')),
-                              );
-                              // refresh sessions section and streak after returning
-                              await _loadData();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              minimumSize: const Size.fromHeight(48),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: const StadiumBorder(),
-                              elevation: 0,
+    return Consumer<UserProfileProvider>(
+      builder: (context, profileProvider, child) {
+        final profile = profileProvider.profile;
+
+        return Scaffold(
+          backgroundColor: AppColors.black,
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      if (profile != null)
+                        CustomAppBar(
+                          name: profile.name,
+                          age: profile.age,
+                          profileImageUrl: profile.profileImageUrl,
+                          hasStory: profile.hasStory,
+                          onProfileTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.profile,
+                              arguments: profile.username,
+                            );
+                          },
+                          onStoryTap: _handleStoryTap,
+                        ),
+                      // bar chart carousel showing multiple progress charts
+                      BarChartCard(charts: _chartData),
+                      const SizedBox(height: 16),
+                      // Action buttons
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          SelectWorkoutsTab(mode: 'start'),
+                                    ),
+                                  );
+                                  await _loadData();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  minimumSize: const Size.fromHeight(48),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: const StadiumBorder(),
+                                  elevation: 0,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Icon(
+                                      Icons.add,
+                                      color: Colors.black,
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Start Empty Session',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.add, color: Colors.black, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Start Empty Session',
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          SelectWorkoutsTab(mode: 'create'),
+                                    ),
+                                  );
+                                  if (result == true) {
+                                    setState(() {
+                                      _refreshKey++;
+                                    });
+                                  }
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(
+                                    color: AppColors.primary,
+                                    width: 1.6,
+                                  ),
+                                  minimumSize: const Size.fromHeight(48),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: const StadiumBorder(),
+                                ),
+                                child: const Text(
+                                  'Create Workout Session',
                                   style: TextStyle(
-                                    color: Colors.black,
+                                    color: AppColors.primary,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            onPressed: () async {
-                              // Navigate to select workouts tab/page (create workout)
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => SelectWorkoutsTab(mode: 'create')),
-                              );
-                              // refresh sessions section if session was created
-                              if (result == true) {
-                                setState(() {
-                                  _refreshKey++;
-                                });
-                              }
-                            },
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.primary, width: 1.6),
-                              minimumSize: const Size.fromHeight(48),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: const StadiumBorder(),
-                            ),
-                            child: const Text(
-                              'Create Workout Session',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 12),
+                      SessionsSection(
+                        key: ValueKey(_refreshKey),
+                        repository: SessionRepository(),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  // Sessions section (moved to its own widget & data layer)
-                  SessionsSection(
-                    key: ValueKey(_refreshKey),
-                    repository: SessionRepository(),
-                  ),
-                ],
-              ),
-            ),
+                ),
+        );
+      },
     );
   }
 }

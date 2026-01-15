@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:heracle/core/storage/local_storage.dart';
 import 'package:heracle/core/theme/app_theme.dart';
+import 'package:heracle/src/auth/providers/auth_provider.dart';
+import 'package:heracle/src/home/providers/user_profile_provider.dart';
+import 'package:heracle/src/home/providers/feed_provider.dart';
 import 'route.dart';
-import 'src/splash_screen.dart'; // added import for route generator
+import 'src/splash_screen.dart';
 import 'core/services/notification_service.dart';
 
 void main() async {
@@ -39,13 +43,21 @@ void main() async {
     debugPrint('NotificationService init error: $e');
   }
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => UserProfileProvider()),
+        ChangeNotifierProvider(create: (_) => FeedProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
