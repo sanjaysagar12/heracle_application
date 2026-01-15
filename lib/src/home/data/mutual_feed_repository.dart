@@ -1,5 +1,6 @@
 import '../../core/network/cache_manager.dart';
 import '../api/mutual_feed_service.dart';
+import '../../../core/helper/time_formatter.dart';
 
 class LikedByUser {
   final String name;
@@ -70,7 +71,12 @@ abstract class FeedPost {
     required this.commentCount,
   });
 
-  FeedPost copyWith({bool? isLiked, int? likes, int? commentCount, bool? isOwnPost});
+  FeedPost copyWith({
+    bool? isLiked,
+    int? likes,
+    int? commentCount,
+    bool? isOwnPost,
+  });
 }
 
 class ExerciseSet {
@@ -104,11 +110,7 @@ class Exercise {
   final String imageUrl;
   final List<ExerciseSet> sets;
 
-  Exercise({
-    required this.name,
-    required this.imageUrl,
-    this.sets = const [],
-  });
+  Exercise({required this.name, required this.imageUrl, this.sets = const []});
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
     return Exercise(
@@ -161,9 +163,13 @@ class WorkoutPost extends FeedPost {
       duration: json['duration'] as String? ?? '',
       volume: json['volume'] as String? ?? '',
       records: json['records'] as String? ?? '',
-      exercises: (json['exercises'] as List? ?? []).map((e) => Exercise.fromJson(e)).toList(),
+      exercises: (json['exercises'] as List? ?? [])
+          .map((e) => Exercise.fromJson(e))
+          .toList(),
       likes: (json['likes'] as int?) ?? 0,
-      likedBy: (json['likedBy'] as List? ?? []).map((user) => LikedByUser.fromJson(user)).toList(),
+      likedBy: (json['likedBy'] as List? ?? [])
+          .map((user) => LikedByUser.fromJson(user))
+          .toList(),
       // read isLiked from API (default false)
       isLiked: json['isLiked'] as bool? ?? false,
       isOwnPost: json['isOwnPost'] as bool? ?? false,
@@ -172,7 +178,12 @@ class WorkoutPost extends FeedPost {
   }
 
   @override
-  WorkoutPost copyWith({bool? isLiked, int? likes, int? commentCount, bool? isOwnPost}) {
+  WorkoutPost copyWith({
+    bool? isLiked,
+    int? likes,
+    int? commentCount,
+    bool? isOwnPost,
+  }) {
     return WorkoutPost(
       id: id,
       username: username,
@@ -194,7 +205,6 @@ class WorkoutPost extends FeedPost {
     );
   }
 }
-
 
 class NutritionMeal {
   final String sessionId; // Added
@@ -284,10 +294,14 @@ class NutritionPost extends FeedPost {
       handle: json['handle'] as String,
       profileImage: json['profileImage'] as String,
       timeAgo: json['timeAgo'] as String,
-      content: mealsList.isNotEmpty ? mealsList.first.content : '', // Fallback content
+      content: mealsList.isNotEmpty
+          ? mealsList.first.content
+          : '', // Fallback content
       images: [], // Nutrition post usually shows meal images separately
       likes: (json['likes'] as int?) ?? 0,
-      likedBy: (json['likedBy'] as List? ?? []).map((user) => LikedByUser.fromJson(user)).toList(),
+      likedBy: (json['likedBy'] as List? ?? [])
+          .map((user) => LikedByUser.fromJson(user))
+          .toList(),
       isLiked: json['isLiked'] as bool? ?? false,
       isOwnPost: json['isOwnPost'] as bool? ?? false,
       commentCount: json['commentCount'] as int? ?? 0,
@@ -321,7 +335,6 @@ class NutritionPost extends FeedPost {
   }
 }
 
-
 class Comment {
   final String id;
   final String username;
@@ -348,21 +361,33 @@ class Comment {
 
     if (json.containsKey('user')) {
       final user = json['user'] as Map<String, dynamic>;
-      username = (user['username'] as String?) ?? (user['name'] as String?) ?? '';
+      username =
+          (user['username'] as String?) ?? (user['name'] as String?) ?? '';
       handle = (user['handle'] as String?) ?? username;
-      profileImage = (user['profileImage'] as String?) ?? (user['avatarUrl'] as String?) ?? '';
+      profileImage =
+          (user['profileImage'] as String?) ??
+          (user['avatarUrl'] as String?) ??
+          '';
     } else {
-      username = (json['username'] as String?) ?? (json['name'] as String?) ?? '';
+      username =
+          (json['username'] as String?) ?? (json['name'] as String?) ?? '';
       handle = (json['handle'] as String?) ?? '';
-      profileImage = (json['profileImage'] as String?) ?? (json['avatarUrl'] as String?) ?? '';
+      profileImage =
+          (json['profileImage'] as String?) ??
+          (json['avatarUrl'] as String?) ??
+          '';
     }
+
+    // Format the time using TimeFormatter for human-readable display
+    final rawTime = json['timeAgo'] ?? json['createdAt'] ?? '';
+    final formattedTime = TimeFormatter.formatRelativeTime(rawTime);
 
     return Comment(
       id: json['id']?.toString() ?? '',
       username: username,
       handle: handle,
       profileImage: profileImage,
-      timeAgo: (json['timeAgo'] as String?) ?? (json['createdAt'] as String?) ?? '',
+      timeAgo: formattedTime,
       content: (json['content'] as String?) ?? (json['text'] as String?) ?? '',
       replies: (json['replies'] as List? ?? [])
           .map((reply) => Comment.fromJson(reply))
@@ -408,7 +433,7 @@ class MutualFeedRepository {
   final CacheManager _cacheManager = CacheManager();
 
   MutualFeedRepository({MutualFeedService? service})
-      : _service = service ?? MutualFeedService();
+    : _service = service ?? MutualFeedService();
 
   Future<List<FeedPost>> getMutualFeed() async {
     try {
@@ -427,27 +452,31 @@ class MutualFeedRepository {
   }
 
   List<FeedPost> _mapFeedData(List<Map<String, dynamic>> data) {
-    return data.map((json) {
-      try {
-        final type = json['type'] as String? ?? 'workout';
-        
-        if (type == 'nutrition') {
-           // Basic validation to ensure we don't return an empty/broken nutrition post
-           // if the structure is actually a workout (has exercises but no meals)
-           if (json['meals'] == null && json['exercises'] != null) {
-              // This is likely a mislabeled workout post
+    return data
+        .map((json) {
+          try {
+            final type = json['type'] as String? ?? 'workout';
+
+            if (type == 'nutrition') {
+              // Basic validation to ensure we don't return an empty/broken nutrition post
+              // if the structure is actually a workout (has exercises but no meals)
+              if (json['meals'] == null && json['exercises'] != null) {
+                // This is likely a mislabeled workout post
+                return WorkoutPost.fromJson(json);
+              }
+              return NutritionPost.fromJson(json);
+            } else {
               return WorkoutPost.fromJson(json);
-           }
-           return NutritionPost.fromJson(json);
-        } else {
-          return WorkoutPost.fromJson(json);
-        }
-      } catch (e) {
-        print('Error parsing feed post: $e');
-        print('JSON: $json');
-        return null; 
-      }
-    }).where((post) => post != null).cast<FeedPost>().toList();
+            }
+          } catch (e) {
+            print('Error parsing feed post: $e');
+            print('JSON: $json');
+            return null;
+          }
+        })
+        .where((post) => post != null)
+        .cast<FeedPost>()
+        .toList();
   }
 
   Future<void> likePost(String postId, {bool isMeal = false}) async {
@@ -457,9 +486,9 @@ class MutualFeedRepository {
       } else {
         await _service.likePost(postId);
       }
-      
+
       // Update local state is complex without knowing if it's a like or unlike from API
-      // For now, we assume success and toggle locally in UI logic above this layer if needed, 
+      // For now, we assume success and toggle locally in UI logic above this layer if needed,
       // but Repository usually fetches fresh data or relies on UI optimistic updates.
       // Here we will just perform the API call.
     } catch (e) {
@@ -467,9 +496,12 @@ class MutualFeedRepository {
     }
   }
 
-  Future<List<Comment>> getComments(String postId, {bool isMeal = false}) async {
+  Future<List<Comment>> getComments(
+    String postId, {
+    bool isMeal = false,
+  }) async {
     try {
-      final commentsData = isMeal 
+      final commentsData = isMeal
           ? await _service.getMealComments(postId)
           : await _service.getPostComments(postId);
 
@@ -479,24 +511,33 @@ class MutualFeedRepository {
     }
   }
 
-  Future<Comment> addComment(String postId, String content, {bool isMeal = false}) async {
+  Future<Comment> addComment(
+    String postId,
+    String content, {
+    bool isMeal = false,
+  }) async {
     try {
-      final commentData = isMeal 
+      final commentData = isMeal
           ? await _service.addMealComment(postId, content)
           : await _service.addComment(postId, content);
-          
+
       return Comment.fromJson(commentData);
     } catch (e) {
       throw Exception('Failed to add comment: $e');
     }
   }
 
-  Future<Comment> addReply(String postId, String commentId, String content, {bool isMeal = false}) async {
+  Future<Comment> addReply(
+    String postId,
+    String commentId,
+    String content, {
+    bool isMeal = false,
+  }) async {
     try {
       final replyData = isMeal
           ? await _service.addMealReply(postId, commentId, content)
           : await _service.addReply(postId, commentId, content);
-          
+
       return Comment.fromJson(replyData);
     } catch (e) {
       throw Exception('Failed to add reply: $e');
