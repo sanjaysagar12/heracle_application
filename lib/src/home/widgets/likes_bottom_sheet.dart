@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
 import '../providers/feed_provider.dart';
 import 'likes_skeleton.dart';
+import '../../profile/presentation/profile_page.dart';
 
 class LikesBottomSheet extends StatefulWidget {
   // Either provide postId to fetch likes from backend OR
@@ -187,34 +188,51 @@ class _LikesBottomSheetState extends State<LikesBottomSheet> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundImage: NetworkImage(user.profileImage),
-            backgroundColor: AppColors.greyDark,
-          ),
-          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.name.isNotEmpty ? user.name : user.username,
-                  style: const TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProfilePage(username: user.username),
                   ),
-                ),
-                Text(
-                  user.username.startsWith('@')
-                      ? user.username
-                      : '@${user.username}',
-                  style: const TextStyle(
-                    color: AppColors.white60,
-                    fontSize: 14,
+                );
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundImage: NetworkImage(user.profileImage),
+                    backgroundColor: AppColors.greyDark,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.name.isNotEmpty ? user.name : user.username,
+                          style: const TextStyle(
+                            color: AppColors.pureWhite,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          user.username.startsWith('@')
+                              ? user.username
+                              : '@${user.username}',
+                          style: const TextStyle(
+                            color: AppColors.white60,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           // If this entry represents the viewer themselves, hide follow/following button

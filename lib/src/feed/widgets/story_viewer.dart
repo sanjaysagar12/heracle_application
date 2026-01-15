@@ -5,6 +5,7 @@ import '../data/stories_repository.dart';
 import '../../home/widgets/comments_bottom_sheet.dart';
 import '../../home/data/mutual_feed_repository.dart';
 import '../../../route.dart';
+import '../../profile/presentation/profile_page.dart';
 
 class StoryViewer extends StatefulWidget {
   final List<StoryUser> stories;
@@ -422,9 +423,12 @@ class _StoryViewerState extends State<StoryViewer>
       _progressController?.stop();
     }
 
-    Navigator.of(
+    Navigator.push(
       context,
-    ).pushNamed(AppRoutes.profile, arguments: username).then((_) {
+      MaterialPageRoute(
+        builder: (context) => ProfilePage(username: username),
+      ),
+    ).then((_) {
       if (mounted && _isContentLoaded) {
         if (_isVideoProgressTracking) {
           _videoController?.play();

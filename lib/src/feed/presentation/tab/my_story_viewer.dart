@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../data/stories_repository.dart';
 import '../../../home/data/mutual_feed_repository.dart'; // For Comment model
 import '../../../home/widgets/comments_bottom_sheet.dart';
+import '../../../../src/profile/presentation/profile_page.dart';
 
 class MyStoryViewer extends StatefulWidget {
   final StoryUser myStory;
@@ -709,6 +710,14 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet>
       itemBuilder: (context, index) {
         final viewer = _details!.viewers[index];
         return ListTile(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProfilePage(username: viewer.username),
+              ),
+            );
+          },
           leading: CircleAvatar(
             backgroundImage: viewer.avatarUrl != null
                 ? NetworkImage(viewer.avatarUrl!)
@@ -739,6 +748,14 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet>
       itemBuilder: (context, index) {
         final liker = _details!.likes[index];
         return ListTile(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProfilePage(username: liker.username),
+              ),
+            );
+          },
           leading: CircleAvatar(
             backgroundImage: liker.avatarUrl != null
                 ? NetworkImage(liker.avatarUrl!)

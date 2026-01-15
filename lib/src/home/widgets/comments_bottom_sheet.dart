@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../profile/presentation/profile_page.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
 import '../data/profile_repository.dart';
@@ -337,9 +338,19 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundImage: NetworkImage(comment.profileImage),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProfilePage(username: comment.username),
+                    ),
+                  );
+                },
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundImage: NetworkImage(comment.profileImage),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -348,12 +359,22 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          comment.username,
-                          style: const TextStyle(
-                            color: AppColors.pureWhite,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProfilePage(username: comment.username),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            comment.username,
+                            style: const TextStyle(
+                              color: AppColors.pureWhite,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),

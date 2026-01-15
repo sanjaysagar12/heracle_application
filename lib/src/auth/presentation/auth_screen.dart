@@ -95,7 +95,7 @@ class _AuthScreenState extends State<AuthScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'This is Your Prime\nTime Wannabe.',
+                  'Prime strength, Rise like Heracles!',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -105,7 +105,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'it\'s zero subscription, 100% savage Download and dominate the fitness feed and dominate the feed forever.',
+                  'it’s zero subscription, 100% savage Download and dominate the fitness feed and dominate the feed forever.',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey,
@@ -121,7 +121,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   child: ElevatedButton(
                     onPressed: _isSigningIn ? null : _handleGoogleSignIn,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),

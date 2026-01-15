@@ -8,6 +8,7 @@ import '../../data/stories_repository.dart';
 import '../../../home/data/profile_repository.dart'; // Added
 import 'dart:math' as math;
 import '../../../home/data/mutual_feed_repository.dart'; // Needed for Comment/LikedByUser types
+import '../../../profile/presentation/profile_page.dart';
 
 class ReelsTab extends StatefulWidget {
   final List<DiscoverStory> stories;
@@ -743,38 +744,48 @@ class _ReelsTabState extends State<ReelsTab> {
       mainAxisSize: MainAxisSize.min,
       children: [
         // User info
-        Row(
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundImage: NetworkImage(story.profileImage),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              story.username,
-              style: const TextStyle(
-                color: AppColors.pureWhite,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProfilePage(username: story.username),
               ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.pureWhite, width: 1.5),
-                borderRadius: BorderRadius.circular(6),
+            );
+          },
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundImage: NetworkImage(story.profileImage),
               ),
-              child: const Text(
-                'Follow',
-                style: TextStyle(
+              const SizedBox(width: 12),
+              Text(
+                story.username,
+                style: const TextStyle(
                   color: AppColors.pureWhite,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.pureWhite, width: 1.5),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'Follow',
+                  style: TextStyle(
+                    color: AppColors.pureWhite,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
 
