@@ -157,6 +157,8 @@ class DiscoverStory {
   final int commentsCount;
   final List<LikedByUser> likedBy;
   final bool isViewed;
+  final bool isFollowing;
+  final bool isOwner;
 
   DiscoverStory({
     required this.id,
@@ -176,31 +178,42 @@ class DiscoverStory {
     this.commentsCount = 0,
     this.likedBy = const [],
     this.isViewed = false,
+    this.isFollowing = false,
+    this.isOwner = false,
   });
 
   factory DiscoverStory.fromJson(Map<String, dynamic> json) {
+    final user = (json['user'] is Map<String, dynamic>)
+        ? json['user'] as Map<String, dynamic>
+        : json;
+
     return DiscoverStory(
       id: json['id'] as String? ?? '',
-      username: json['username'] as String? ?? '',
-      profileImage: json['profileImage'] as String? ?? '',
-      content: json['content'] as String? ?? '',
+      username: user['username'] as String? ?? json['username'] as String? ?? '',
+      profileImage: user['avatarUrl'] as String? ??
+          user['profileImage'] as String? ??
+          json['profileImage'] as String? ??
+          '',
+      content: json['content'] as String? ?? json['caption'] as String? ?? '',
       hashtags: (json['hashtags'] as List<dynamic>?)?.cast<String>() ?? [],
-      imageUrl: json['imageUrl'] as String? ?? '',
+      imageUrl: json['mediaUrl'] as String? ?? json['imageUrl'] as String? ?? '', // Handle mediaUrl from feed API
       thumbnail: json['thumbnail'] as String? ?? '',
-      mediaType: json['mediaType'] as String? ?? 'IMAGE',
+      mediaType: (json['mediaType'] as String?)?.toUpperCase() ?? 'IMAGE', // Ensure uppercase
       platform: json['platform'] as String? ?? '',
       platformHandle: json['platformHandle'] as String? ?? '',
       label: json['label'] as String? ?? '',
       timeAgo: json['timeAgo'] as String? ?? '',
       isLiked: json['isLiked'] as bool? ?? false,
-      likesCount: json['likesCount'] as int? ?? 0,
-      commentsCount: json['commentsCount'] as int? ?? 0,
+      likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? 0, // Handle likeCount from feed API
+      commentsCount: json['commentCount'] as int? ?? json['commentsCount'] as int? ?? 0, // Handle commentCount from feed API
       likedBy:
           (json['likedBy'] as List<dynamic>?)
               ?.map((e) => LikedByUser.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
       isViewed: json['isViewed'] as bool? ?? false,
+      isFollowing: json['isFollowing'] as bool? ?? false,
+      isOwner: json['isOwner'] as bool? ?? false,
     );
   }
 
@@ -222,6 +235,8 @@ class DiscoverStory {
     int? commentsCount,
     List<LikedByUser>? likedBy,
     bool? isViewed,
+    bool? isFollowing,
+    bool? isOwner,
   }) {
     return DiscoverStory(
       id: id ?? this.id,
@@ -241,6 +256,8 @@ class DiscoverStory {
       commentsCount: commentsCount ?? this.commentsCount,
       likedBy: likedBy ?? this.likedBy,
       isViewed: isViewed ?? this.isViewed,
+      isFollowing: isFollowing ?? this.isFollowing,
+      isOwner: isOwner ?? this.isOwner,
     );
   }
 }

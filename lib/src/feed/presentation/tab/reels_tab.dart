@@ -7,6 +7,7 @@ import '../../../home/widgets/likes_bottom_sheet.dart';
 import '../../data/stories_repository.dart';
 import '../../../home/data/profile_repository.dart'; // Added
 import 'dart:math' as math;
+import '../../../home/api/mutual_feed_service.dart';
 import '../../../home/data/mutual_feed_repository.dart'; // Needed for Comment/LikedByUser types
 import '../../../profile/presentation/profile_page.dart';
 
@@ -43,6 +44,7 @@ class _ReelsTabState extends State<ReelsTab> {
   
   // Added: Profile loading for comments
   final ProfileRepository _profileRepository = ProfileRepository();
+  final MutualFeedService _mutualFeedService = MutualFeedService();
   Profile? _profile;
 
   @override
@@ -145,6 +147,44 @@ class _ReelsTabState extends State<ReelsTab> {
         setState(() {
           _stories = revertedStories;
         });
+      }
+    }
+  }
+
+  Future<void> _handleFollow(DiscoverStory story) async {
+    final isCurrentlyFollowing = story.isFollowing;
+    
+    // Optimistic update
+    setState(() {
+      _stories = _stories.map((s) {
+        if (s.id == story.id) {
+          return s.copyWith(isFollowing: !isCurrentlyFollowing);
+        }
+        return s;
+      }).toList().cast<DiscoverStory>();
+    });
+
+    try {
+      await _mutualFeedService.followUser(story.username);
+    } catch (e) {
+      print('Error following/unfollowing user: $e');
+      // Revert if failed
+      if (mounted) {
+        setState(() {
+          _stories = _stories.map((s) {
+            if (s.id == story.id) {
+              return s.copyWith(isFollowing: isCurrentlyFollowing);
+            }
+            return s;
+          }).toList().cast<DiscoverStory>();
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to ${isCurrentlyFollowing ? 'unfollow' : 'follow'} user'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -769,21 +809,26 @@ class _ReelsTabState extends State<ReelsTab> {
                 ),
               ),
               const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.pureWhite, width: 1.5),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'Follow',
-                  style: TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+              if (!story.isOwner && !story.isFollowing)
+                GestureDetector(
+                  onTap: () => _handleFollow(story),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.pureWhite, width: 1.5),
+                      borderRadius: BorderRadius.circular(6),
+                      // color: story.isFollowing ? AppColors.pureWhite.withOpacity(0.2) : Colors.transparent, // Logic removed as button is hidden
+                    ),
+                    child: const Text(
+                      'Follow', // Always 'Follow' because it's hidden if following
+                      style: TextStyle(
+                        color: AppColors.pureWhite,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

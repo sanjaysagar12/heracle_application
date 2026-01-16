@@ -91,28 +91,7 @@ class StoriesService {
       final responseData = response.data as Map<String, dynamic>;
       final List<dynamic> items = responseData['items'] as List<dynamic>;
 
-      return items.map((item) {
-        final user = item['user'] as Map<String, dynamic>;
-        final createdAt = item['createdAt'] as String;
-        
-        return {
-          'id': item['id'],
-          'username': user['username'] ?? '',
-          'profileImage': user['avatarUrl'] ?? '',
-          'content': item['caption'] ?? '',
-          'hashtags': _extractHashtags(item['caption'] ?? ''),
-          'imageUrl': item['mediaUrl'] ?? '',
-          'thumbnail': item['thumbnail'] ?? '',
-          'mediaType': item['mediaType'] ?? 'IMAGE',
-          'platform': 'Heracle', // Default platform for internal feed
-          'platformHandle': '@${user['username'] ?? ''}',
-          'label': '',
-          'timeAgo': _calculateTimeAgo(createdAt),
-          'isLiked': item['isLiked'] ?? false,
-          'likesCount': item['likeCount'] ?? 0,
-          'likedBy': <Map<String, dynamic>>[], // API doesn't return likedBy list
-        };
-      }).toList().cast<Map<String, dynamic>>();
+      return items.cast<Map<String, dynamic>>();
 
     } catch (e, st) {
       developer.log('StoriesService.getDiscoverStories API failed: $e\n$st');
