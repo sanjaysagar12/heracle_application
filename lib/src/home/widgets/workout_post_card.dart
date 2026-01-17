@@ -511,13 +511,15 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
                   ),
                 )),
                 const SizedBox(width: 8),
-                Text(
-                  'Liked by ${widget.likedBy[0].name} and others',
-                  style: const TextStyle(
-                    color: AppColors.white60,
-                    fontSize: 13,
+                  Text(
+                    widget.likes > 1
+                        ? 'Liked by ${widget.likedBy[0].name} and others'
+                        : 'Liked by ${widget.likedBy[0].name}',
+                    style: const TextStyle(
+                      color: AppColors.white60,
+                      fontSize: 13,
+                    ),
                   ),
-                ),
               ],
             ),
           ),

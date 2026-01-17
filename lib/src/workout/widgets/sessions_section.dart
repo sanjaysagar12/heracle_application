@@ -228,7 +228,7 @@ class _SessionsSectionState extends State<SessionsSection> {
                           .toList();
 
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

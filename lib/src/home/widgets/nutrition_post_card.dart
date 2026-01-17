@@ -374,7 +374,9 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                   )),
                   const SizedBox(width: 8),
                   Text(
-                    'Liked by ${item.likedBy[0].name} and others',
+                    item.likes > 1
+                        ? 'Liked by ${item.likedBy[0].name} and others'
+                        : 'Liked by ${item.likedBy[0].name}',
                     style: const TextStyle(
                       color: AppColors.white60,
                       fontSize: 13,

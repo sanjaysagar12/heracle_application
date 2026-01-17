@@ -470,6 +470,7 @@ class FoodItemCard extends StatefulWidget {
 class _FoodItemCardState extends State<FoodItemCard> {
   late TextEditingController _nameController;
   late TextEditingController _qtyController;
+  final FocusNode _qtyFocusNode = FocusNode();  // Add FocusNode
   late TextEditingController _calsController;
   late TextEditingController _protController;
   late TextEditingController _fatController;
@@ -482,6 +483,16 @@ class _FoodItemCardState extends State<FoodItemCard> {
     _qtyController = TextEditingController(
       text: widget.item.quantity.toString(),
     );
+    // Add listener to handle blur
+    _qtyFocusNode.addListener(() {
+      if (!_qtyFocusNode.hasFocus) {
+        if (_qtyController.text.isEmpty) {
+          _qtyController.text = '1';
+          widget.item.quantity = 1;
+          widget.onUpdate();
+        }
+      }
+    });
     _calsController = TextEditingController(
       text: _formatInt(widget.item.calories),
     );
@@ -539,6 +550,7 @@ class _FoodItemCardState extends State<FoodItemCard> {
   void dispose() {
     _nameController.dispose();
     _qtyController.dispose();
+    _qtyFocusNode.dispose(); // Dispose FocusNode
     _calsController.dispose();
     _protController.dispose();
     _fatController.dispose();
@@ -552,6 +564,7 @@ class _FoodItemCardState extends State<FoodItemCard> {
   }
 
   void _onQtyChanged(String val) {
+    if (val.isEmpty) return; // Don't update state or force text if empty
     widget.item.quantity = int.tryParse(val) ?? 1;
     widget.onUpdate();
   }
@@ -789,6 +802,7 @@ class _FoodItemCardState extends State<FoodItemCard> {
                       textAlign: TextAlign.center,
                       keyboardType: TextInputType.number,
                       controller: _qtyController,
+                      focusNode: _qtyFocusNode, // Attach FocusNode
                       onChanged: _onQtyChanged,
                       style: const TextStyle(color: AppColors.pureWhite),
                       decoration: const InputDecoration(
