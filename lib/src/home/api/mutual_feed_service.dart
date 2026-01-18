@@ -13,6 +13,15 @@ class MutualFeedService {
     }
   }
 
+  Future<Map<String, dynamic>> getPostDetails(String postId) async {
+    try {
+      final response = await _dio.get('/api/post/$postId');
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to load post details: $e');
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getPostComments(String postId) async {
     try {
       final response = await _dio.get('/api/post/$postId/comments');
@@ -87,6 +96,15 @@ class MutualFeedService {
       await _dio.post('/api/post/meal/$postId/like');
     } catch (e) {
       throw Exception('Failed to like meal post: $e');
+    }
+  }
+  
+  Future<Map<String, dynamic>> getMealPostDetails(String postId) async {
+    try {
+      final response = await _dio.get('/api/post/meal/$postId');
+      return response.data;
+    } catch (e) {
+      throw Exception('Failed to load meal post details: $e');
     }
   }
 

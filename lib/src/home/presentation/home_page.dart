@@ -144,6 +144,7 @@ class _HomePageState extends State<HomePage> {
 
       final updatedPost = WorkoutPost(
         id: post.id,
+        name: post.name,
         username: post.username,
         handle: post.handle,
         profileImage: post.profileImage,

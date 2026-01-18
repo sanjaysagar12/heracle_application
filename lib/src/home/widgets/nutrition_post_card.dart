@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../nutrition/presentation/post_nutrition_page.dart'; // Added
+import '../presentation/nutrition_details_page.dart';
 import '../data/mutual_feed_repository.dart';
 import '../../../route.dart'; // Added for AppRoutes
 
@@ -116,7 +117,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              item.username, 
+                              item.name, 
                               style: const TextStyle(
                                 color: AppColors.pureWhite,
                                 fontSize: 16,
@@ -124,7 +125,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                               ),
                             ),
                             Text(
-                              item.handle,
+                              item.handle.isNotEmpty ? item.handle : '@${item.username}',
                               style: const TextStyle(
                                 color: AppColors.white60,
                                 fontSize: 12,
@@ -261,16 +262,26 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
           if (item.meals.isNotEmpty) ...[
              AspectRatio(
                aspectRatio: 16/10, // Adjust based on your image needs
-               child: PageView.builder(
-                 itemCount: item.meals.length,
-                 onPageChanged: (index) {
-                   setState(() {
-                     _currentMealIndex = index;
-                   });
+               child: GestureDetector(
+                 onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NutritionDetailsPage(post: item),
+                      ),
+                    );
                  },
-                 itemBuilder: (context, index) {
-                   return _buildMealPage(item.meals[index]);
-                 },
+                 child: PageView.builder(
+                   itemCount: item.meals.length,
+                   onPageChanged: (index) {
+                     setState(() {
+                       _currentMealIndex = index;
+                     });
+                   },
+                   itemBuilder: (context, index) {
+                     return _buildMealPage(item.meals[index]);
+                   },
+                 ),
                ),
              ),
              const SizedBox(height: 12),

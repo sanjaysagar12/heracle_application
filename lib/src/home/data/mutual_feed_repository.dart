@@ -44,6 +44,7 @@ class LikedByUser {
 
 abstract class FeedPost {
   final String id;
+  final String name; 
   final String username;
   final String handle;
   final String profileImage;
@@ -58,6 +59,7 @@ abstract class FeedPost {
 
   FeedPost({
     required this.id,
+    required this.name,
     required this.username,
     required this.handle,
     required this.profileImage,
@@ -113,9 +115,14 @@ class Exercise {
   Exercise({required this.name, required this.imageUrl, this.sets = const []});
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
+    // Handle image from r2 if provided in the exercise object from API
+    String image = json['imageUrl'] as String? ?? '';
+    if (image.isEmpty) {
+        image = json['image'] as String? ?? '';
+    }
     return Exercise(
       name: json['name'] as String? ?? json['exercise'] as String? ?? '',
-      imageUrl: json['imageUrl'] as String? ?? '',
+      imageUrl: image,
       sets: (json['sets'] as List? ?? [])
           .map((e) => ExerciseSet.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -132,6 +139,7 @@ class WorkoutPost extends FeedPost {
 
   WorkoutPost({
     required super.id,
+    required super.name,
     required super.username,
     required super.handle,
     required super.profileImage,
@@ -151,29 +159,50 @@ class WorkoutPost extends FeedPost {
   });
 
   factory WorkoutPost.fromJson(Map<String, dynamic> json) {
+    String name = '';
+    String username = '';
+    String handle = '';
+    String profileImage = '';
+
+    if (json.containsKey('user') && json['user'] is Map) {
+      final user = json['user'] as Map<String, dynamic>;
+      username = user['username'] as String? ?? '';
+      name = user['name'] as String? ?? username;
+      handle = '@$username'; // Assuming handle is derived from username if not present
+      profileImage = user['avatarUrl'] as String? ?? '';
+    } else {
+      username = json['username'] as String? ?? '';
+      name = json['name'] as String? ?? username;
+      handle = json['handle'] as String? ?? '';
+      profileImage = json['profileImage'] as String? ?? '';
+    }
+
     return WorkoutPost(
       id: json['id'] as String,
-      username: json['username'] as String,
-      handle: json['handle'] as String,
-      profileImage: json['profileImage'] as String,
-      timeAgo: json['timeAgo'] as String,
-      content: json['content'] as String,
+      name: name,
+      username: username,
+      handle: handle,
+      profileImage: profileImage,
+      timeAgo: json['createdAt'] != null 
+          ? TimeFormatter.formatRelativeTime(json['createdAt']) 
+          : (json['timeAgo'] as String? ?? ''),
+      content: (json['caption'] as String?) ?? (json['content'] as String?) ?? '',
       tags: List<String>.from(json['tags'] ?? const []),
       images: List<String>.from(json['images'] ?? const []),
-      duration: json['duration'] as String? ?? '',
-      volume: json['volume'] as String? ?? '',
-      records: json['records'] as String? ?? '',
+      duration: json['duration']?.toString() ?? '', // Convert to string if number
+      volume: json['volume']?.toString() ?? '',
+      records: json['records']?.toString() ?? '',
       exercises: (json['exercises'] as List? ?? [])
           .map((e) => Exercise.fromJson(e))
           .toList(),
-      likes: (json['likes'] as int?) ?? 0,
-      likedBy: (json['likedBy'] as List? ?? [])
+      likes: (json['likeCount'] as int?) ?? (json['likes'] as int?) ?? 0,
+       likedBy: (json['likedBy'] as List? ?? [])
           .map((user) => LikedByUser.fromJson(user))
           .toList(),
       // read isLiked from API (default false)
       isLiked: json['isLiked'] as bool? ?? false,
       isOwnPost: json['isOwnPost'] as bool? ?? false,
-      commentCount: json['commentCount'] as int? ?? 0,
+      commentCount: (json['commentCount'] as int?) ?? 0,
     );
   }
 
@@ -186,6 +215,7 @@ class WorkoutPost extends FeedPost {
   }) {
     return WorkoutPost(
       id: id,
+      name: name,
       username: username,
       handle: handle,
       profileImage: profileImage,
@@ -206,8 +236,44 @@ class WorkoutPost extends FeedPost {
   }
 }
 
+class NutritionFoodItem {
+  final String name;
+  final int calories;
+  final double protein;
+  final double fat;
+  final double carbs;
+  final int quantity;
+  final String servingSize;
+
+  NutritionFoodItem({
+    required this.name,
+    required this.calories,
+    required this.protein,
+    required this.fat,
+    required this.carbs,
+    required this.quantity,
+    required this.servingSize,
+  });
+
+  factory NutritionFoodItem.fromJson(Map<String, dynamic> json) {
+    // Check if it has customFood or food object
+    final foodData = (json['customFood'] as Map<String, dynamic>?) ?? 
+                     (json['food'] as Map<String, dynamic>?) ?? {};
+    
+    return NutritionFoodItem(
+      name: foodData['name'] as String? ?? 'Unknown Food',
+      calories: (foodData['calories'] as num?)?.toInt() ?? 0,
+      protein: (foodData['protein'] as num?)?.toDouble() ?? 0.0,
+      fat: (foodData['fat'] as num?)?.toDouble() ?? 0.0,
+      carbs: (foodData['carbs'] as num?)?.toDouble() ?? 0.0,
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      servingSize: foodData['servingSize'] as String? ?? 'serving',
+    );
+  }
+}
+
 class NutritionMeal {
-  final String sessionId; // Added
+  final String sessionId; 
   final String mealType;
   final String content;
   final List<String> images;
@@ -215,6 +281,7 @@ class NutritionMeal {
   final int protein;
   final int carbs;
   final int fats;
+  final List<NutritionFoodItem> foodItems;
 
   NutritionMeal({
     required this.sessionId, // Added
@@ -225,18 +292,39 @@ class NutritionMeal {
     required this.protein,
     required this.carbs,
     required this.fats,
+    this.foodItems = const [],
   });
 
   factory NutritionMeal.fromJson(Map<String, dynamic> json) {
+    final foodItems = (json['nutritionLogs'] as List? ?? [])
+          .map((e) => NutritionFoodItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+    int totalCal = (json['calories'] as num?)?.toInt() ?? 0;
+    int totalProt = (json['protein'] as num?)?.toInt() ?? 0;
+    int totalCarb = (json['carbs'] as num?)?.toInt() ?? 0;
+    int totalFat = (json['fats'] as num?)?.toInt() ?? 0;
+
+    // If totals are missing but we have items, sum them up
+    if (totalCal == 0 && foodItems.isNotEmpty) {
+       for (var item in foodItems) {
+         totalCal += item.calories;
+         totalProt += item.protein.toInt();
+         totalCarb += item.carbs.toInt();
+         totalFat += item.fat.toInt();
+       }
+    }
+
     return NutritionMeal(
-      sessionId: json['sessionId'] as String? ?? '',
+      sessionId: json['sessionId'] as String? ?? json['id'] as String? ?? '',
       mealType: json['mealType'] as String? ?? 'Meal',
-      content: json['content'] as String? ?? '',
+      content: (json['caption'] as String?) ?? (json['content'] as String?) ?? '',
       images: List<String>.from(json['images'] ?? []),
-      calories: (json['calories'] as num?)?.toInt() ?? 0,
-      protein: (json['protein'] as num?)?.toInt() ?? 0,
-      carbs: (json['carbs'] as num?)?.toInt() ?? 0,
-      fats: (json['fats'] as num?)?.toInt() ?? 0,
+      calories: totalCal,
+      protein: totalProt,
+      carbs: totalCarb,
+      fats: totalFat,
+      foodItems: foodItems,
     );
   }
 
@@ -249,6 +337,7 @@ class NutritionMeal {
     int? protein,
     int? carbs,
     int? fats,
+    List<NutritionFoodItem>? foodItems,
   }) {
     return NutritionMeal(
       sessionId: sessionId ?? this.sessionId,
@@ -259,6 +348,7 @@ class NutritionMeal {
       protein: protein ?? this.protein,
       carbs: carbs ?? this.carbs,
       fats: fats ?? this.fats,
+      foodItems: foodItems ?? this.foodItems,
     );
   }
 }
@@ -268,6 +358,7 @@ class NutritionPost extends FeedPost {
 
   NutritionPost({
     required super.id,
+    required super.name,
     required super.username,
     required super.handle,
     required super.profileImage,
@@ -284,27 +375,52 @@ class NutritionPost extends FeedPost {
 
   factory NutritionPost.fromJson(Map<String, dynamic> json) {
     // If meals is null/empty, we can provide empty list
-    final mealsList = (json['meals'] as List? ?? [])
+    // Check for 'meals' (from feed) or 'sessions' (from details)
+    final sessionsList = (json['sessions'] as List?);
+    final mealsData = sessionsList ?? (json['meals'] as List? ?? []);
+
+    final mealsList = mealsData
         .map((e) => NutritionMeal.fromJson(e as Map<String, dynamic>))
         .toList();
 
+    String name = '';
+    String username = '';
+    String handle = '';
+    String profileImage = '';
+
+    if (json.containsKey('user') && json['user'] is Map) {
+      final user = json['user'] as Map<String, dynamic>;
+      username = user['username'] as String? ?? '';
+      name = user['name'] as String? ?? username;
+      handle = '@$username'; 
+      profileImage = user['avatarUrl'] as String? ?? '';
+    } else {
+      username = json['username'] as String? ?? '';
+      name = json['name'] as String? ?? username;
+      handle = json['handle'] as String? ?? '';
+      profileImage = json['profileImage'] as String? ?? '';
+    }
+    
     return NutritionPost(
       id: json['id'] as String,
-      username: json['username'] as String,
-      handle: json['handle'] as String,
-      profileImage: json['profileImage'] as String,
-      timeAgo: json['timeAgo'] as String,
+      name: name,
+      username: username,
+      handle: handle,
+      profileImage: profileImage,
+      timeAgo: json['createdAt'] != null 
+          ? TimeFormatter.formatRelativeTime(json['createdAt']) 
+          : (json['timeAgo'] as String? ?? ''),
       content: mealsList.isNotEmpty
           ? mealsList.first.content
-          : '', // Fallback content
-      images: [], // Nutrition post usually shows meal images separately
-      likes: (json['likes'] as int?) ?? 0,
-      likedBy: (json['likedBy'] as List? ?? [])
+          : (json['caption'] as String?) ?? '',
+      images: [], 
+      likes: (json['likeCount'] as int?) ?? (json['likes'] as int?) ?? 0,
+       likedBy: (json['likes'] as List? ?? json['likedBy'] as List? ?? [])
           .map((user) => LikedByUser.fromJson(user))
           .toList(),
       isLiked: json['isLiked'] as bool? ?? false,
       isOwnPost: json['isOwnPost'] as bool? ?? false,
-      commentCount: json['commentCount'] as int? ?? 0,
+      commentCount: (json['commentCount'] as int?) ?? 0,
       meals: mealsList,
     );
   }
@@ -319,6 +435,7 @@ class NutritionPost extends FeedPost {
   }) {
     return NutritionPost(
       id: id,
+      name: name,
       username: username,
       handle: handle,
       profileImage: profileImage,
@@ -448,6 +565,29 @@ class MutualFeedRepository {
         return _mapFeedData(List<Map<String, dynamic>>.from(cachedData));
       }
       throw Exception('Failed to load mutual feed: $e');
+    }
+  }
+
+  Future<FeedPost> getPostDetails(String postId, {bool isMeal = false}) async {
+    try {
+      final data = isMeal 
+          ? await _service.getMealPostDetails(postId)
+          : await _service.getPostDetails(postId);
+      
+      // If explicitly requested as meal, or if 'type' is nutrition, or if it has 'sessions' (meal details specific)
+      final type = data['type'] as String?;
+      final isNutrition = isMeal || type == 'nutrition' || data.containsKey('sessions') || data.containsKey('meals');
+
+      if (isNutrition) {
+         if (data['meals'] == null && data['sessions'] == null && data['exercises'] != null) {
+            return WorkoutPost.fromJson(data);
+         }
+         return NutritionPost.fromJson(data);
+      } else {
+        return WorkoutPost.fromJson(data);
+      }
+    } catch (e) {
+      throw Exception('Failed to load post details: $e');
     }
   }
 

@@ -125,6 +125,8 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
         ...displayPosts.map<Widget>((post) {
           if (post is WorkoutPost) {
             return WorkoutPostCard(
+              id: post.id,
+              name: post.name,
               username: post.username,
               handle: post.handle,
               profileImage: post.profileImage,

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
-import '../../../route.dart'; // Add import at top
+import '../../../route.dart';
+import '../presentation/workout_details_page.dart';
 
 class WorkoutPostCard extends StatefulWidget {
+  final String id; // Add ID field
+  final String name; 
   final String username;
   final String handle;
   final String profileImage;
@@ -29,6 +32,8 @@ class WorkoutPostCard extends StatefulWidget {
 
   const WorkoutPostCard({
     super.key,
+    this.id = '', // Default or required, depends. It should be required but existing calls might break if I don't default.
+    required this.name,
     required this.username,
     required this.handle,
     required this.profileImage,
@@ -101,23 +106,35 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
         color: AppColors.black100,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 12),
-          _buildContent(),
-          const SizedBox(height: 12),
-          _buildTags(),
-          const SizedBox(height: 16),
-          _buildImages(),
-          const SizedBox(height: 16),
-          _buildStats(),
-          const SizedBox(height: 16),
-          _buildExercises(),
-          const SizedBox(height: 16),
-          _buildFooter(),
-        ],
+      child: GestureDetector(
+        onTap: () {
+            if (widget.id.isNotEmpty) {
+                 Navigator.push(
+                    context, 
+                    MaterialPageRoute(
+                        builder: (context) => WorkoutDetailsPage(postId: widget.id),
+                    ),
+                 );
+            }
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 12),
+            _buildContent(),
+            const SizedBox(height: 12),
+            _buildTags(),
+            const SizedBox(height: 16),
+            _buildImages(),
+            const SizedBox(height: 16),
+            _buildStats(),
+            const SizedBox(height: 16),
+            _buildExercises(),
+            const SizedBox(height: 16),
+            _buildFooter(),
+          ],
+        ),
       ),
     );
   }
@@ -141,7 +158,7 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.username,
+                        widget.name,
                         style: const TextStyle(
                           color: AppColors.pureWhite,
                           fontSize: 16,
@@ -149,7 +166,7 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
                         ),
                       ),
                       Text(
-                        widget.handle,
+                        widget.handle.isNotEmpty ? widget.handle : '@${widget.username}',
                         style: const TextStyle(
                           color: AppColors.white60,
                           fontSize: 14,

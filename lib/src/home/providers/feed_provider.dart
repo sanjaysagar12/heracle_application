@@ -307,6 +307,7 @@ class FeedProvider extends ChangeNotifier {
       if (post is WorkoutPost) {
         _posts[homeIndex] = WorkoutPost(
           id: post.id,
+          name: post.name,
           username: post.username,
           handle: post.handle,
           profileImage: post.profileImage,
@@ -327,6 +328,7 @@ class FeedProvider extends ChangeNotifier {
       } else if (post is NutritionPost) {
         _posts[homeIndex] = NutritionPost(
           id: post.id,
+          name: post.name,
           username: post.username,
           handle: post.handle,
           profileImage: post.profileImage,
@@ -351,6 +353,7 @@ class FeedProvider extends ChangeNotifier {
         if (post is WorkoutPost) {
           _userPosts[username]![userIndex] = WorkoutPost(
             id: post.id,
+            name: post.name,
             username: post.username,
             handle: post.handle,
             profileImage: post.profileImage,
@@ -371,6 +374,7 @@ class FeedProvider extends ChangeNotifier {
         } else if (post is NutritionPost) {
           _userPosts[username]![userIndex] = NutritionPost(
             id: post.id,
+            name: post.name,
             username: post.username,
             handle: post.handle,
             profileImage: post.profileImage,

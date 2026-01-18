@@ -220,6 +220,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       final updatedPost = WorkoutPost(
         id: post.id,
+        name: post.name,
         username: post.username,
         handle: post.handle,
         profileImage: post.profileImage,
@@ -530,6 +531,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
         if (post is WorkoutPost) {
           return WorkoutPostCard(
+            id: post.id,
+            name: post.name,
             username: post.username,
             handle: post.handle,
             profileImage: post.profileImage,
