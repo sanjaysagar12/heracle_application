@@ -414,8 +414,8 @@ class NutritionPost extends FeedPost {
           ? mealsList.first.content
           : (json['caption'] as String?) ?? '',
       images: [], 
-      likes: (json['likeCount'] as int?) ?? (json['likes'] as int?) ?? 0,
-       likedBy: (json['likes'] as List? ?? json['likedBy'] as List? ?? [])
+      likes: (json['likeCount'] as int?) ?? (json['likes'] is int ? json['likes'] as int : 0),
+       likedBy: (json['likes'] is List ? json['likes'] as List : (json['likedBy'] as List? ?? []))
           .map((user) => LikedByUser.fromJson(user))
           .toList(),
       isLiked: json['isLiked'] as bool? ?? false,
