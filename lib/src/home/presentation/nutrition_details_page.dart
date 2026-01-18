@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
@@ -7,9 +6,11 @@ import '../../nutrition/presentation/track_calories_page.dart';
 import '../../../route.dart';
 import '../widgets/comments_bottom_sheet.dart';
 import '../widgets/likes_bottom_sheet.dart';
+import '../widgets/nutrition_post_card.dart';
 import '../providers/feed_provider.dart';
 import '../data/profile_repository.dart' as home_repo;
 import '../../profile/data/profile_repository.dart';
+import 'package:flutter_svg/flutter_svg.dart'; // Still needed for logic icons if any remaining
 
 class NutritionDetailsPage extends StatefulWidget {
   final NutritionPost post;
@@ -23,28 +24,46 @@ class NutritionDetailsPage extends StatefulWidget {
 class _NutritionDetailsPageState extends State<NutritionDetailsPage> {
   late Future<FeedPost> _postFuture;
   final MutualFeedRepository _repository = MutualFeedRepository();
-  final ProfileRepository _profileRepository = ProfileRepository(); // Added
-  UserProfile? _currentUserProfile; // Added
+  final ProfileRepository _profileRepository = ProfileRepository(); 
+  UserProfile? _currentUserProfile;
 
-  int _currentSessionIndex = 0;
-  PageController? _pageController;
-
+  int _currentSessionIndex = 0; // Still used for diet log selection matching? 
+  // Actually NutritionPostCard manages its own session index visually.
+  // But our Diet Log list depends on which meal is selected.
+  // PROBLEM: NutritionPostCard has its own PageController state. We don't get a callback when it changes page.
+  // The user might swipe the card carousel, but our "Diet log" below won't update if we don't sync.
+  // The request is "use the nutrition post card".
+  // `NutritionPostCard` does NOT expose a callback for page change.
+  // To strictly follow the "use the card" instruction AND keep "Diet Log" working, 
+  // I either need to accept that Diet Log only shows the first meal (or all meals?), 
+  // OR modify NutritionPostCard to expose onPageChanged.
+  // Given the complexity, I'll update NutritionPostCard to expose `onPageChanged`.
+  
+  // However, for this step, I will assume showing all logs or just the first is acceptable, 
+  // OR I can quickly add the callback to NutritionPostCard. 
+  // Let's add the callback next. For now, I'll stick to showing a list for the *first* meal or handle it.
+  // Actually, checking NutritionDetailsPage previous code (step 524), it had `_currentSessionIndex`.
+  // If I delegate the carousel to the Card, I lose control.
+  // I will add `onPageChanged` to `NutritionPostCard`.
+  
+  // WAIT. I'll stick to the plan of just implementing using the card first.
+  // If I use the card, the "Diet Log" section below needs accurate data.
+  // I'll make the diet log show *all* meals sequentially if there are multiple? 
+  // Or just update the card to share state. sharing state is better.
+  
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
     _loadPost();
-    _loadUserProfile(); // Added
+    _loadUserProfile(); 
   }
   
   void _loadPost() {
     _postFuture = _repository.getPostDetails(widget.post.id, isMeal: true);
   }
 
-  Future<void> _loadUserProfile() async { // Added
+  Future<void> _loadUserProfile() async { 
       try {
-           // Fallback to a default user or fetch 'me' if possible. 
-           // Using same logic as WorkoutDetailsPage for consistency.
            final profile = await _profileRepository.getUserProfile('@sanjaysagar.main');
            if (mounted) {
                setState(() {
@@ -56,23 +75,7 @@ class _NutritionDetailsPageState extends State<NutritionDetailsPage> {
       }
   }
 
-  @override
-  void dispose() {
-    _pageController?.dispose();
-    super.dispose();
-  }
-
-  NutritionMeal _getCurrentMeal(NutritionPost post) {
-    if (post.meals.isEmpty) {
-        return NutritionMeal(
-            sessionId: '', mealType: 'Meal', content: '', images: [], 
-            calories: 0, protein: 0, carbs: 0, fats: 0);
-    }
-    if (_currentSessionIndex >= post.meals.length) return post.meals.first;
-    return post.meals[_currentSessionIndex];
-  }
-
-  void _showComments(BuildContext context, FeedPost post) { // Added
+  void _showComments(BuildContext context, FeedPost post) { 
     final feedProvider = context.read<FeedProvider>();
     const isMeal = true;
 
@@ -134,7 +137,7 @@ class _NutritionDetailsPageState extends State<NutritionDetailsPage> {
     );
   }
 
-  void _showLikes(BuildContext context, FeedPost post) { // Added
+  void _showLikes(BuildContext context, FeedPost post) { 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -191,74 +194,73 @@ class _NutritionDetailsPageState extends State<NutritionDetailsPage> {
                 return const Center(child: Text('Not a nutrition post', style: TextStyle(color: AppColors.white60)));
             }
             
-            final currentMeal = _getCurrentMeal(post);
-
+            // Note: We use the Card for display. The Diet Log needs to know which meal is active.
+            // Since NutritionPostCard handles its own state, let's just show logs for ALL meals for now,
+            // or just the first one if listing them all is too long.
+            // Listing all with headers is a good detail view experience.
+            
             return SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.black100,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.white10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildHeader(post),
-                          
-                          if (currentMeal.content.isNotEmpty) ...[
-                            const SizedBox(height: 16),
-                            Text(
-                              currentMeal.content,
-                              style: const TextStyle(
-                                color: AppColors.pureWhite,
-                                fontSize: 15,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-
-                          const SizedBox(height: 16),
-
-                          if (post.meals.isNotEmpty)
-                            _buildCarousel(post.meals),
-
-                          if (post.meals.isNotEmpty)
-                            _buildMacros(currentMeal),
-
-                          const SizedBox(height: 16),
-                          const Divider(color: AppColors.greyDark, height: 1),
-                          const SizedBox(height: 16),
-
-                          _buildActions(context, post), // Updated signature
-                          
-                          _buildLikedBy(context, post), // Updated signature
-                        ],
-                      ),
+                    NutritionPostCard(
+                      post: post,
+                      isDetailView: true,
+                      onDelete: () async {
+                         // Implement delete if needed
+                      },
+                      onLike: () async {
+                         await _repository.likePost(post.id, isMeal: true);
+                         setState(() { _loadPost(); });
+                      },
+                      onComment: () => _showComments(context, post),
+                      onLikesClick: () => _showLikes(context, post),
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentSessionIndex = index;
+                        });
+                      },
                     ),
 
                     const SizedBox(height: 12),
-
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text(
-                        'Diet log',
-                        style: TextStyle(
-                          color: AppColors.pureWhite,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    if (post.meals.isNotEmpty)
-                      _buildDietLogList(currentMeal),
                     
+                    if (post.meals.isNotEmpty && _currentSessionIndex < post.meals.length) ...[
+                         Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Row(
+                            children: [
+                              const Text(
+                                'Diet log',
+                                style: TextStyle(
+                                  color: AppColors.pureWhite,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  post.meals[_currentSessionIndex].mealType,
+                                  style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        _buildDietLogList(post.meals[_currentSessionIndex]),
+                    ],
+
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -266,263 +268,6 @@ class _NutritionDetailsPageState extends State<NutritionDetailsPage> {
         },
       ),
     );
-  }
-
-  Widget _buildHeader(NutritionPost post) {
-      return Row(
-        children: [
-          GestureDetector(
-            onTap: () {
-               Navigator.pushNamed(
-                context,
-                AppRoutes.profile,
-                arguments: post.handle,
-              );
-            },
-            child: CircleAvatar(
-              radius: 20,
-              backgroundImage: NetworkImage(post.profileImage.isNotEmpty
-                  ? post.profileImage
-                  : 'https://ui-avatars.com/api/?name=${post.username}&background=random'),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  post.name,
-                  style: const TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  post.handle.isNotEmpty ? post.handle : '@${post.username}',
-                  style: const TextStyle(
-                    color: AppColors.white60,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            post.timeAgo,
-            style: const TextStyle(
-              color: AppColors.white60,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      );
-  }
-  
-  Widget _buildActions(BuildContext context, NutritionPost post) {
-       return Row(
-        children: [
-          GestureDetector(
-            onTap: () async {
-               await _repository.likePost(post.id, isMeal: true);
-               setState(() {
-                   _loadPost(); // Refresh
-               });
-            },
-            child: Icon(
-              post.isLiked ? Icons.favorite : Icons.favorite_border,
-              color: post.isLiked ? Colors.red : AppColors.pureWhite,
-            ),
-          ),
-          const SizedBox(width: 6),
-          GestureDetector(
-             onTap: () => _showLikes(context, post),
-             child: Text('${post.likes}', style: const TextStyle(color: AppColors.pureWhite)),
-          ),
-          const SizedBox(width: 16),
-          
-          GestureDetector(
-            onTap: () => _showComments(context, post),
-            child: SvgPicture.asset(
-              'assets/icons/comment.svg',
-              width: 20,
-              height: 20,
-              color: AppColors.pureWhite,
-            ),
-          ),
-          const SizedBox(width: 6),
-          GestureDetector(
-             onTap: () => _showComments(context, post),
-             child: Text('${post.commentCount}', style: const TextStyle(color: AppColors.pureWhite)),
-          ),
-          const SizedBox(width: 16),
-
-          SvgPicture.asset(
-            'assets/icons/share.svg',
-            width: 20,
-            height: 20,
-            color: AppColors.pureWhite,
-          ),
-        ],
-      );
-  }
-  
-  Widget _buildLikedBy(BuildContext context, NutritionPost post) {
-     if (post.likedBy.isEmpty) return const SizedBox.shrink();
-     
-     return GestureDetector(
-        onTap: () => _showLikes(context, post),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Row(
-            children: [
-              ...post.likedBy.take(3).map((user) => Align(
-                widthFactor: 0.7,
-                child: CircleAvatar(
-                  radius: 12,
-                  backgroundColor: AppColors.greyDark,
-                  backgroundImage: NetworkImage(user.profileImage),
-                ),
-              )),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  post.likes > 1
-                      ? 'Liked by ${post.likedBy[0].name} and others'
-                      : 'Liked by ${post.likedBy[0].name}',
-                  style: const TextStyle(
-                    color: AppColors.white60,
-                    fontSize: 13,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-     );
-  }
-
-  Widget _buildCarousel(List<NutritionMeal> meals) {
-    return Column(
-      children: [
-        AspectRatio(
-          aspectRatio: 16 / 10,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: meals.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentSessionIndex = index;
-              });
-            },
-            itemBuilder: (context, index) {
-              final meal = meals[index];
-              return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  image: DecorationImage(
-                    image: NetworkImage(meal.images.isNotEmpty 
-                        ? meal.images.first 
-                        : 'https://dummyimage.com/600x400/000/fff'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                 child: Stack(
-                  children: [
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          meal.mealType,
-                          style: const TextStyle(
-                            color: AppColors.pureWhite,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (meals.length > 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(meals.length, (index) {
-              return Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _currentSessionIndex == index 
-                      ? AppColors.white60 
-                      : AppColors.white10,
-                ),
-              );
-            }),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildMacros(NutritionMeal meal) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildMacroItem('Calories', '${meal.calories}', 'assets/icons/calories.svg', AppColors.primary),
-          _buildMacroItem('Protein', '${meal.protein}g', 'assets/icons/protein.svg', AppColors.primary),
-          _buildMacroItem('Carbs', '${meal.carbs}g', 'assets/icons/carbs.svg', AppColors.primary),
-          _buildMacroItem('Fats', '${meal.fats}g', 'assets/icons/fat.svg', AppColors.primary),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildMacroItem(String label, String value, String assetPath, Color color) {
-      return Column(
-        children: [
-          Row(
-            children: [
-               SvgPicture.asset(
-                assetPath,
-                width: 14,
-                height: 14,
-                color: AppColors.white60,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: const TextStyle(color: AppColors.white60, fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      );
   }
 
   Widget _buildDietLogList(NutritionMeal meal) {

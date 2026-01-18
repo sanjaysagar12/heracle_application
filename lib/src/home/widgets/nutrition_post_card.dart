@@ -12,6 +12,7 @@ class NutritionPostCard extends StatefulWidget {
   final VoidCallback onLike;
   final VoidCallback onComment;
   final VoidCallback onLikesClick;
+  final bool isDetailView;
 
   const NutritionPostCard({
     super.key,
@@ -20,7 +21,11 @@ class NutritionPostCard extends StatefulWidget {
     required this.onLike,
     required this.onComment,
     required this.onLikesClick,
+    this.isDetailView = false,
+    this.onPageChanged,
   });
+
+  final ValueChanged<int>? onPageChanged;
 
   @override
   State<NutritionPostCard> createState() => _NutritionPostCardState();
@@ -264,12 +269,14 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                aspectRatio: 16/10, // Adjust based on your image needs
                child: GestureDetector(
                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => NutritionDetailsPage(post: item),
-                      ),
-                    );
+                    if (!widget.isDetailView) {
+                       Navigator.push(
+                         context,
+                         MaterialPageRoute(
+                           builder: (context) => NutritionDetailsPage(post: item),
+                         ),
+                       );
+                    }
                  },
                  child: PageView.builder(
                    itemCount: item.meals.length,
@@ -277,6 +284,9 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                      setState(() {
                        _currentMealIndex = index;
                      });
+                     if (widget.onPageChanged != null) {
+                       widget.onPageChanged!(index);
+                     }
                    },
                    itemBuilder: (context, index) {
                      return _buildMealPage(item.meals[index]);

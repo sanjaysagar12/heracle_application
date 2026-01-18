@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../core/theme/app_colors.dart'; // Correct path: src/home/presentation -> src/home -> src -> lib -> core/theme (3 levels up)
+import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
 import '../widgets/comments_bottom_sheet.dart';
 import '../widgets/likes_bottom_sheet.dart';
+import '../widgets/workout_post_card.dart'; // Import the card
 import '../../profile/presentation/profile_page.dart';
 import '../providers/feed_provider.dart';
 import '../data/profile_repository.dart' as home_repo;
@@ -34,15 +35,6 @@ class _WorkoutDetailsPageState extends State<WorkoutDetailsPage> {
   
   Future<void> _loadUserProfile() async {
       try {
-          // Assuming we can get current user profile. Using a hardcoded username or getting from auth is typical.
-          // For now, let's try to get it if we have a way, or rely on FeedProvider if it has it.
-          // ProfilePage loads it. Here we might be deep in nav.
-          // Let's try to fetch via ProfileRepository using 'me' or similar if supported, 
-          // or just assume we can get it from an auth provider.
-          // Since I don't have easy access to "my username" without auth context, 
-          // I will look at how ProfilePage does it. It uses widget.username ?? '@sanjaysagar'.
-          // I'll try to fetch '@sanjaysagar' as a fallback for the "current user" for commenting.
-          // In a real app, I'd grab this from a UserProvider.
            final profile = await _profileRepository.getUserProfile('@sanjaysagar.main');
            if (mounted) {
                setState(() {
@@ -60,9 +52,8 @@ class _WorkoutDetailsPageState extends State<WorkoutDetailsPage> {
 
   void _showComments(BuildContext context, FeedPost post) {
     final feedProvider = context.read<FeedProvider>();
-    final isMeal = post is NutritionPost;
+    const isMeal = false;
 
-    // Start loading comments
     feedProvider.loadComments(post.id, isMeal: isMeal);
 
     showModalBottomSheet(
@@ -97,8 +88,9 @@ class _WorkoutDetailsPageState extends State<WorkoutDetailsPage> {
                   content,
                   userProfile,
                   isMeal: isMeal,
-                  username: post.username, // Post owner username? Or just passed for context?
+                  username: post.username,
                 );
+                setState(() { _loadPost(); });
                }
             },
             onAddReply: (commentId, content) async {
@@ -112,8 +104,6 @@ class _WorkoutDetailsPageState extends State<WorkoutDetailsPage> {
                 );
                }
             },
-            onOptimisticCommentAdd: (comment) {}, // Optional
-            onOptimisticReplyAdd: (commentId, reply) {}, // Optional
             currentUserProfile: userProfile,
           );
         },
@@ -125,7 +115,7 @@ class _WorkoutDetailsPageState extends State<WorkoutDetailsPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent, // Changed to transparent for draggable sheet
+      backgroundColor: Colors.transparent,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.6,
         minChildSize: 0.4,
@@ -136,25 +126,6 @@ class _WorkoutDetailsPageState extends State<WorkoutDetailsPage> {
         ),
       ),
     );
-  }
-
-  String _formatDuration(String durationStr) {
-    if (durationStr.isEmpty) return '0min';
-    final duration = int.tryParse(durationStr);
-    if (duration != null) {
-        if (duration > 60) {
-            final hrs = duration ~/ 60;
-            final mins = duration % 60;
-            return '${hrs}hr ${mins}min';
-        }
-        return '${duration}min';
-    }
-    return durationStr;
-  }
-
-  String _formatVolume(String volumeStr) {
-    if (volumeStr.isEmpty || volumeStr == '0') return '0kg';
-    return '${volumeStr}kg'; 
   }
 
   @override
@@ -193,303 +164,72 @@ class _WorkoutDetailsPageState extends State<WorkoutDetailsPage> {
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context, post),
+                // Use WorkoutPostCard
+                WorkoutPostCard(
+                  id: post.id,
+                  name: post.name,
+                  username: post.username,
+                  handle: post.handle,
+                  profileImage: post.profileImage,
+                  timeAgo: post.timeAgo,
+                  content: post.content,
+                  tags: post.tags,
+                  images: post.images,
+                  duration: post.duration,
+                  volume: post.volume,
+                  records: post.records,
+                  exercises: post.exercises,
+                  likes: post.likes,
+                  likedBy: post.likedBy,
+                  isLiked: post.isLiked,
+                  isOwnPost: post.isOwnPost,
+                  commentCount: post.commentCount,
+                  isDetailView: true, // IMPORTANT: Disables recursive nav and summary exercises
+                  onLike: () async {
+                      await _repository.likePost(post.id);
+                      setState(() { _loadPost(); });
+                  },
+                  onComment: () => _showComments(context, post),
+                  onLikesClick: () => _showLikes(context, post),
+                  onDelete: () async {
+                     // Implement delete if needed
+                  },
+                  onEdit: () {
+                    // Implement edit if needed
+                  },
+                ),
+
                 const SizedBox(height: 16),
-                _buildContent(post),
-                const SizedBox(height: 12),
-                _buildTags(post),
-                const SizedBox(height: 16),
-                _buildImages(context, post),
-                const SizedBox(height: 20),
-                _buildStats(post),
-                 const SizedBox(height: 16),
-                const Divider(color: AppColors.greyDark),
-                const SizedBox(height: 16),
-                _buildActions(context, post),
-                 const SizedBox(height: 16),
-                _buildLikedBy(context, post),
-                 const SizedBox(height: 24),
-                const Text(
-                  'Workout',
-                  style: TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                
+                 const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    'Workout',
+                    style: TextStyle(
+                      color: AppColors.pureWhite,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildExercisesList(post),
+                
+                // Detailed Exercise List
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _buildExercisesList(post),
+                ),
+                
+                const SizedBox(height: 40),
               ],
             ),
           );
         },
       ),
     );
-  }
-
-  Widget _buildHeader(BuildContext context, WorkoutPost post) {
-    return GestureDetector(
-      onTap: () {
-         Navigator.push(
-            context,
-            MaterialPageRoute(
-               builder: (context) => ProfilePage(username: post.username),
-            ),
-         );
-      },
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundImage: NetworkImage(post.profileImage),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  post.name, 
-                  style: const TextStyle(
-                    color: AppColors.pureWhite,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  post.handle.isNotEmpty ? post.handle : '@${post.username}',
-                  style: const TextStyle(
-                    color: AppColors.white60,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            post.timeAgo,
-            style: const TextStyle(
-              color: AppColors.white60,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContent(WorkoutPost post) {
-    if (post.content.isEmpty) return const SizedBox.shrink();
-    return Text(
-      post.content,
-      style: const TextStyle(
-        color: AppColors.pureWhite,
-        fontSize: 15,
-        height: 1.4,
-      ),
-    );
-  }
-
-  Widget _buildTags(WorkoutPost post) {
-    if (post.tags.isEmpty) return const SizedBox.shrink();
-    return Wrap(
-      spacing: 8,
-      children: post.tags.map((tag) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.greyDark,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          tag,
-          style: const TextStyle(
-            color: AppColors.primary,
-            fontSize: 13,
-          ),
-        ),
-      )).toList(),
-    );
-  }
-
-  Widget _buildImages(BuildContext context, WorkoutPost post) {
-    if (post.images.isEmpty) return const SizedBox.shrink();
-    
-     return SizedBox(
-      height: 200,
-      child: post.images.length == 1
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                post.images[0],
-                fit: BoxFit.cover,
-                width: double.infinity,
-                 errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
-              ),
-            )
-          : Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      post.images[0],
-                      fit: BoxFit.cover,
-                      height: double.infinity,
-                       errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              post.images[1],
-                              fit: BoxFit.cover,
-                               errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
-                            ),
-                          ),
-                          if (post.images.length > 2)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.6),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '+${post.images.length - 2}',
-                                  style: const TextStyle(
-                                    color: AppColors.pureWhite,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                      ],
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildStats(WorkoutPost post) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-       children: [
-          Expanded(child: _buildStatItem('Duration', _formatDuration(post.duration))),
-          Expanded(child: _buildStatItem('Volume', _formatVolume(post.volume))),
-          Expanded(child: _buildStatItem('Records', post.records.isEmpty || post.records == 'nil' ? 'nil' : post.records)),
-       ],
-    );
-  }
-
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.white60,
-            fontSize: 13,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.pureWhite,
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActions(BuildContext context, WorkoutPost post) {
-      return Row(
-          children: [
-              GestureDetector(
-                  onTap: () {
-                     _repository.likePost(post.id);
-                     setState(() {
-                         _loadPost(); 
-                     });
-                  },
-                  child: Icon(
-                      post.isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: post.isLiked ? Colors.red : AppColors.pureWhite,
-                      size: 28,
-                  ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                  '${post.likes}',
-                  style: const TextStyle(
-                      color: AppColors.pureWhite,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                  ),
-              ),
-              const SizedBox(width: 24),
-              GestureDetector(
-                  onTap: () => _showComments(context, post),
-                  child: SvgPicture.asset(
-                      'assets/icons/comment.svg',
-                      width: 24,
-                      height: 24,
-                      colorFilter: const ColorFilter.mode(AppColors.pureWhite, BlendMode.srcIn),
-                  ),
-              ),
-               const SizedBox(width: 8),
-               Text(
-                   '${post.commentCount}',
-                   style: const TextStyle(
-                       color: AppColors.pureWhite,
-                       fontSize: 16,
-                       fontWeight: FontWeight.bold,
-                   ),
-               )
-           ],
-      );
-  }
-  
-  Widget _buildLikedBy(BuildContext context, WorkoutPost post) {
-      if (post.likedBy.isEmpty) return const SizedBox.shrink();
-      
-      final firstUser = post.likedBy.first;
-      return GestureDetector(
-          onTap: () => _showLikes(context, post),
-          child: Row(
-              children: [
-                  CircleAvatar(
-                      radius: 10,
-                      backgroundImage: NetworkImage(firstUser.profileImage),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                        'Liked by ${firstUser.name} and others',
-                        style: const TextStyle(
-                            color: AppColors.white60,
-                            fontSize: 13,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-          ),
-      );
   }
 
   Widget _buildExercisesList(WorkoutPost post) {

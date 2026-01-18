@@ -29,6 +29,7 @@ class WorkoutPostCard extends StatefulWidget {
   final int commentCount;
   final VoidCallback onComment;
   final VoidCallback onLikesClick;
+  final bool isDetailView;
 
   const WorkoutPostCard({
     super.key,
@@ -55,6 +56,7 @@ class WorkoutPostCard extends StatefulWidget {
     required this.onLikesClick,
     required this.onDelete,
     required this.onEdit,
+    this.isDetailView = false,
   });
 
   @override
@@ -108,7 +110,7 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
       ),
       child: GestureDetector(
         onTap: () {
-            if (widget.id.isNotEmpty) {
+            if (!widget.isDetailView && widget.id.isNotEmpty) {
                  Navigator.push(
                     context, 
                     MaterialPageRoute(
@@ -130,7 +132,10 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
             const SizedBox(height: 16),
             _buildStats(),
             const SizedBox(height: 16),
-            _buildExercises(),
+            if (!widget.isDetailView) ...[
+              const SizedBox(height: 16),
+              _buildExercises(),
+            ],
             const SizedBox(height: 16),
             _buildFooter(),
           ],
