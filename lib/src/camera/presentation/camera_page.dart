@@ -71,7 +71,11 @@ class _CameraPageState extends State<CameraPage>
   Future<void> _pickGallery() async {
     final img = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (img != null) {
-      setState(() => _previewFile = File(img.path));
+      if (_selectedMode == _CameraMode.calAI) {
+        _handleCalAICapture(File(img.path));
+      } else {
+        setState(() => _previewFile = File(img.path));
+      }
     }
   }
 
