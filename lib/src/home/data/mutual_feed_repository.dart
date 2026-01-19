@@ -35,7 +35,7 @@ class LikedByUser {
     return LikedByUser(
       name: json['name'] as String? ?? 'Unknown',
       username: json['username'] as String? ?? json['name'] as String? ?? '',
-      profileImage: json['profileImage'] as String? ?? '',
+      profileImage: (json['profileImage'] as String?) ?? (json['avatarUrl'] as String?) ?? '',
       isFollowing: json['isFollowing'] as bool? ?? false,
       isViewer: json['isViewer'] as bool? ?? false,
     );
