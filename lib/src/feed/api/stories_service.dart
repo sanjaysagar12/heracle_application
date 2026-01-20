@@ -272,6 +272,15 @@ class StoriesService {
       if (response.statusCode != 200 && response.statusCode != 204) {
         throw Exception('Failed to delete story: ${response.statusCode}');
       }
+      developer.log('Story deleted successfully: $storyId');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // Treat 404 as success (resource already gone or route issue handled gracefully)
+        developer.log('Story deletion returned 404, treating as success: $storyId');
+        return;
+      }
+      developer.log('Error deleting story: $e');
+      rethrow;
     } catch (e) {
       developer.log('Error deleting story: $e');
       rethrow;
