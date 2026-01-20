@@ -322,12 +322,15 @@ class _HomePageState extends State<HomePage> {
       final myStory = await _storiesRepository.getMyStories();
       if (!mounted) return;
 
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => MyStoryViewer(myStory: myStory),
         ),
       );
+      if (mounted) {
+        _onRefresh(); // Refresh data to reflect deletions
+      }
     } catch (e) {
       debugPrint('Failed to open story: $e');
     }

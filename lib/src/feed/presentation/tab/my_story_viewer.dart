@@ -202,6 +202,13 @@ class _MyStoryViewerState extends State<MyStoryViewer>
       try {
         await _storiesRepository.deleteStory(story.id);
         if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Story deleted successfully'),
+              backgroundColor: AppColors.primary,
+            ),
+          );
+
           setState(() {
             _stories.removeAt(_currentStoryIndex);
           });
@@ -217,7 +224,28 @@ class _MyStoryViewerState extends State<MyStoryViewer>
         }
       } catch (e) {
         _resumeProgress();
-        if (mounted) {
+        // If the story is not found (404), it's already deleted, so remove it locally.
+        if (e.toString().contains('404')) {
+           if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Story deleted successfully (was already missing)'),
+                backgroundColor: AppColors.primary,
+              ),
+            );
+            setState(() {
+              _stories.removeAt(_currentStoryIndex);
+            });
+            if (_stories.isEmpty) {
+              Navigator.pop(context);
+            } else {
+              if (_currentStoryIndex >= _stories.length) {
+                _currentStoryIndex = _stories.length - 1;
+              }
+              _loadCurrentStory();
+            }
+          }
+        } else if (mounted) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Failed to delete story: $e')));
