@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:heracle/main.dart'; // Added
+import 'package:heracle/core/services/notification_service.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:device_info_plus/device_info_plus.dart';
@@ -303,25 +305,54 @@ class _CameraPageState extends State<CameraPage>
       // 2. Capture edited image
       File fileToUpload = await _capturePngToFile();
 
-      // 3. Upload
-      final repository = StoryRepository();
-      // index 0: Public Story (isHighlighted = false)
-      // index 1: Spotlight (isHighlighted = true)
-      final bool isHighlighted = index == 1;
-      
-      await repository.createStory(
-        fileToUpload, 
-        _captionController.text, 
-        isHighlighted: isHighlighted
-      );
+      // Fake delay for "Processing" feeling (Optimistic UI)
+      await Future.delayed(const Duration(seconds: 2));
 
       if (mounted) {
         Navigator.pop(context); // Dismiss loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Story shared successfully!")),
+          const SnackBar(
+            content: Text("Story shared successfully!"),
+            backgroundColor: AppColors.primary,
+          ),
         );
 
-        // Navigate to Home
+        // 3. Upload in Background (Fire and Forget)
+        final repository = StoryRepository();
+        // index 0: Public Story (isHighlighted = false)
+        // index 1: Spotlight (isHighlighted = true)
+        final bool isHighlighted = index == 1;
+        final String caption = _captionController.text;
+
+        repository.createStory(
+          fileToUpload, 
+          caption, 
+          isHighlighted: isHighlighted
+        ).then((_) {
+            NotificationService().showNotification(
+                id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                title: 'Story Shared',
+                body: 'Your story has been created successfully!',
+            );
+            
+            // In-App Success
+            rootScaffoldMessengerKey.currentState?.showSnackBar(
+              const SnackBar(
+                content: Text('Your story is now live!'),
+                backgroundColor: AppColors.primary,
+                duration: Duration(seconds: 3),
+              ),
+            );
+        }).catchError((e) {
+             debugPrint("Background upload failed: $e");
+             NotificationService().showNotification(
+                id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                title: 'Story Failed',
+                body: 'Failed to upload story. Please try again.',
+            );
+        });
+
+        // Navigate to Home immediately
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
     } catch (e) {

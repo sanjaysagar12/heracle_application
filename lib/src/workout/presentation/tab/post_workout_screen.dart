@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart' as img_picker;
+import 'package:heracle/main.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../data/post_workout_repository.dart';
 
 class PostWorkoutScreen extends StatefulWidget {
@@ -163,7 +165,23 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
           }); // Return data to signal update
         }
       } else {
-        await _repository.postWorkout(
+
+        // OPTIMISTIC UI: Fake delay then success
+        await Future.delayed(const Duration(seconds: 2));
+
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Workout posted successfully!'),
+              backgroundColor: Color(0xFFCCFF00), // Lime green
+            ),
+          );
+          // Navigate immediately
+          Navigator.popUntil(context, (route) => route.isFirst);
+        }
+
+        // BACKGROUND: Actual Upload
+        _repository.postWorkout(
           caption: _captionController.text,
           isPublic: _isPublic,
           tags: _tags,
@@ -171,14 +189,33 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
           volume: widget.volume,
           exercises: widget.exercises,
           imagePaths: _selectedImages.map((e) => e.path).toList(),
-        );
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Workout posted successfully!')),
-          );
-          Navigator.popUntil(context, (route) => route.isFirst);
-        }
+
+        ).then((_) {
+            // Success Notification
+            NotificationService().showNotification(
+              id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              title: 'Workout Posted',
+              body: 'Your workout has been posted to the feed!',
+            );
+            
+            // In-App Success Message (Global)
+            rootScaffoldMessengerKey.currentState?.showSnackBar(
+              const SnackBar(
+                content: Text('Your workout is now live!'),
+                backgroundColor: AppColors.primary,
+                duration: Duration(seconds: 3),
+              ),
+            );
+        }).catchError((e) {
+          debugPrint("Background workout upload failed: $e");
+          // Error Notification
+          NotificationService().showNotification(
+              id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              title: 'Upload Failed',
+              body: 'Failed to post workout. Please try again.',
+            );
+        });
       }
     } catch (e) {
       if (mounted) {

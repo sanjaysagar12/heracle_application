@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:heracle/main.dart'; // Added
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -372,12 +373,10 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
         }
       }
 
-      final response = await NutritionApiService().saveMeal(formData);
-
+      // 1. OPTIMISTIC LOCAL UPDATE
       // Calculate total fiber as it's not passed to the widget
       final totalFiber = widget.items.fold(0.0, (sum, item) => sum + item.fiber);
 
-      // Update local storage instantly
       await DailyNutritionStorage().addNutrition(
         widget.totalCalories, 
         widget.totalProtein.toInt(),
@@ -386,51 +385,22 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
         fiber: totalFiber.toInt(),
       );
 
-      if (!mounted) return;
+      // 2. FAKE DELAY & SUCCESS FEEDBACK
+      await Future.delayed(const Duration(seconds: 2));
 
-      if (shouldPost) {
-        try {
-          final session = response['session'];
-          if (session != null && session['id'] != null) {
-            final sessionId = session['id'];
-            await NutritionApiService().postMeal(sessionId);
-            
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Saved and Posted successfully!')),
-              );
-              
-              // Show Local Notification
-              NotificationService().showNotification(
-                id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                title: 'Post Successful',
-                body: 'Your diet log has been posted to your feed!',
-              );
-            }
-          } else {
-             if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Saved, but could not post (Missing Session ID).')),
-                );
-             }
-          }
-        } catch (postError) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Saved, but failed to post: $postError')),
-            );
-          }
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Saved successfully!')),
-        );
-      }
-      
       if (mounted) {
-        Navigator.pop(context, true); // Pop Post Page with success result
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(shouldPost ? 'Posted to Feed successfully!' : 'Saved to Diary successfully!'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+        Navigator.pop(context, true); // Return success
       }
-      
+
+      // 3. BACKGROUND NETWORK OPERATIONS
+      _performBackgroundSave(formData, shouldPost);
+       
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -443,6 +413,44 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
           _isSaving = false;
         });
       }
+    }
+  }
+
+  Future<void> _performBackgroundSave(FormData formData, bool shouldPost) async {
+    try {
+      final response = await NutritionApiService().saveMeal(formData);
+
+      if (shouldPost) {
+          final session = response['session'];
+          if (session != null && session['id'] != null) {
+            final sessionId = session['id'];
+            await NutritionApiService().postMeal(sessionId);
+            
+            // Show Notification if possible (since we already popped context, we use logic that doesn't rely on it)
+             NotificationService().showNotification(
+                id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                title: 'Post Successful',
+                body: 'Your diet log is live on your feed!',
+              );
+              
+              // In-App Success
+              rootScaffoldMessengerKey.currentState?.showSnackBar(
+                const SnackBar(
+                  content: Text('Your diet post is now live!'),
+                  backgroundColor: AppColors.primary,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+          }
+      }
+    } catch (e) {
+      debugPrint("Background save/post failed: $e");
+      // Fallback notification
+       NotificationService().showNotification(
+          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          title: 'Post Failed',
+          body: 'There was an error saving your post. Please check your connection.',
+        );
     }
   }
 
