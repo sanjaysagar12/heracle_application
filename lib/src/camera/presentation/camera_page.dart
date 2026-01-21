@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:heracle/main.dart'; // Added
 import 'package:heracle/core/services/notification_service.dart';
+import 'package:heracle/core/services/upload_manager.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:device_info_plus/device_info_plus.dart';
@@ -317,18 +318,31 @@ class _CameraPageState extends State<CameraPage>
           ),
         );
 
-        // 3. Upload in Background (Fire and Forget)
-        final repository = StoryRepository();
+      // 3. Upload with UploadManager
+        final uploadManager = UploadManager();
+        final uploadId = uploadManager.startUpload(
+          title: 'Posting Story',
+          type: 'story',
+        );
+
         // index 0: Public Story (isHighlighted = false)
         // index 1: Spotlight (isHighlighted = true)
         final bool isHighlighted = index == 1;
         final String caption = _captionController.text;
 
+        // BACKGROUND: Actual Upload
+        final repository = StoryRepository();
         repository.createStory(
           fileToUpload, 
           caption, 
-          isHighlighted: isHighlighted
+          isHighlighted: isHighlighted,
+          onProgress: (progress) {
+            uploadManager.updateProgress(uploadId, progress);
+          },
         ).then((_) {
+            uploadManager.updateProgress(uploadId, 1.0);
+            uploadManager.completeUpload(uploadId);
+
             NotificationService().showNotification(
                 id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
                 title: 'Story Shared',
@@ -345,6 +359,8 @@ class _CameraPageState extends State<CameraPage>
             );
         }).catchError((e) {
              debugPrint("Background upload failed: $e");
+             uploadManager.failUpload(uploadId, errorMessage: 'Upload failed. Please try again.');
+             
              NotificationService().showNotification(
                 id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
                 title: 'Story Failed',
