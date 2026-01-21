@@ -38,7 +38,7 @@ class _DietHistoryPageState extends State<DietHistoryPage> {
   // Group items by date string (Today, Yesterday, Mon Jan 05)
   Map<String, List<NutritionHistoryResponse>> _groupedItems() {
     final grouped = <String, List<NutritionHistoryResponse>>{};
-    
+
     for (var item in _sessions) {
       final date = item.session.date.toLocal(); // Ensure local time
       final now = DateTime.now();
@@ -70,43 +70,60 @@ class _DietHistoryPageState extends State<DietHistoryPage> {
     return Scaffold(
       backgroundColor: AppColors.black,
       appBar: AppBar(
-        title: const Text('Diet History', style: TextStyle(color: AppColors.pureWhite, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Diet History',
+          style: TextStyle(
+            color: AppColors.pureWhite,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: AppColors.black,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.pureWhite, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: AppColors.pureWhite,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : grouped.isEmpty
-              ? const Center(child: Text('No history available', style: TextStyle(color: AppColors.white60)))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: grouped.length,
-                  itemBuilder: (context, index) {
-                    final header = grouped.keys.elementAt(index);
-                    final items = grouped[header]!;
-                    
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            header,
-                            style: const TextStyle(
-                              color: AppColors.pureWhite,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+          ? const Center(
+              child: Text(
+                'No history available',
+                style: TextStyle(color: AppColors.white60),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: grouped.length,
+              itemBuilder: (context, index) {
+                final header = grouped.keys.elementAt(index);
+                final items = grouped[header]!;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        header,
+                        style: const TextStyle(
+                          color: AppColors.pureWhite,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
-                        ...items.map((item) => _buildSessionCard(item)).toList(),
-                      ],
-                    );
-                  },
-                ),
+                      ),
+                    ),
+                    ...items.map((item) => _buildSessionCard(item)).toList(),
+                  ],
+                );
+              },
+            ),
     );
   }
 
@@ -115,13 +132,18 @@ class _DietHistoryPageState extends State<DietHistoryPage> {
     final cals = item.logs.fold(0, (sum, log) => sum + log.calories);
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => NutritionSessionDetailPage(sessionData: item),
           ),
         );
+
+        // If an item was deleted, refresh the list
+        if (result == true) {
+          _loadHistory();
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -146,7 +168,10 @@ class _DietHistoryPageState extends State<DietHistoryPage> {
                 color: item.session.images.isEmpty ? AppColors.greyDark : null,
               ),
               child: item.session.images.isEmpty
-                  ? const Icon(Icons.image_not_supported, color: AppColors.white60)
+                  ? const Icon(
+                      Icons.image_not_supported,
+                      color: AppColors.white60,
+                    )
                   : null,
             ),
             const SizedBox(width: 12),
@@ -162,12 +187,16 @@ class _DietHistoryPageState extends State<DietHistoryPage> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (item.session.caption != null && item.session.caption!.isNotEmpty)
+                  if (item.session.caption != null &&
+                      item.session.caption!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         item.session.caption!,
-                        style: const TextStyle(color: AppColors.white60, fontSize: 12),
+                        style: const TextStyle(
+                          color: AppColors.white60,
+                          fontSize: 12,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -180,7 +209,7 @@ class _DietHistoryPageState extends State<DietHistoryPage> {
               children: [
                 Text(
                   // Hardcoded/Placeholder logic since API response struct provided lacks calories
-                  '${cals > 0 ? cals : '---'}Cal', 
+                  '${cals > 0 ? cals : '---'}Cal',
                   style: const TextStyle(
                     color: Color(0xFFD0FD3E), // Neon yellow/green from image
                     fontSize: 14,

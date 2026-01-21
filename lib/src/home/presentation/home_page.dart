@@ -19,6 +19,7 @@ import '../../feed/presentation/tab/my_story_viewer.dart';
 import '../../../core/services/notification_service.dart';
 import '../providers/user_profile_provider.dart';
 import '../providers/feed_provider.dart';
+import '../../nutrition/api/nutrition_service.dart'; // Added for nutrition delete
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -102,6 +103,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _handleDeletePost(String postId) async {
+    // Determine if it's a nutrition post or workout post
+    final feedProvider = context.read<FeedProvider>();
+    final post = feedProvider.posts.firstWhere(
+      (p) => p.id == postId,
+      orElse: () => throw Exception('Post not found'),
+    );
+
+    if (post is NutritionPost) {
+      await _handleDeleteNutritionPost(postId, post.sessionId);
+    } else {
+      await _handleDeleteWorkoutPost(postId);
+    }
+  }
+
+  /// Delete a workout post
+  Future<void> _handleDeleteWorkoutPost(String postId) async {
     try {
       await _postWorkoutRepository.deletePost(postId);
       if (mounted) {
@@ -115,6 +132,33 @@ class _HomePageState extends State<HomePage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to delete post: $e')));
+      }
+    }
+  }
+
+  /// Delete a nutrition/meal post
+  /// postId: The post ID for UI removal
+  /// sessionId: The session ID for the API call
+  Future<void> _handleDeleteNutritionPost(
+    String postId,
+    String sessionId,
+  ) async {
+    try {
+      debugPrint(
+        '🍽️ Deleting nutrition post: postId=$postId, sessionId=$sessionId',
+      );
+      await NutritionApiService().deleteSession(sessionId);
+      if (mounted) {
+        context.read<FeedProvider>().removePost(postId);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Meal deleted')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete meal: $e')));
       }
     }
   }

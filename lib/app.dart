@@ -5,6 +5,7 @@ import 'src/feed/presentation/feed_page.dart';
 import 'src/home/presentation/home_page.dart';
 import 'src/profile/presentation/profile_page.dart';
 import 'widgets/nav_bar.dart';
+import 'widgets/upload_progress_bar.dart';
 
 class AppPage extends StatefulWidget {
   final int initialIndex;
@@ -146,36 +147,39 @@ class _AppPageState extends State<AppPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: IndexedStack(
-        index: _index,
-        children: pages.asMap().entries.map((entry) {
-          int pageIndex = entry.key;
-          Widget page = pageIndex == 2 ? _buildPage(pageIndex) : entry.value;
-          
-          // Wrap scrollable pages with ScrollController
-          if (pageIndex == 0 || pageIndex == 3) { // HomePage and WorkoutPage
-            return _wrapWithScrollController(page, pageIndex);
-          }
-          return page;
-        }).toList(),
-      ),
-      bottomNavigationBar: SlideTransition(
-        position: _navBarSlideAnimation,
-        child: FloatingNavBar(
-          currentIndex: _index,
-          onTap: (i) {
-            if (i == 1) {
-              _openCamera();
-              return;
+    return UploadProgressOverlay(
+      bottomPadding: 100, // Nav bar height + padding
+      child: Scaffold(
+        extendBody: true,
+        body: IndexedStack(
+          index: _index,
+          children: pages.asMap().entries.map((entry) {
+            int pageIndex = entry.key;
+            Widget page = pageIndex == 2 ? _buildPage(pageIndex) : entry.value;
+            
+            // Wrap scrollable pages with ScrollController
+            if (pageIndex == 0 || pageIndex == 3) { // HomePage and WorkoutPage
+              return _wrapWithScrollController(page, pageIndex);
             }
-            setState(() => _index = i);
-            if (i == 3) {
-              _workoutKey.currentState?.refresh(); // Refresh Workout Page
-            }
-            _lastScrollPosition = 0;
-          },
+            return page;
+          }).toList(),
+        ),
+        bottomNavigationBar: SlideTransition(
+          position: _navBarSlideAnimation,
+          child: FloatingNavBar(
+            currentIndex: _index,
+            onTap: (i) {
+              if (i == 1) {
+                _openCamera();
+                return;
+              }
+              setState(() => _index = i);
+              if (i == 3) {
+                _workoutKey.currentState?.refresh(); // Refresh Workout Page
+              }
+              _lastScrollPosition = 0;
+            },
+          ),
         ),
       ),
     );

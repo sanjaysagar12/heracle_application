@@ -35,7 +35,10 @@ class LikedByUser {
     return LikedByUser(
       name: json['name'] as String? ?? 'Unknown',
       username: json['username'] as String? ?? json['name'] as String? ?? '',
-      profileImage: (json['profileImage'] as String?) ?? (json['avatarUrl'] as String?) ?? '',
+      profileImage:
+          (json['profileImage'] as String?) ??
+          (json['avatarUrl'] as String?) ??
+          '',
       isFollowing: json['isFollowing'] as bool? ?? false,
       isViewer: json['isViewer'] as bool? ?? false,
     );
@@ -44,7 +47,7 @@ class LikedByUser {
 
 abstract class FeedPost {
   final String id;
-  final String name; 
+  final String name;
   final String username;
   final String handle;
   final String profileImage;
@@ -118,7 +121,7 @@ class Exercise {
     // Handle image from r2 if provided in the exercise object from API
     String image = json['imageUrl'] as String? ?? '';
     if (image.isEmpty) {
-        image = json['image'] as String? ?? '';
+      image = json['image'] as String? ?? '';
     }
     return Exercise(
       name: json['name'] as String? ?? json['exercise'] as String? ?? '',
@@ -168,7 +171,8 @@ class WorkoutPost extends FeedPost {
       final user = json['user'] as Map<String, dynamic>;
       username = user['username'] as String? ?? '';
       name = user['name'] as String? ?? username;
-      handle = '@$username'; // Assuming handle is derived from username if not present
+      handle =
+          '@$username'; // Assuming handle is derived from username if not present
       profileImage = user['avatarUrl'] as String? ?? '';
     } else {
       username = json['username'] as String? ?? '';
@@ -183,20 +187,22 @@ class WorkoutPost extends FeedPost {
       username: username,
       handle: handle,
       profileImage: profileImage,
-      timeAgo: json['createdAt'] != null 
-          ? TimeFormatter.formatRelativeTime(json['createdAt']) 
+      timeAgo: json['createdAt'] != null
+          ? TimeFormatter.formatRelativeTime(json['createdAt'])
           : (json['timeAgo'] as String? ?? ''),
-      content: (json['caption'] as String?) ?? (json['content'] as String?) ?? '',
+      content:
+          (json['caption'] as String?) ?? (json['content'] as String?) ?? '',
       tags: List<String>.from(json['tags'] ?? const []),
       images: List<String>.from(json['images'] ?? const []),
-      duration: json['duration']?.toString() ?? '', // Convert to string if number
+      duration:
+          json['duration']?.toString() ?? '', // Convert to string if number
       volume: json['volume']?.toString() ?? '',
       records: json['records']?.toString() ?? '',
       exercises: (json['exercises'] as List? ?? [])
           .map((e) => Exercise.fromJson(e))
           .toList(),
       likes: (json['likeCount'] as int?) ?? (json['likes'] as int?) ?? 0,
-       likedBy: (json['likedBy'] as List? ?? [])
+      likedBy: (json['likedBy'] as List? ?? [])
           .map((user) => LikedByUser.fromJson(user))
           .toList(),
       // read isLiked from API (default false)
@@ -257,9 +263,11 @@ class NutritionFoodItem {
 
   factory NutritionFoodItem.fromJson(Map<String, dynamic> json) {
     // Check if it has customFood or food object
-    final foodData = (json['customFood'] as Map<String, dynamic>?) ?? 
-                     (json['food'] as Map<String, dynamic>?) ?? {};
-    
+    final foodData =
+        (json['customFood'] as Map<String, dynamic>?) ??
+        (json['food'] as Map<String, dynamic>?) ??
+        {};
+
     return NutritionFoodItem(
       name: foodData['name'] as String? ?? 'Unknown Food',
       calories: (foodData['calories'] as num?)?.toInt() ?? 0,
@@ -273,7 +281,7 @@ class NutritionFoodItem {
 }
 
 class NutritionMeal {
-  final String sessionId; 
+  final String sessionId;
   final String mealType;
   final String content;
   final List<String> images;
@@ -297,8 +305,8 @@ class NutritionMeal {
 
   factory NutritionMeal.fromJson(Map<String, dynamic> json) {
     final foodItems = (json['nutritionLogs'] as List? ?? [])
-          .map((e) => NutritionFoodItem.fromJson(e as Map<String, dynamic>))
-          .toList();
+        .map((e) => NutritionFoodItem.fromJson(e as Map<String, dynamic>))
+        .toList();
 
     int totalCal = (json['calories'] as num?)?.toInt() ?? 0;
     int totalProt = (json['protein'] as num?)?.toInt() ?? 0;
@@ -307,18 +315,19 @@ class NutritionMeal {
 
     // If totals are missing but we have items, sum them up
     if (totalCal == 0 && foodItems.isNotEmpty) {
-       for (var item in foodItems) {
-         totalCal += item.calories;
-         totalProt += item.protein.toInt();
-         totalCarb += item.carbs.toInt();
-         totalFat += item.fat.toInt();
-       }
+      for (var item in foodItems) {
+        totalCal += item.calories;
+        totalProt += item.protein.toInt();
+        totalCarb += item.carbs.toInt();
+        totalFat += item.fat.toInt();
+      }
     }
 
     return NutritionMeal(
       sessionId: json['sessionId'] as String? ?? json['id'] as String? ?? '',
       mealType: json['mealType'] as String? ?? 'Meal',
-      content: (json['caption'] as String?) ?? (json['content'] as String?) ?? '',
+      content:
+          (json['caption'] as String?) ?? (json['content'] as String?) ?? '',
       images: List<String>.from(json['images'] ?? []),
       calories: totalCal,
       protein: totalProt,
@@ -356,6 +365,9 @@ class NutritionMeal {
 class NutritionPost extends FeedPost {
   final List<NutritionMeal> meals;
 
+  /// Returns the sessionId of the first meal for deletion purposes
+  String get sessionId => meals.isNotEmpty ? meals.first.sessionId : id;
+
   NutritionPost({
     required super.id,
     required super.name,
@@ -392,7 +404,7 @@ class NutritionPost extends FeedPost {
       final user = json['user'] as Map<String, dynamic>;
       username = user['username'] as String? ?? '';
       name = user['name'] as String? ?? username;
-      handle = '@$username'; 
+      handle = '@$username';
       profileImage = user['avatarUrl'] as String? ?? '';
     } else {
       username = json['username'] as String? ?? '';
@@ -400,24 +412,29 @@ class NutritionPost extends FeedPost {
       handle = json['handle'] as String? ?? '';
       profileImage = json['profileImage'] as String? ?? '';
     }
-    
+
     return NutritionPost(
       id: json['id'] as String,
       name: name,
       username: username,
       handle: handle,
       profileImage: profileImage,
-      timeAgo: json['createdAt'] != null 
-          ? TimeFormatter.formatRelativeTime(json['createdAt']) 
+      timeAgo: json['createdAt'] != null
+          ? TimeFormatter.formatRelativeTime(json['createdAt'])
           : (json['timeAgo'] as String? ?? ''),
       content: mealsList.isNotEmpty
           ? mealsList.first.content
           : (json['caption'] as String?) ?? '',
-      images: [], 
-      likes: (json['likeCount'] as int?) ?? (json['likes'] is int ? json['likes'] as int : 0),
-       likedBy: (json['likes'] is List ? json['likes'] as List : (json['likedBy'] as List? ?? []))
-          .map((user) => LikedByUser.fromJson(user))
-          .toList(),
+      images: [],
+      likes:
+          (json['likeCount'] as int?) ??
+          (json['likes'] is int ? json['likes'] as int : 0),
+      likedBy:
+          (json['likes'] is List
+                  ? json['likes'] as List
+                  : (json['likedBy'] as List? ?? []))
+              .map((user) => LikedByUser.fromJson(user))
+              .toList(),
       isLiked: json['isLiked'] as bool? ?? false,
       isOwnPost: json['isOwnPost'] as bool? ?? false,
       commentCount: (json['commentCount'] as int?) ?? 0,
@@ -570,19 +587,25 @@ class MutualFeedRepository {
 
   Future<FeedPost> getPostDetails(String postId, {bool isMeal = false}) async {
     try {
-      final data = isMeal 
+      final data = isMeal
           ? await _service.getMealPostDetails(postId)
           : await _service.getPostDetails(postId);
-      
+
       // If explicitly requested as meal, or if 'type' is nutrition, or if it has 'sessions' (meal details specific)
       final type = data['type'] as String?;
-      final isNutrition = isMeal || type == 'nutrition' || data.containsKey('sessions') || data.containsKey('meals');
+      final isNutrition =
+          isMeal ||
+          type == 'nutrition' ||
+          data.containsKey('sessions') ||
+          data.containsKey('meals');
 
       if (isNutrition) {
-         if (data['meals'] == null && data['sessions'] == null && data['exercises'] != null) {
-            return WorkoutPost.fromJson(data);
-         }
-         return NutritionPost.fromJson(data);
+        if (data['meals'] == null &&
+            data['sessions'] == null &&
+            data['exercises'] != null) {
+          return WorkoutPost.fromJson(data);
+        }
+        return NutritionPost.fromJson(data);
       } else {
         return WorkoutPost.fromJson(data);
       }

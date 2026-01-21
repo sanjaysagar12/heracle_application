@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:heracle/main.dart'; // Added
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +9,7 @@ import '../../nutrition/data/diet_log_item.dart';
 import '../../nutrition/api/nutrition_service.dart';
 import '../../home/storage/daily_nutrition_storage.dart';
 import '../../../core/services/notification_service.dart'; // Added
+import '../../../core/services/upload_manager.dart'; // Added
 
 class PostNutritionPage extends StatefulWidget {
   final List<DietLogItem> items;
@@ -372,12 +374,10 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
         }
       }
 
-      final response = await NutritionApiService().saveMeal(formData);
-
+      // 1. OPTIMISTIC LOCAL UPDATE
       // Calculate total fiber as it's not passed to the widget
       final totalFiber = widget.items.fold(0.0, (sum, item) => sum + item.fiber);
 
-      // Update local storage instantly
       await DailyNutritionStorage().addNutrition(
         widget.totalCalories, 
         widget.totalProtein.toInt(),
@@ -386,51 +386,21 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
         fiber: totalFiber.toInt(),
       );
 
-      if (!mounted) return;
+      // Start upload tracking with UploadManager
+      final uploadManager = UploadManager();
+      final uploadId = uploadManager.startUpload(
+        title: shouldPost ? 'Posting Diet Log' : 'Saving Diet Log',
+        type: 'diet',
+      );
 
-      if (shouldPost) {
-        try {
-          final session = response['session'];
-          if (session != null && session['id'] != null) {
-            final sessionId = session['id'];
-            await NutritionApiService().postMeal(sessionId);
-            
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Saved and Posted successfully!')),
-              );
-              
-              // Show Local Notification
-              NotificationService().showNotification(
-                id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                title: 'Post Successful',
-                body: 'Your diet log has been posted to your feed!',
-              );
-            }
-          } else {
-             if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Saved, but could not post (Missing Session ID).')),
-                );
-             }
-          }
-        } catch (postError) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Saved, but failed to post: $postError')),
-            );
-          }
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Saved successfully!')),
-        );
-      }
-      
+      // Navigate immediately - user sees progress bar
       if (mounted) {
-        Navigator.pop(context, true); // Pop Post Page with success result
+        Navigator.pop(context, true);
       }
-      
+
+      // 2. BACKGROUND NETWORK OPERATIONS with progress tracking
+      _performBackgroundSave(formData, shouldPost, uploadId);
+       
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -445,6 +415,104 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
       }
     }
   }
+
+  Future<void> _performBackgroundSave(FormData formData, bool shouldPost, String uploadId) async {
+    final uploadManager = UploadManager();
+    
+    try {
+      // Initial progress
+      debugPrint("🍽️ [Diet Post] Starting background save... shouldPost=$shouldPost");
+      await Future.delayed(const Duration(milliseconds: 300));
+      uploadManager.updateProgress(uploadId, 0.3);
+      
+      debugPrint("🍽️ [Diet Post] Calling saveMeal API...");
+      final response = await NutritionApiService().saveMeal(formData);
+      debugPrint("🍽️ [Diet Post] saveMeal response: $response");
+      uploadManager.updateProgress(uploadId, 0.6);
+
+      if (shouldPost) {
+        // Try multiple ways to get the session ID from response
+        String? sessionId;
+        
+        if (response['session'] != null && response['session']['id'] != null) {
+          sessionId = response['session']['id'].toString();
+        } else if (response['sessionId'] != null) {
+          sessionId = response['sessionId'].toString();
+        } else if (response['id'] != null) {
+          sessionId = response['id'].toString();
+        }
+        
+        debugPrint("🍽️ [Diet Post] Extracted sessionId: $sessionId");
+        
+        if (sessionId != null && sessionId.isNotEmpty) {
+          debugPrint("🍽️ [Diet Post] Calling postMeal API with sessionId: $sessionId");
+          await NutritionApiService().postMeal(sessionId);
+          debugPrint("🍽️ [Diet Post] postMeal successful!");
+          
+          uploadManager.updateProgress(uploadId, 1.0);
+          uploadManager.completeUpload(uploadId);
+          
+          // Save notification to notification page
+          await NotificationService.saveNotification(
+            title: 'Diet Posted',
+            body: 'Your diet log is live on your feed!',
+            time: DateTime.now(),
+          );
+          
+          // Show system notification
+          NotificationService().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: 'Diet Posted',
+            body: 'Your diet log is live on your feed!',
+          );
+        } else {
+          // No session ID found - the meal was saved but we can't post it
+          debugPrint("🍽️ [Diet Post] ERROR: No sessionId found in response. Full response: $response");
+          uploadManager.updateProgress(uploadId, 1.0);
+          uploadManager.completeUpload(uploadId);
+          
+          // Save notification indicating partial success
+          await NotificationService.saveNotification(
+            title: 'Diet Saved',
+            body: 'Your diet log was saved but could not be posted to feed.',
+            time: DateTime.now(),
+          );
+        }
+      } else {
+        // Just saving, not posting
+        debugPrint("🍽️ [Diet Post] Save only mode - completed successfully");
+        uploadManager.updateProgress(uploadId, 1.0);
+        uploadManager.completeUpload(uploadId);
+        
+        // Save notification to notification page
+        await NotificationService.saveNotification(
+          title: 'Diet Saved',
+          body: 'Your diet log has been saved to your diary.',
+          time: DateTime.now(),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint("🍽️ [Diet Post] ERROR: Background save/post failed: $e");
+      debugPrint("🍽️ [Diet Post] Stack trace: $stackTrace");
+      uploadManager.failUpload(uploadId, errorMessage: 'Upload failed: ${e.toString()}');
+      
+      // Save error notification
+      await NotificationService.saveNotification(
+        title: 'Upload Failed',
+        body: 'There was an error saving your post. Please check your connection.',
+        time: DateTime.now(),
+      );
+      
+      // Show system notification
+      NotificationService().showNotification(
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        title: 'Post Failed',
+        body: 'There was an error saving your post. Please check your connection.',
+      );
+    }
+  }
+
+
 
   Widget _buildTag(String text, Color color, Color textColor) {
     return Container(
