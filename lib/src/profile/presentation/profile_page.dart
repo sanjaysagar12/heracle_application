@@ -186,7 +186,7 @@ class _ProfilePageState extends State<ProfilePage> {
         );
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Post deleted')));
+        ).showSnackBar(const SnackBar(content: Text('Workout deleted')));
       }
     } catch (e) {
       if (mounted) {
