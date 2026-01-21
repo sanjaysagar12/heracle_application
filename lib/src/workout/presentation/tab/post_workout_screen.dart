@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart' as img_picker;
 import 'package:heracle/main.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/upload_manager.dart';
 import '../../data/post_workout_repository.dart';
 
 class PostWorkoutScreen extends StatefulWidget {
@@ -165,57 +166,71 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
           }); // Return data to signal update
         }
       } else {
+        // Start upload tracking with UploadManager
+        final uploadManager = UploadManager();
+        final uploadId = uploadManager.startUpload(
+          title: 'Posting Workout',
+          type: 'workout',
+        );
 
-        // OPTIMISTIC UI: Fake delay then success
-        await Future.delayed(const Duration(seconds: 2));
-
+        // Navigate immediately - user sees progress bar
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Workout posted successfully!'),
-              backgroundColor: Color(0xFFCCFF00), // Lime green
-            ),
-          );
-          // Navigate immediately
           Navigator.popUntil(context, (route) => route.isFirst);
         }
 
+        // Simulate initial progress
+        await Future.delayed(const Duration(milliseconds: 500));
+        uploadManager.updateProgress(uploadId, 0.2);
+
         // BACKGROUND: Actual Upload
-        _repository.postWorkout(
-          caption: _captionController.text,
-          isPublic: _isPublic,
-          tags: _tags,
-          duration: widget.duration,
-          volume: widget.volume,
-          exercises: widget.exercises,
-          imagePaths: _selectedImages.map((e) => e.path).toList(),
+        try {
+          await Future.delayed(const Duration(milliseconds: 500));
+          uploadManager.updateProgress(uploadId, 0.5);
+          
+          await _repository.postWorkout(
+            caption: _captionController.text,
+            isPublic: _isPublic,
+            tags: _tags,
+            duration: widget.duration,
+            volume: widget.volume,
+            exercises: widget.exercises,
+            imagePaths: _selectedImages.map((e) => e.path).toList(),
+          );
 
-
-        ).then((_) {
-            // Success Notification
-            NotificationService().showNotification(
-              id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              title: 'Workout Posted',
-              body: 'Your workout has been posted to the feed!',
-            );
-            
-            // In-App Success Message (Global)
-            rootScaffoldMessengerKey.currentState?.showSnackBar(
-              const SnackBar(
-                content: Text('Your workout is now live!'),
-                backgroundColor: AppColors.primary,
-                duration: Duration(seconds: 3),
-              ),
-            );
-        }).catchError((e) {
+          uploadManager.updateProgress(uploadId, 1.0);
+          uploadManager.completeUpload(uploadId);
+          
+          // Save notification to notification page
+          await NotificationService.saveNotification(
+            title: 'Workout Posted',
+            body: 'Your workout has been posted to the feed!',
+            time: DateTime.now(),
+          );
+          
+          // Show system notification
+          NotificationService().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: 'Workout Posted',
+            body: 'Your workout has been posted to the feed!',
+          );
+        } catch (e) {
           debugPrint("Background workout upload failed: $e");
+          uploadManager.failUpload(uploadId, errorMessage: 'Upload failed. Please try again.');
+          
+          // Save error notification
+          await NotificationService.saveNotification(
+            title: 'Upload Failed',
+            body: 'Failed to post workout. Please try again.',
+            time: DateTime.now(),
+          );
+          
           // Error Notification
           NotificationService().showNotification(
-              id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              title: 'Upload Failed',
-              body: 'Failed to post workout. Please try again.',
-            );
-        });
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: 'Upload Failed',
+            body: 'Failed to post workout. Please try again.',
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -231,6 +246,7 @@ class _PostWorkoutScreenState extends State<PostWorkoutScreen> {
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

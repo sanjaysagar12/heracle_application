@@ -25,6 +25,7 @@ import 'edit_profile_page.dart';
 import '../data/profile_session_repository.dart';
 import 'settings_page.dart';
 import '../../home/providers/feed_provider.dart';
+import '../../nutrition/api/nutrition_service.dart'; // Added for nutrition delete
 
 class ProfilePage extends StatefulWidget {
   final String? username;
@@ -174,7 +175,8 @@ class _ProfilePageState extends State<ProfilePage> {
     context.read<FeedProvider>().toggleLike(postId, username: _targetUsername);
   }
 
-  Future<void> _handleDeletePost(String postId) async {
+  /// Delete a workout post
+  Future<void> _handleDeleteWorkoutPost(String postId) async {
     try {
       await _postWorkoutRepository.deletePost(postId);
       if (mounted) {
@@ -191,6 +193,28 @@ class _ProfilePageState extends State<ProfilePage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to delete post: $e')));
+      }
+    }
+  }
+
+  /// Delete a nutrition/meal post
+  Future<void> _handleDeleteNutritionPost(String sessionId) async {
+    try {
+      await NutritionApiService().deleteSession(sessionId);
+      if (mounted) {
+        context.read<FeedProvider>().removePost(
+          sessionId,
+          username: _targetUsername,
+        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Meal deleted')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete meal: $e')));
       }
     }
   }
@@ -551,7 +575,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onLike: () => _handleLike(post.id),
             onComment: () => _handleCommentClick(post.id),
             onLikesClick: () => _handleLikesClick(post.id),
-            onDelete: () => _handleDeletePost(post.id),
+            onDelete: () => _handleDeleteWorkoutPost(post.id),
             onEdit: () => _handleEditPost(post),
             isOwnPost: post.isOwnPost,
           );
@@ -561,7 +585,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onLike: () => _handleLike(post.id),
             onComment: () => _handleCommentClick(post.id),
             onLikesClick: () => _handleLikesClick(post.id),
-            onDelete: () => _handleDeletePost(post.id),
+            onDelete: () => _handleDeleteNutritionPost(post.sessionId),
           );
         }
         return const SizedBox.shrink();
