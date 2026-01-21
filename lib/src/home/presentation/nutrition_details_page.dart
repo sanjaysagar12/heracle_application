@@ -13,9 +13,11 @@ import '../../profile/data/profile_repository.dart';
 import 'package:flutter_svg/flutter_svg.dart'; // Still needed for logic icons if any remaining
 
 class NutritionDetailsPage extends StatefulWidget {
-  final NutritionPost post;
+  final NutritionPost? post;
+  final String? postId;
 
-  const NutritionDetailsPage({super.key, required this.post});
+  const NutritionDetailsPage({super.key, this.post, this.postId})
+      : assert(post != null || postId != null);
 
   @override
   State<NutritionDetailsPage> createState() => _NutritionDetailsPageState();
@@ -59,7 +61,8 @@ class _NutritionDetailsPageState extends State<NutritionDetailsPage> {
   }
   
   void _loadPost() {
-    _postFuture = _repository.getPostDetails(widget.post.id, isMeal: true);
+    final id = widget.post?.id ?? widget.postId!;
+    _postFuture = _repository.getPostDetails(id, isMeal: true);
   }
 
   Future<void> _loadUserProfile() async { 

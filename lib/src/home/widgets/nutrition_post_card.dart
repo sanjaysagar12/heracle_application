@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../core/utils/share_utils.dart';
 import '../../nutrition/presentation/post_nutrition_page.dart'; // Added
 import '../presentation/nutrition_details_page.dart';
 import '../data/mutual_feed_repository.dart';
@@ -372,10 +373,21 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
               
               const SizedBox(width: 24),
               // Share
-              SvgPicture.asset(
-                'assets/icons/share.svg',
-                width: 24,
-                height: 24,
+              GestureDetector(
+                onTap: () {
+                  ShareUtils.showShareOptions(
+                    context: context,
+                    title: 'Check out this meal by ${item.name}',
+                    content: item.content,
+                    postId: item.id,
+                    type: 'nutrition',
+                  );
+                },
+                child: SvgPicture.asset(
+                  'assets/icons/share.svg',
+                  width: 24,
+                  height: 24,
+                ),
               ),
             ],
           ),

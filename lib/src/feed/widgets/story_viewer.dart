@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../core/utils/share_utils.dart';
 import '../data/stories_repository.dart';
 import '../../home/widgets/comments_bottom_sheet.dart';
 import '../../home/data/mutual_feed_repository.dart';
@@ -100,6 +101,36 @@ class _StoryViewerState extends State<StoryViewer>
     ).then((_) {
       // Resume playback
       if (_isContentLoaded) {
+        if (_isVideoProgressTracking) {
+          _videoController?.play();
+        } else {
+          _progressController?.forward();
+        }
+      }
+    });
+  }
+
+  void _showShareOptions() {
+    final currentUser = _localStories[_currentUserIndex];
+    if (currentUser.stories.isEmpty) return;
+    final currentStory = currentUser.stories[_currentStoryIndex];
+
+    // Pause playback
+    if (_isVideoProgressTracking) {
+      _videoController?.pause();
+    } else {
+      _progressController?.stop();
+    }
+
+    ShareUtils.showShareOptions(
+      context: context,
+      title: 'Check out ${currentUser.name}\'s story',
+      content: 'View this story on Heracle',
+      postId: currentStory.id,
+      type: 'story',
+    ).then((_) {
+      // Resume playback
+      if (mounted && _isContentLoaded) {
         if (_isVideoProgressTracking) {
           _videoController?.play();
         } else {
@@ -786,6 +817,27 @@ class _StoryViewerState extends State<StoryViewer>
                                         : Colors.white,
                                     size: 22,
                                   ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          GestureDetector(
+                            onTap: _showShareOptions,
+                            child: Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.share_outlined,
+                                  color: Colors.white,
+                                  size: 22,
                                 ),
                               ),
                             ),
