@@ -301,7 +301,7 @@ class _PostNutritionPageState extends State<PostNutritionPage> {
                               ),
                               child: _isSaving
                                   ? const CircularProgressIndicator(color: AppColors.black)
-                                  : const Text('Post Workout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  : const Text('Post Diet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                             ),
                           ),
                         ),

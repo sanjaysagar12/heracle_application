@@ -125,7 +125,7 @@ class _HomePageState extends State<HomePage> {
         context.read<FeedProvider>().removePost(postId);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Post deleted')));
+        ).showSnackBar(const SnackBar(content: Text('Workout deleted')));
       }
     } catch (e) {
       if (mounted) {
