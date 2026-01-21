@@ -198,12 +198,20 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   /// Delete a nutrition/meal post
-  Future<void> _handleDeleteNutritionPost(String sessionId) async {
+  /// postId: The post ID for UI removal
+  /// sessionId: The session ID for the API call
+  Future<void> _handleDeleteNutritionPost(
+    String postId,
+    String sessionId,
+  ) async {
     try {
+      debugPrint(
+        '🍽️ Deleting nutrition post: postId=$postId, sessionId=$sessionId',
+      );
       await NutritionApiService().deleteSession(sessionId);
       if (mounted) {
         context.read<FeedProvider>().removePost(
-          sessionId,
+          postId, // Use postId for UI removal
           username: _targetUsername,
         );
         ScaffoldMessenger.of(
@@ -585,7 +593,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onLike: () => _handleLike(post.id),
             onComment: () => _handleCommentClick(post.id),
             onLikesClick: () => _handleLikesClick(post.id),
-            onDelete: () => _handleDeleteNutritionPost(post.sessionId),
+            onDelete: () => _handleDeleteNutritionPost(post.id, post.sessionId),
           );
         }
         return const SizedBox.shrink();

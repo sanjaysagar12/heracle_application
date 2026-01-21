@@ -111,7 +111,7 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (post is NutritionPost) {
-      await _handleDeleteNutritionPost(post.sessionId);
+      await _handleDeleteNutritionPost(postId, post.sessionId);
     } else {
       await _handleDeleteWorkoutPost(postId);
     }
@@ -137,17 +137,19 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// Delete a nutrition/meal post
-  Future<void> _handleDeleteNutritionPost(String sessionId) async {
+  /// postId: The post ID for UI removal
+  /// sessionId: The session ID for the API call
+  Future<void> _handleDeleteNutritionPost(
+    String postId,
+    String sessionId,
+  ) async {
     try {
+      debugPrint(
+        '🍽️ Deleting nutrition post: postId=$postId, sessionId=$sessionId',
+      );
       await NutritionApiService().deleteSession(sessionId);
       if (mounted) {
-        // Find the post by session ID and remove it
-        final feedProvider = context.read<FeedProvider>();
-        final post = feedProvider.posts.firstWhere(
-          (p) => p is NutritionPost && p.sessionId == sessionId,
-          orElse: () => throw Exception('Post not found'),
-        );
-        feedProvider.removePost(post.id);
+        context.read<FeedProvider>().removePost(postId);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Meal deleted')));
