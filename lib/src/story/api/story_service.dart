@@ -5,7 +5,7 @@ import '../../../../core/network/dio_client.dart';
 class StoryService {
   final DioClient _dioClient = DioClient();
 
-  Future<void> createStory(File file, String caption, {bool isHighlighted = false}) async {
+  Future<void> createStory(File file, String caption, {bool isHighlighted = false, Function(double)? onProgress}) async {
     try {
       String fileName = file.path.split('/').last;
       
@@ -21,6 +21,11 @@ class StoryService {
       final response = await _dioClient.dio.post(
         '/api/story',
         data: formData,
+        onSendProgress: (sent, total) {
+          if (total != -1 && onProgress != null) {
+            onProgress(sent / total);
+          }
+        },
         options: Options(
           headers: {
             'Content-Type': 'multipart/form-data',

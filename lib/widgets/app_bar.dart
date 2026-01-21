@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../core/theme/app_colors.dart';
 import '../src/home/presentation/notification_page.dart';
 import '../core/services/notification_service.dart';
+import '../core/services/upload_manager.dart';
+import 'dart:math' as math;
 
 class CustomAppBar extends StatelessWidget {
   final String name;
@@ -35,34 +37,52 @@ class CustomAppBar extends StatelessWidget {
         height: 80.0,
         child: Row(
           children: [
-            GestureDetector(
-              onTap: hasStory ? onStoryTap : onProfileTap,
-              child: Container(
-                padding: const EdgeInsets.all(2), // Space for border
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: hasStory
-                      ? const LinearGradient(
-                          colors: [
-                            AppColors.primary,
-                            AppColors.primary, // Or use a slight gradient if desired
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.black, width: 2), // Inner spacing/border
+            ListenableBuilder(
+              listenable: UploadManager(),
+              builder: (context, _) {
+                final storyTask = UploadManager().activeTasks.cast<UploadTask?>().firstWhere(
+                  (t) => t?.type == 'story',
+                  orElse: () => null,
+                );
+                final isUploading = storyTask != null;
+
+                return GestureDetector(
+                  onTap: hasStory ? onStoryTap : onProfileTap,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (isUploading)
+                        const _RotatingProgressBorder(),
+                      Container(
+                        padding: const EdgeInsets.all(2), // Space for border
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: hasStory && !isUploading
+                              ? const LinearGradient(
+                                  colors: [
+                                    AppColors.primary,
+                                    AppColors.primary,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : null,
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black, width: 2), // Inner spacing/border
+                          ),
+                          child: CircleAvatar(
+                            radius: 24, // Slightly reduced to fit in container
+                            backgroundImage: NetworkImage(profileImageUrl),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: CircleAvatar(
-                    radius: 24, // Slightly reduced to fit in container
-                    backgroundImage: NetworkImage(profileImageUrl),
-                  ),
-                ),
-              ),
+                );
+              },
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -148,6 +168,61 @@ class CustomAppBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RotatingProgressBorder extends StatefulWidget {
+  const _RotatingProgressBorder();
+
+  @override
+  State<_RotatingProgressBorder> createState() => _RotatingProgressBorderState();
+}
+
+class _RotatingProgressBorderState extends State<_RotatingProgressBorder>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.rotate(
+          angle: _controller.value * 2 * math.pi,
+          child: Container(
+            width: 58,
+            height: 58,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: SweepGradient(
+                colors: [
+                  Colors.transparent,
+                  AppColors.primary,
+                  AppColors.primary,
+                  Colors.transparent,
+                ],
+                stops: [0.0, 0.2, 0.8, 1.0],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
