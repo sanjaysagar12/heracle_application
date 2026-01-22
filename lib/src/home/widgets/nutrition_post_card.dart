@@ -379,8 +379,13 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                     context: context,
                     title: 'Check out this meal by ${item.name}',
                     content: item.content,
+                    username: item.name,
+                    profileImageUrl: item.profileImage,
                     postId: item.id,
                     type: 'nutrition',
+                    imageUrl: item.meals.isNotEmpty && item.meals.first.images.isNotEmpty 
+                        ? item.meals.first.images.first 
+                        : null,
                   );
                 },
                 child: SvgPicture.asset(

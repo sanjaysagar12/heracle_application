@@ -514,13 +514,16 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
             const SizedBox(width: 24),
             GestureDetector(
               onTap: () {
-                ShareUtils.showShareOptions(
-                  context: context,
-                  title: 'Check out this workout by ${widget.name}',
-                  content: widget.content,
-                  postId: widget.id,
-                  type: 'workout',
-                );
+                  ShareUtils.showShareOptions(
+                    context: context,
+                    title: 'Check out this workout by ${widget.name}',
+                    content: widget.content,
+                    username: widget.name,
+                    profileImageUrl: widget.profileImage,
+                    postId: widget.id,
+                    type: 'workout',
+                    imageUrl: widget.images.isNotEmpty ? widget.images.first : null,
+                  );
               },
               child: SvgPicture.asset(
                 'assets/icons/share.svg',

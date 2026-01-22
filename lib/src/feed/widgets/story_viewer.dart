@@ -126,8 +126,11 @@ class _StoryViewerState extends State<StoryViewer>
       context: context,
       title: 'Check out ${currentUser.name}\'s story',
       content: 'View this story on Heracle',
+      username: currentUser.name,
+      profileImageUrl: currentUser.profileImage,
       postId: currentStory.id,
       type: 'story',
+      imageUrl: currentStory.imageUrl,
     ).then((_) {
       // Resume playback
       if (mounted && _isContentLoaded) {
