@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../core/utils/share_utils.dart';
 import '../data/mutual_feed_repository.dart';
 import '../../../route.dart';
 import '../presentation/workout_details_page.dart';
@@ -511,10 +512,24 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
               ),
             ),
             const SizedBox(width: 24),
-            SvgPicture.asset(
-              'assets/icons/share.svg',
-              width: 24,
-              height: 24,
+            GestureDetector(
+              onTap: () {
+                  ShareUtils.showShareOptions(
+                    context: context,
+                    title: 'Check out this workout by ${widget.name}',
+                    content: widget.content,
+                    username: widget.name,
+                    profileImageUrl: widget.profileImage,
+                    postId: widget.id,
+                    type: 'workout',
+                    imageUrl: widget.images.isNotEmpty ? widget.images.first : null,
+                  );
+              },
+              child: SvgPicture.asset(
+                'assets/icons/share.svg',
+                width: 24,
+                height: 24,
+              ),
             ),
           ],
         ),

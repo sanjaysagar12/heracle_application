@@ -12,6 +12,7 @@ import 'package:heracle/src/home/providers/feed_provider.dart';
 import 'route.dart';
 import 'src/splash_screen.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/deep_link_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,9 @@ void main() async {
     debugPrint('NotificationService init error: $e');
   }
 
+  // Initialize DeepLinkService with the GlobalKey
+  DeepLinkService().init(navigatorKey);
+
   runApp(
     MultiProvider(
       providers: [
@@ -56,6 +60,7 @@ void main() async {
 }
 
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -63,6 +68,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       scaffoldMessengerKey: rootScaffoldMessengerKey,
       title: 'Heracle',
       theme: AppTheme.light,
