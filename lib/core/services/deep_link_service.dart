@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import '../../route.dart';
 import '../../src/home/presentation/workout_details_page.dart';
 import '../../src/home/presentation/nutrition_details_page.dart';
+import '../../app.dart';
 
 class DeepLinkService {
   static final DeepLinkService _instance = DeepLinkService._internal();
@@ -12,6 +14,7 @@ class DeepLinkService {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
   GlobalKey<NavigatorState>? _navigatorKey;
+  Uri? _pendingInitialUri;
 
   void init(GlobalKey<NavigatorState> navigatorKey) {
     _navigatorKey = navigatorKey;
@@ -21,9 +24,10 @@ class DeepLinkService {
   Future<void> _initDeepLinks() async {
     // Handle initial link (when app is opened from closed state)
     try {
-      final initialUri = await _appLinks.getInitialLink();
-      if (initialUri != null) {
-        _handleUri(initialUri);
+      _pendingInitialUri = await _appLinks.getInitialLink();
+      if (_pendingInitialUri != null) {
+        debugPrint('🔗 DeepLinkService: Pending initial link found: $_pendingInitialUri');
+        _handleUri(_pendingInitialUri!);
       }
     } catch (e) {
       debugPrint('Error getting initial deep link: $e');
@@ -43,13 +47,11 @@ class DeepLinkService {
     String? id;
 
     if (uri.scheme == 'heracle') {
-      // Format: heracle://workout/id
       type = uri.host;
       if (uri.pathSegments.isNotEmpty) {
         id = uri.pathSegments[0];
       }
     } else {
-      // Format: https://heracle.fit/workout/id
       final pathSegments = uri.pathSegments;
       if (pathSegments.length >= 2) {
         type = pathSegments[0];
@@ -57,31 +59,41 @@ class DeepLinkService {
       }
     }
 
-    debugPrint('🔗 DeepLinkService: Parsed Type: $type, ID: $id');
+    if (type == null || id == null) return;
 
-    if (type == null || id == null) {
-      debugPrint('🔗 DeepLinkService: Invalid deep link format');
-      return;
-    }
-
+    Widget? page;
     switch (type) {
       case 'workout':
-        debugPrint('🔗 DeepLinkService: Navigating to Workout: $id');
-        _navigateTo(WorkoutDetailsPage(postId: id));
+        page = WorkoutDetailsPage(postId: id);
         break;
       case 'nutrition':
-        debugPrint('🔗 DeepLinkService: Navigating to Nutrition: $id');
-        _navigateTo(NutritionDetailsPage(postId: id));
+        page = NutritionDetailsPage(postId: id);
         break;
-      default:
-        debugPrint('🔗 DeepLinkService: Unknown type: $type');
+    }
+
+    if (page != null) {
+      _navigateTo(page);
     }
   }
 
   void _navigateTo(Widget page) {
-    // Wait a bit for the app to be ready if it just launched
-    Future.delayed(const Duration(milliseconds: 500), () {
-      _navigatorKey?.currentState?.push(
+    // Wait for the app to finish its initial splash navigation
+    // We wait 2 seconds to ensure authentication check and splash navigation are done
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      final navigatorState = _navigatorKey?.currentState;
+      if (navigatorState == null) return;
+
+      // Check if we are still on Splash or have a clean stack
+      // If we can't pop, we should ensure the Home page is the base
+      if (!navigatorState.canPop()) {
+        navigatorState.pushNamedAndRemoveUntil(
+          AppRoutes.home,
+          (route) => false,
+        );
+      }
+
+      // Push the detail page on top
+      navigatorState.push(
         MaterialPageRoute(builder: (_) => page),
       );
     });

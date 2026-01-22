@@ -137,7 +137,7 @@ class ShareUtils {
             ),
             ListTile(
               leading: const Icon(Icons.share, color: AppColors.pureWhite),
-              title: const Text('Share to Stories...', style: TextStyle(color: AppColors.pureWhite)),
+              title: const Text('Share with others', style: TextStyle(color: AppColors.pureWhite)),
               onTap: () {
                 Navigator.pop(context);
                 sharePost(
