@@ -31,9 +31,9 @@ class DiscoverStoryCard extends StatelessWidget {
               children: [
                 Center(
                   child: Image.network(
-                    (story.mediaType == 'VIDEO' && story.thumbnail != null && story.thumbnail!.isNotEmpty)
-                        ? story.thumbnail!
-                        : (story.imageUrl ?? ''),
+                    (story.mediaType == 'VIDEO' && story.thumbnailUrl != null && story.thumbnailUrl!.isNotEmpty)
+                        ? story.thumbnailUrl!
+                        : (story.mediaUrl),
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
@@ -45,14 +45,6 @@ class DiscoverStoryCard extends StatelessWidget {
                     },
                   ),
                 ),
-                if (story.mediaType == 'VIDEO')
-                  const Center(
-                    child: Icon(
-                      Icons.play_circle_fill,
-                      color: Colors.white70,
-                      size: 40,
-                    ),
-                  ),
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),

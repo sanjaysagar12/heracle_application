@@ -561,15 +561,38 @@ class _ReelsTabState extends State<ReelsTab> {
             child: Center(
               child: story.mediaType == 'VIDEO'
                   ? VideoPlayerWidget(
-                      videoUrl: story.imageUrl ?? '',
+                      videoUrl: story.mediaUrl,
                       isPlaying: isPlaying,
                       isLooping: true,
                     )
                   : Image.network(
-                      story.imageUrl ?? '',
-                      fit: BoxFit.contain,
+                      story.mediaUrl,
+                      fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: AppColors.greyDark,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: AppColors.greyDark,
+                          child: const Center(
+                            child: Icon(
+                              Icons.error,
+                              color: AppColors.white40,
+                              size: 32,
+                            ),
+                          ),
+                        );
+                      },
                     ),
             ),
           ),

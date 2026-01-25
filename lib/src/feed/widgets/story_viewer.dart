@@ -130,7 +130,7 @@ class _StoryViewerState extends State<StoryViewer>
       profileImageUrl: currentUser.profileImage,
       postId: currentStory.id,
       type: 'story',
-      imageUrl: currentStory.imageUrl,
+      imageUrl: currentStory.mediaUrl,
     ).then((_) {
       // Resume playback
       if (mounted && _isContentLoaded) {
@@ -179,10 +179,10 @@ class _StoryViewerState extends State<StoryViewer>
     _videoController?.dispose();
     _videoController = null;
 
-    if (story.type == 'video' && story.imageUrl != null) {
-      _initializeVideoPlayer(story.imageUrl!);
-    } else if (story.type == 'image' && story.imageUrl != null) {
-      _preloadImage(story.imageUrl!);
+    if (story.type == 'video' && story.mediaUrl.isNotEmpty) {
+      _initializeVideoPlayer(story.mediaUrl);
+    } else if (story.type == 'image' && story.mediaUrl.isNotEmpty) {
+      _preloadImage(story.mediaUrl);
     } else {
       setState(() {
         _isContentLoaded = true;
@@ -861,14 +861,14 @@ class _StoryViewerState extends State<StoryViewer>
   Widget _buildStoryContent(StoryContent story) {
     switch (story.type) {
       case 'image':
-        return _isValidUrl(story.imageUrl)
+        return _isValidUrl(story.mediaUrl)
             ? Container(
                 width: double.infinity,
                 height: double.infinity,
                 color: Colors.black,
                 child: Center(
                   child: Image.network(
-                    story.imageUrl!,
+                    story.mediaUrl,
                     fit: BoxFit.contain,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
@@ -921,7 +921,7 @@ class _StoryViewerState extends State<StoryViewer>
               );
 
       case 'video':
-        if (!_isValidUrl(story.imageUrl)) {
+        if (!_isValidUrl(story.mediaUrl)) {
           return Container(
             color: Colors.grey[800],
             child: const Center(

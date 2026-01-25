@@ -41,8 +41,8 @@ class _MyStoryViewerState extends State<MyStoryViewer>
 
     final currentStory = _stories[_currentStoryIndex];
 
-    if (currentStory.type == 'image' && currentStory.imageUrl != null) {
-      _preloadImage(currentStory.imageUrl!);
+    if (currentStory.type == 'image' && currentStory.mediaUrl.isNotEmpty) {
+      _preloadImage(currentStory.mediaUrl);
     } else {
       // Text story - no loading needed
       setState(() {
@@ -266,13 +266,13 @@ class _MyStoryViewerState extends State<MyStoryViewer>
   Widget _buildStoryContent(StoryContent story) {
     if (story.type.toUpperCase() == 'VIDEO') {
       return VideoPlayerWidget(
-        videoUrl: story.imageUrl,
+        videoUrl: story.mediaUrl,
         isPlaying: _progressController.isAnimating, 
         isLooping: true, 
       );
-    } else if (story.type == 'image' && story.imageUrl != null) {
+    } else if (story.type == 'image' && story.mediaUrl.isNotEmpty) {
       return Image.network(
-        story.imageUrl!,
+        story.mediaUrl,
         fit: BoxFit.contain,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;

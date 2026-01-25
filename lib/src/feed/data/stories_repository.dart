@@ -5,7 +5,8 @@ import '../../home/data/mutual_feed_repository.dart';
 class StoryContent {
   final String id;
   final String type;
-  final String imageUrl;
+  final String mediaUrl;
+  final String? thumbnailUrl;
   final String text;
   final int duration;
   final bool isLiked;
@@ -18,7 +19,8 @@ class StoryContent {
   StoryContent({
     required this.id,
     required this.type,
-    required this.imageUrl,
+    required this.mediaUrl,
+    this.thumbnailUrl,
     required this.text,
     this.duration = 5,
     this.isLiked = false,
@@ -33,7 +35,8 @@ class StoryContent {
     return StoryContent(
       id: json['id'] as String? ?? '',
       type: json['type'] as String? ?? 'image',
-      imageUrl: json['imageUrl'] as String? ?? '',
+      mediaUrl: json['mediaUrl'] as String? ?? json['imageUrl'] as String? ?? '',
+      thumbnailUrl: json['thumbnailUrl'] as String?,
       text: json['text'] as String? ?? '',
       duration: json['duration'] as int? ?? 5,
       isLiked: json['isLiked'] as bool? ?? false,
@@ -52,7 +55,8 @@ class StoryContent {
   StoryContent copyWith({
     String? id,
     String? type,
-    String? imageUrl,
+    String? mediaUrl,
+    String? thumbnailUrl,
     String? text,
     int? duration,
     bool? isLiked,
@@ -65,7 +69,8 @@ class StoryContent {
     return StoryContent(
       id: id ?? this.id,
       type: type ?? this.type,
-      imageUrl: imageUrl ?? this.imageUrl,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       text: text ?? this.text,
       duration: duration ?? this.duration,
       isLiked: isLiked ?? this.isLiked,
@@ -145,8 +150,8 @@ class DiscoverStory {
   final String profileImage;
   final String content;
   final List<String> hashtags;
-  final String imageUrl;
-  final String thumbnail;
+  final String mediaUrl;
+  final String thumbnailUrl;
   final String mediaType;
   final String platform;
   final String platformHandle;
@@ -166,8 +171,8 @@ class DiscoverStory {
     required this.profileImage,
     required this.content,
     this.hashtags = const [],
-    required this.imageUrl,
-    this.thumbnail = '',
+    required this.mediaUrl,
+    this.thumbnailUrl = '',
     this.mediaType = 'IMAGE',
     this.platform = '',
     this.platformHandle = '',
@@ -196,16 +201,16 @@ class DiscoverStory {
           '',
       content: json['content'] as String? ?? json['caption'] as String? ?? '',
       hashtags: (json['hashtags'] as List<dynamic>?)?.cast<String>() ?? [],
-      imageUrl: json['mediaUrl'] as String? ?? json['imageUrl'] as String? ?? '', // Handle mediaUrl from feed API
-      thumbnail: json['thumbnail'] as String? ?? '',
-      mediaType: (json['mediaType'] as String?)?.toUpperCase() ?? 'IMAGE', // Ensure uppercase
+      mediaUrl: json['mediaUrl'] as String? ?? json['imageUrl'] as String? ?? '', 
+      thumbnailUrl: json['thumbnailUrl'] as String? ?? json['thumbnail'] as String? ?? '',
+      mediaType: (json['mediaType'] as String?)?.toUpperCase() ?? 'IMAGE', 
       platform: json['platform'] as String? ?? '',
       platformHandle: json['platformHandle'] as String? ?? '',
       label: json['label'] as String? ?? '',
       timeAgo: json['timeAgo'] as String? ?? '',
       isLiked: json['isLiked'] as bool? ?? false,
-      likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? 0, // Handle likeCount from feed API
-      commentsCount: json['commentCount'] as int? ?? json['commentsCount'] as int? ?? 0, // Handle commentCount from feed API
+      likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? 0, 
+      commentsCount: json['commentCount'] as int? ?? json['commentsCount'] as int? ?? 0, 
       likedBy:
           (json['likedBy'] as List<dynamic>?)
               ?.map((e) => LikedByUser.fromJson(e as Map<String, dynamic>))
@@ -223,8 +228,8 @@ class DiscoverStory {
     String? profileImage,
     String? content,
     List<String>? hashtags,
-    String? imageUrl,
-    String? thumbnail,
+    String? mediaUrl,
+    String? thumbnailUrl,
     String? mediaType,
     String? platform,
     String? platformHandle,
@@ -244,8 +249,8 @@ class DiscoverStory {
       profileImage: profileImage ?? this.profileImage,
       content: content ?? this.content,
       hashtags: hashtags ?? this.hashtags,
-      imageUrl: imageUrl ?? this.imageUrl,
-      thumbnail: thumbnail ?? this.thumbnail,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       mediaType: mediaType ?? this.mediaType,
       platform: platform ?? this.platform,
       platformHandle: platformHandle ?? this.platformHandle,

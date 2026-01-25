@@ -193,7 +193,10 @@ class WorkoutPost extends FeedPost {
       content:
           (json['caption'] as String?) ?? (json['content'] as String?) ?? '',
       tags: List<String>.from(json['tags'] ?? const []),
-      images: List<String>.from(json['images'] ?? const []),
+      images: (json['images'] as List? ?? [])
+          .where((e) => e != null && e.toString().trim().isNotEmpty)
+          .map((e) => e.toString())
+          .toList(),
       duration:
           json['duration']?.toString() ?? '', // Convert to string if number
       volume: json['volume']?.toString() ?? '',
@@ -328,7 +331,10 @@ class NutritionMeal {
       mealType: json['mealType'] as String? ?? 'Meal',
       content:
           (json['caption'] as String?) ?? (json['content'] as String?) ?? '',
-      images: List<String>.from(json['images'] ?? []),
+      images: (json['images'] as List? ?? [])
+          .where((e) => e != null && e.toString().trim().isNotEmpty)
+          .map((e) => e.toString())
+          .toList(),
       calories: totalCal,
       protein: totalProt,
       carbs: totalCarb,
