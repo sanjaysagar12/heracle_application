@@ -34,7 +34,8 @@ class StoriesService {
         final stories = storiesData.map((story) {
           final id = story['id'] as String? ?? '';
           final mediaType = (story['mediaType'] as String? ?? 'IMAGE').toUpperCase();
-          final imageUrl = story['imageUrl'] as String? ?? '';
+          final mediaUrl = story['mediaUrl'] as String? ?? '';
+          final thumbnailUrl = story['thumbnailUrl'] as String? ?? '';
           final caption = story['caption'] as String? ?? '';
           final isLiked = story['isLiked'] as bool? ?? false;
           final likes = story['likes'] as int? ?? 0;
@@ -45,13 +46,14 @@ class StoriesService {
           return {
             'id': id,
             'type': mediaType == 'IMAGE' ? 'image' : (mediaType == 'VIDEO' ? 'video' : 'image'),
-            'imageUrl': imageUrl,
+            'mediaUrl': mediaUrl,
+            'thumbnailUrl': thumbnailUrl,
             'text': caption,
             'duration': 5,
             'isLiked': isLiked,
             'likes': likes,
             'views': views,
-            'likedBy': <Map<String, dynamic>>[], // Can be extended later
+            'likedBy': <Map<String, dynamic>>[], 
             'isHighlighted': isHighlighted,
           };
         }).toList();
@@ -149,8 +151,9 @@ class StoriesService {
       final stories = storiesData.map((story) {
         final id = story['id'] as String? ?? '';
         final mediaType = (story['mediaType'] as String? ?? 'IMAGE').toUpperCase();
-        final imageUrl = story['imageUrl'] as String? ?? '';
-        final caption = story['caption'] as String? ?? '';
+          final mediaUrl = story['mediaUrl'] as String? ?? story['imageUrl'] as String? ?? '';
+        final thumbnailUrl = story['thumbnailUrl'] as String? ?? story['thumbnail'] as String? ?? '';
+        final caption = story['caption'] as String? ?? story['text'] as String? ?? '';
         final isLiked = story['isLiked'] as bool? ?? false;
         final likes = story['likes'] as int? ?? 0;
         final views = story['views'] as int? ?? 0;
@@ -160,7 +163,8 @@ class StoriesService {
         return {
           'id': id,
           'type': mediaType == 'IMAGE' ? 'image' : (mediaType == 'VIDEO' ? 'video' : 'image'),
-          'imageUrl': imageUrl,
+          'mediaUrl': mediaUrl,
+          'thumbnailUrl': thumbnailUrl,
           'text': caption,
           'duration': 5,
           'isLiked': isLiked,

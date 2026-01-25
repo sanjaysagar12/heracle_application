@@ -5,12 +5,16 @@ class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
   final bool isPlaying;
   final bool isLooping;
+  final Function(Duration)? onInitialized;
+  final VoidCallback? onCompleted;
 
   const VideoPlayerWidget({
     super.key,
     required this.videoUrl,
     required this.isPlaying,
     this.isLooping = true,
+    this.onInitialized,
+    this.onCompleted,
   });
 
   @override
@@ -30,10 +34,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           setState(() {
             _initialized = true;
           });
+          widget.onInitialized?.call(_controller.value.duration);
           _controller.setLooping(widget.isLooping);
           if (widget.isPlaying) {
             _controller.play();
           }
+          
+          _controller.addListener(() {
+            if (_controller.value.position >= _controller.value.duration) {
+              widget.onCompleted?.call();
+            }
+          });
         }
       });
   }
@@ -67,7 +78,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
     return SizedBox.expand(
       child: FittedBox(
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         child: SizedBox(
           width: _controller.value.size.width,
           height: _controller.value.size.height,

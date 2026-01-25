@@ -43,6 +43,11 @@ class _MyStoryViewerState extends State<MyStoryViewer>
 
     if (currentStory.type == 'image' && currentStory.mediaUrl.isNotEmpty) {
       _preloadImage(currentStory.mediaUrl);
+    } else if (currentStory.type.toUpperCase() == 'VIDEO') {
+      // Wait for video to initialize
+      setState(() {
+        _isContentLoaded = false;
+      });
     } else {
       // Text story - no loading needed
       setState(() {
@@ -80,11 +85,14 @@ class _MyStoryViewerState extends State<MyStoryViewer>
     );
   }
 
-  void _startProgress() {
+  void _startProgress({Duration? duration}) {
     if (_stories.isEmpty || !_isContentLoaded) return;
 
     final currentStory = _stories[_currentStoryIndex];
-    _progressController.duration = Duration(seconds: currentStory.duration);
+    
+    // Use provided duration (from video) or fallback to story duration
+    _progressController.duration = duration ?? Duration(seconds: currentStory.duration);
+    
     _progressController.reset();
     _progressController.forward().then((_) {
       if (_currentStoryIndex < _stories.length - 1) {
@@ -266,9 +274,33 @@ class _MyStoryViewerState extends State<MyStoryViewer>
   Widget _buildStoryContent(StoryContent story) {
     if (story.type.toUpperCase() == 'VIDEO') {
       return VideoPlayerWidget(
+        key: ValueKey(story.id),
         videoUrl: story.mediaUrl,
-        isPlaying: _progressController.isAnimating, 
-        isLooping: true, 
+        isPlaying: _isContentLoaded, // Control play based on content loaded (which we set to true on init)
+        isLooping: false, // Don't loop, we want to go to next story
+        onInitialized: (duration) {
+          if (mounted) {
+            setState(() {
+              _isContentLoaded = true;
+            });
+            // Update duration for progress controller
+            final currentStory = _stories[_currentStoryIndex];
+            if (currentStory.id == story.id) { // Ensure we are still on the same story
+               _startProgress(duration: duration);
+            }
+          }
+        },
+        onCompleted: () {
+          if (mounted) {
+             // Go to next story
+             if (_currentStoryIndex < _stories.length - 1) {
+                setState(() => _currentStoryIndex++);
+                _loadCurrentStory();
+              } else {
+                Navigator.pop(context);
+              }
+          }
+        },
       );
     } else if (story.type == 'image' && story.mediaUrl.isNotEmpty) {
       return Image.network(
@@ -339,7 +371,7 @@ class _MyStoryViewerState extends State<MyStoryViewer>
         },
         onTapDown: (details) {
           final screenWidth = MediaQuery.of(context).size.width;
-          if (details.globalPosition.dx < screenWidth / 2) {
+          if (details.globalPosition.dx < screenWidth * 0.3) {
             if (_currentStoryIndex > 0) {
               setState(() => _currentStoryIndex--);
               _loadCurrentStory();
