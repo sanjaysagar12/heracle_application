@@ -11,6 +11,9 @@ import 'package:heracle/route.dart';
 import '../../feed/data/stories_repository.dart';
 import '../../feed/presentation/tab/my_story_viewer.dart';
 import '../../home/providers/user_profile_provider.dart';
+import '../data/draft_repository.dart';
+import 'dart:convert';
+import './tab/log_workout_tab.dart';
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -161,14 +164,64 @@ class WorkoutPageState extends State<WorkoutPage> {
                               width: double.infinity,
                               child: ElevatedButton(
                                 onPressed: () async {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          SelectWorkoutsTab(mode: 'start'),
-                                    ),
-                                  );
-                                  await _loadData();
+                                  final draftRepo = DraftRepository();
+                                  final hasDraft = await draftRepo.hasDraft();
+
+                                  if (hasDraft && context.mounted) {
+                                     final shouldResume = await showDialog<String>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                           backgroundColor: AppColors.black100,
+                                           title: const Text('Unfinished Workout', style: TextStyle(color: AppColors.pureWhite)),
+                                           content: const Text('You have an unfinished workout session. Do you want to resume it or start a new empty one?', style: TextStyle(color: AppColors.white60)),
+                                           actions: [
+                                              TextButton(
+                                                 onPressed: () => Navigator.pop(ctx, 'new'),
+                                                 child: const Text('Start New', style: TextStyle(color: AppColors.white60)),
+                                              ),
+                                              TextButton(
+                                                 onPressed: () => Navigator.pop(ctx, 'resume'),
+                                                 child: const Text('Resume', style: TextStyle(color: AppColors.primary)),
+                                              ),
+                                           ],
+                                        ),
+                                     );
+
+                                     if (shouldResume == 'resume') {
+                                         final draft = await draftRepo.getDraft();
+                                         if (draft != null && context.mounted) {
+                                            final exercises = List<Map<String, dynamic>>.from(jsonDecode(draft.data));
+                                            await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => LogWorkoutTab(
+                                                  mode: 'resume',
+                                                  exercises: exercises,
+                                                  sessionId: draft.sessionId,
+                                                  sessionName: draft.sessionName,
+                                                ),
+                                              ),
+                                            );
+                                            await _loadData();
+                                            return;
+                                         }
+                                     } else if (shouldResume == 'new') {
+                                         await draftRepo.deleteDraft();
+                                     } else {
+                                         return;
+                                     }
+                                  }
+
+                                  if (context.mounted) {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            SelectWorkoutsTab(mode: 'start'),
+                                      ),
+                                    );
+                                    await _loadData();
+                                  }
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,

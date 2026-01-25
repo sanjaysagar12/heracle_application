@@ -6,6 +6,8 @@ import '../presentation/tab/log_workout_tab.dart';
 import '../presentation/tab/create_session_tab.dart';
 import '../presentation/tab/workout_logs_tab.dart'; // Added
 import '../presentation/view_session_page.dart';
+import '../data/draft_repository.dart';
+import 'dart:convert';
 
 class SessionsSection extends StatefulWidget {
   final SessionRepository? repository;
@@ -590,28 +592,81 @@ class _SessionsSectionState extends State<SessionsSection> {
                     ),
                   )
                 : ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
+                      final draftRepo = DraftRepository();
+                      final hasDraft = await draftRepo.hasDraft();
+
+                      if (hasDraft && context.mounted) {
+                         final shouldResume = await showDialog<String>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                               backgroundColor: AppColors.black100,
+                               title: const Text('Unfinished Workout', style: TextStyle(color: AppColors.pureWhite)),
+                               content: const Text('You have an unfinished workout session. Do you want to resume it or start this new one?', style: TextStyle(color: AppColors.white60)),
+                               actions: [
+                                  TextButton(
+                                     onPressed: () => Navigator.pop(ctx, 'new'),
+                                     child: const Text('Start New', style: TextStyle(color: AppColors.white60)),
+                                  ),
+                                  TextButton(
+                                     onPressed: () => Navigator.pop(ctx, 'resume'),
+                                     child: const Text('Resume', style: TextStyle(color: AppColors.primary)),
+                                  ),
+                               ],
+                            ),
+                         );
+                         
+                         if (shouldResume == 'resume') {
+                             final draft = await draftRepo.getDraft();
+                             if (draft != null && context.mounted) {
+                                final exercises = List<Map<String, dynamic>>.from(jsonDecode(draft.data));
+                                // Inject startTime if needed, but LogWorkoutTab can handle it if we pass a special flag or just the data
+                                // We'll pass the exercises, and set title/id from draft
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => LogWorkoutTab(
+                                      mode: 'resume',
+                                      exercises: exercises,
+                                      sessionId: draft.sessionId,
+                                      sessionName: draft.sessionName,
+                                    ),
+                                  ),
+                                );
+                                return;
+                             }
+                         } else if (shouldResume == 'new') {
+                             await draftRepo.deleteDraft();
+                         } else {
+                             // User cancelled dialog
+                             return;
+                         }
+                      }
+
                       final exercisesForLog = s.exercises.map((e) {
                         return <String, dynamic>{
                           'id': e['id']?.toString() ?? '',
                           'name': e['name']?.toString() ?? '',
                           'desc': e['desc']?.toString() ?? '',
                           'image': e['image']?.toString() ?? '',
+                          'trackingType': e['trackingType'], // Ensure trackingType is passed
                           'sets': e['sets'],
                         };
                       }).toList();
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => LogWorkoutTab(
-                            mode: 'start',
-                            exercises: exercisesForLog,
-                            sessionId: s.id,
-                            sessionName: s.title,
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LogWorkoutTab(
+                              mode: 'start',
+                              exercises: exercisesForLog,
+                              sessionId: s.id,
+                              sessionName: s.title,
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,

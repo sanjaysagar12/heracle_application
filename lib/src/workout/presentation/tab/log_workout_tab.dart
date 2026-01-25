@@ -5,7 +5,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../data/session_repository.dart';
 import 'select_workouts_tab.dart';
 import 'post_workout_screen.dart';
-import '../../storage/streak_storage.dart'; // Added
+import '../../storage/streak_storage.dart';
+import '../../data/draft_repository.dart';
+import 'dart:async';
+import 'dart:convert';
 
 class LogWorkoutTab extends StatefulWidget {
   final String mode; // 'start' or 'create'
@@ -67,12 +70,17 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   late DateTime _startTime;
   bool _isReordering = false;
   final SessionRepository _sessionRepository = SessionRepository();
-  final StreakStorage _streakStorage = StreakStorage(); // Added
+  final StreakStorage _streakStorage = StreakStorage();
+  final DraftRepository _draftRepository = DraftRepository();
+  Timer? _saveDebounce;
 
   @override
   void initState() {
     super.initState();
-    _startTime = DateTime.now();
+    _startTime = widget.mode == 'resume' && widget.exercises.isNotEmpty 
+        ? DateTime.fromMillisecondsSinceEpoch(widget.exercises.first['startTime'] ?? DateTime.now().millisecondsSinceEpoch) 
+        : DateTime.now();
+
     _exerciseLogs = widget.exercises.map((e) {
       // if exercise has saved sets, use them; otherwise create 3 empty sets
       final savedSets = e['sets'];
@@ -83,13 +91,19 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           final savedKg = sMap['kg']?.toString() ?? '';
           final savedReps = sMap['reps']?.toString() ?? '';
           final savedTime = sMap['time']?.toString() ?? '';
+          final isCompleted = sMap['completed'] == true;
+          
+          // Determine if we are resuming (values exist in kg/reps/time) or starting from template (values in placeholders)
+          // valid values in kg/reps/time imply a resume or pre-filled data
+          
           return _SetLog(
-            kg: '', // keep empty - user will enter new values
-            reps: '', // keep empty
-            time: '',
-            placeholderKg: savedKg.isNotEmpty && savedKg != '0' ? savedKg : null,
-            placeholderReps: savedReps.isNotEmpty && savedReps != '0' ? savedReps : null,
-            placeholderTime: savedTime.isNotEmpty && savedTime != '0' ? savedTime : null,
+            kg: savedKg == '0' ? '' : savedKg, 
+            reps: savedReps == '0' ? '' : savedReps,
+            time: savedTime == '0' ? '' : savedTime,
+            completed: isCompleted,
+            placeholderKg: sMap['placeholderKg'], // Pass through placeholders if they exist
+            placeholderReps: sMap['placeholderReps'],
+            placeholderTime: sMap['placeholderTime'],
           );
         }).toList();
       } else {
@@ -104,6 +118,60 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
         sets: sets,
       );
     }).toList();
+  }
+
+  @override
+  void dispose() {
+    _saveDebounce?.cancel();
+    // Verify if we should save on dispose? 
+    // Usually dispose happens on finish/discard too. 
+    // We handle deleteDraft explicitly in finish/discard, so if we just back out, we want to save.
+    // However, we can't do async work reliably in dispose. 
+    // Deactivate is better, or relies on autosave.
+    super.dispose();
+  }
+  
+  @override
+  void deactivate() {
+     _saveDraft(); // Handle save when navigating away (e.g. back button)
+     super.deactivate();
+  }
+
+  void _triggerSave() {
+    if (_saveDebounce?.isActive ?? false) _saveDebounce!.cancel();
+    _saveDebounce = Timer(const Duration(seconds: 2), _saveDraft);
+  }
+
+  Future<void> _saveDraft() async {
+      // Serialize current state
+      final exercisesJson = _exerciseLogs.map((ex) {
+        return {
+           'id': ex.id,
+           'name': ex.name,
+           'desc': ex.desc,
+           'image': ex.image,
+           'trackingType': ex.trackingType,
+           'sets': ex.sets.map((s) => {
+             'kg': s.kg,
+             'reps': s.reps,
+             'time': s.time,
+             'completed': s.completed,
+             'placeholderKg': s.placeholderKg,
+             'placeholderReps': s.placeholderReps,
+             'placeholderTime': s.placeholderTime,
+           }).toList(),
+        };
+      }).toList();
+
+      final draft = DraftWorkout(
+        sessionId: widget.sessionId,
+        sessionName: widget.sessionName,
+        startTime: _startTime.millisecondsSinceEpoch,
+        data: jsonEncode(exercisesJson),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      );
+
+      await _draftRepository.saveDraft(draft);
   }
 
   int get _totalSetCount => _exerciseLogs.fold(0, (s, ex) => s + ex.sets.length);
@@ -133,21 +201,28 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
     setState(() {
       ex.sets.add(_SetLog(kg: '', reps: '', time: ''));
     });
+    _triggerSave();
   }
 
   void _toggleComplete(_SetLog set) {
     setState(() {
       set.completed = !set.completed;
     });
+    _triggerSave();
   }
 
   void _removeSet(_ExerciseLog ex, int index) {
     setState(() {
       if (ex.sets.length > 1) ex.sets.removeAt(index);
     });
+    _triggerSave();
   }
 
-  void _discardWorkout() {
+  void _discardWorkout() async {
+    // Delete draft
+    await _draftRepository.deleteDraft();
+    
+    if (!mounted) return;
     setState(() {
       // reset all sets to default
       for (var ex in _exerciseLogs) {
@@ -156,6 +231,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
       _startTime = DateTime.now();
     });
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout discarded')));
+    Navigator.pop(context); // Go back after discard
   }
 
   Future<void> _addWorkout() async {
@@ -239,6 +315,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
       );
 
       await _sessionRepository.saveWorkoutLogToDb(workoutLog);
+      await _draftRepository.deleteDraft(); // Clear draft on success
       await _streakStorage.incrementStreak(); // Update streak
 
       if (mounted) {
@@ -335,6 +412,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
       setState(() {
         _exerciseLogs.removeWhere((ex) => ex.id == exercise.id);
       });
+      _triggerSave();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Removed "${exercise.name}" from workout')),
       );
@@ -430,6 +508,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                     final item = _exerciseLogs.removeAt(oldIndex);
                     _exerciseLogs.insert(newIndex, item);
                   });
+                  _triggerSave();
                 },
                 onReorderStart: (index) {
                   HapticFeedback.heavyImpact();
@@ -696,7 +775,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                                 ),
                                 style: const TextStyle(color: AppColors.pureWhite),
-                                onChanged: (v) => setState(() => set.kg = v),
+                                onChanged: (v) { setState(() => set.kg = v); _triggerSave(); },
                                 controller: TextEditingController(text: set.kg)..selection = TextSelection.fromPosition(TextPosition(offset: set.kg.length)),
                               ),
                             ),
@@ -722,7 +801,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                                 ),
                                 style: const TextStyle(color: AppColors.pureWhite),
-                                onChanged: (v) => setState(() => set.reps = v),
+                                onChanged: (v) { setState(() => set.reps = v); _triggerSave(); },
                                 controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
                               ),
                             ),
@@ -748,7 +827,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                                 ),
                                 style: const TextStyle(color: AppColors.pureWhite),
-                                onChanged: (v) => setState(() => set.reps = v),
+                                onChanged: (v) { setState(() => set.reps = v); _triggerSave(); },
                                 controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
                               ),
                             ),
@@ -774,7 +853,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                                 ),
                                 style: const TextStyle(color: AppColors.pureWhite),
-                                onChanged: (v) => setState(() => set.time = v),
+                                onChanged: (v) { setState(() => set.time = v); _triggerSave(); },
                                 controller: TextEditingController(text: set.time)..selection = TextSelection.fromPosition(TextPosition(offset: set.time.length)),
                               ),
                             ),

@@ -24,7 +24,7 @@ class DatabaseHelper {
       
       return await openDatabase(
         path,
-        version: 1, // Fresh install starts at version 1
+        version: 2, // Upgraded to version 2
         onCreate: _createTables,
         onUpgrade: _onUpgrade,
         onConfigure: _onConfigure,
@@ -146,6 +146,18 @@ class DatabaseHelper {
         updated_at INTEGER NOT NULL
       )
     ''');
+    
+    // Create draft_workouts table (Added in v2 logic for new installs)
+    batch.execute('''
+      CREATE TABLE draft_workouts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT,
+        session_name TEXT,
+        start_time INTEGER,
+        data TEXT,
+        created_at INTEGER
+      )
+    ''');
 
     // Insert default targets
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -172,8 +184,19 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // No upgrades needed as we're starting fresh with the latest schema
-    print('DatabaseHelper: Upgrading database from version $oldVersion to $newVersion (Clean Install Logic)');
+    print('DatabaseHelper: Upgrading database from version $oldVersion to $newVersion');
+    if (oldVersion < 2) {
+       await db.execute('''
+        CREATE TABLE draft_workouts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id TEXT,
+          session_name TEXT,
+          start_time INTEGER,
+          data TEXT,
+          created_at INTEGER
+        )
+      ''');
+    }
   }
 
   Future<void> closeDatabase() async {
