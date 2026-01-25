@@ -5,6 +5,7 @@ import '../../data/stories_repository.dart';
 import '../../../home/data/mutual_feed_repository.dart'; // For Comment model
 import '../../../home/widgets/comments_bottom_sheet.dart';
 import '../../../../src/profile/presentation/profile_page.dart';
+import '../../widgets/video_player_widget.dart';
 
 class MyStoryViewer extends StatefulWidget {
   final StoryUser myStory;
@@ -262,6 +263,47 @@ class _MyStoryViewerState extends State<MyStoryViewer>
     super.dispose();
   }
 
+  Widget _buildStoryContent(StoryContent story) {
+    if (story.type.toUpperCase() == 'VIDEO') {
+      return VideoPlayerWidget(
+        videoUrl: story.imageUrl,
+        isPlaying: _progressController.isAnimating, 
+        isLooping: true, 
+      );
+    } else if (story.type == 'image' && story.imageUrl != null) {
+      return Image.network(
+        story.imageUrl!,
+        fit: BoxFit.contain,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => Container(
+          color: AppColors.greyDark,
+          child: const Center(
+             child: Icon(Icons.error, color: AppColors.pureWhite),
+          ),
+        ),
+      );
+    } else {
+      return Container(
+        color: AppColors.primary,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Text(
+              story.text,
+              style: const TextStyle(fontSize: 24, color: AppColors.black),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_stories.isEmpty) {
@@ -319,58 +361,7 @@ class _MyStoryViewerState extends State<MyStoryViewer>
           children: [
             // Story Content
             Center(
-              child:
-                  currentStory.type == 'image' && currentStory.imageUrl != null
-                  ? Image.network(
-                      currentStory.imageUrl!,
-                      fit: BoxFit.contain,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: AppColors.greyDark,
-                          child: const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.error,
-                                  color: AppColors.pureWhite,
-                                  size: 50,
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Failed to load image',
-                                  style: TextStyle(color: AppColors.pureWhite),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                  : Container(
-                      color: AppColors.primary,
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Text(
-                            currentStory.text ?? '',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              color: AppColors.black,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ),
+              child: _buildStoryContent(currentStory),
             ),
 
             // Loading Indicator

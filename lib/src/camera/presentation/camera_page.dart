@@ -303,8 +303,16 @@ class _CameraPageState extends State<CameraPage>
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      // 2. Capture edited image
-      File fileToUpload = await _capturePngToFile();
+      File fileToUpload;
+      String mediaType;
+
+      if (_isVideo && _previewFile != null) {
+        fileToUpload = _previewFile!;
+        mediaType = 'VIDEO';
+      } else {
+        fileToUpload = await _capturePngToFile();
+        mediaType = 'IMAGE';
+      }
 
       // Fake delay for "Processing" feeling (Optimistic UI)
       await Future.delayed(const Duration(seconds: 2));
@@ -336,6 +344,7 @@ class _CameraPageState extends State<CameraPage>
           fileToUpload, 
           caption, 
           isHighlighted: isHighlighted,
+          mediaType: mediaType,
           onProgress: (progress) {
             uploadManager.updateProgress(uploadId, progress);
           },

@@ -10,6 +10,7 @@ import 'dart:math' as math;
 import '../../../home/api/mutual_feed_service.dart';
 import '../../../home/data/mutual_feed_repository.dart'; // Needed for Comment/LikedByUser types
 import '../../../profile/presentation/profile_page.dart';
+import '../../widgets/video_player_widget.dart';
 
 class ReelsTab extends StatefulWidget {
   final List<DiscoverStory> stories;
@@ -559,9 +560,10 @@ class _ReelsTabState extends State<ReelsTab> {
             color: Colors.black,
             child: Center(
               child: story.mediaType == 'VIDEO'
-                  ? ReelVideoPlayer(
+                  ? VideoPlayerWidget(
                       videoUrl: story.imageUrl ?? '',
                       isPlaying: isPlaying,
+                      isLooping: true,
                     )
                   : Image.network(
                       story.imageUrl ?? '',
@@ -1224,75 +1226,4 @@ class _ReelsTabState extends State<ReelsTab> {
   }
 }
 
-class ReelVideoPlayer extends StatefulWidget {
-  final String videoUrl;
-  final bool isPlaying;
 
-  const ReelVideoPlayer({
-    super.key,
-    required this.videoUrl,
-    required this.isPlaying,
-  });
-
-  @override
-  State<ReelVideoPlayer> createState() => _ReelVideoPlayerState();
-}
-
-class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
-  late VideoPlayerController _controller;
-  bool _initialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
-      ..initialize().then((_) {
-        if (mounted) {
-          setState(() {
-            _initialized = true;
-          });
-          if (widget.isPlaying) {
-            _controller.play();
-            _controller.setLooping(true);
-          }
-        }
-      });
-  }
-
-  @override
-  void didUpdateWidget(ReelVideoPlayer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isPlaying != oldWidget.isPlaying && _initialized) {
-      if (widget.isPlaying) {
-        _controller.play();
-      } else {
-        _controller.pause();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_initialized) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFD4FC79)),
-      );
-    }
-    return SizedBox.expand(
-      child: FittedBox(
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: _controller.value.size.width,
-          height: _controller.value.size.height,
-          child: VideoPlayer(_controller),
-        ),
-      ),
-    );
-  }
-}
