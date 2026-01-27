@@ -436,12 +436,12 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              image: DecorationImage(
-                image: NetworkImage(meal.images.isNotEmpty 
-                    ? meal.images.first 
-                    : 'https://dummyimage.com/600x400/000/fff'),
-                fit: BoxFit.cover,
-              ),
+              image: (meal.images.isNotEmpty && meal.images.first.isNotEmpty)
+                  ? DecorationImage(
+                      image: NetworkImage(meal.images.first),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
             child: Stack(
               children: [
