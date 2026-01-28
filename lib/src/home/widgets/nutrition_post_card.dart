@@ -266,6 +266,10 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
 
           // Meal Carousel
           if (item.meals.isNotEmpty) ...[
+             // Add Tags here
+             _buildTags(item.meals[_currentMealIndex]),
+             const SizedBox(height: 16),
+
              AspectRatio(
                aspectRatio: 16/10, // Adjust based on your image needs
                child: GestureDetector(
@@ -428,44 +432,58 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
     );
   }
 
+  Widget _buildTags(NutritionMeal meal) {
+    if (meal.mealType.isEmpty) return const SizedBox.shrink();
+    
+    return Wrap(
+      spacing: 8,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.greyDark,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            meal.mealType,
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMealPage(NutritionMeal meal) {
+    final hasImage = meal.images.isNotEmpty && meal.images.first.isNotEmpty;
+
     return Column(
       children: [
-        // Image with Badge
         Expanded(
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              image: (meal.images.isNotEmpty && meal.images.first.isNotEmpty)
+              color: hasImage ? null : AppColors.greyDark,
+              image: hasImage
                   ? DecorationImage(
                       image: NetworkImage(meal.images.first),
                       fit: BoxFit.cover,
                     )
                   : null,
             ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+            child: hasImage
+                ? null
+                : const Center(
                     child: Text(
-                      meal.mealType,
-                      style: const TextStyle(
-                        color: AppColors.pureWhite,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                      'Image not added',
+                      style: TextStyle(
+                        color: AppColors.white60,
+                        fontSize: 14,
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
           ),
         ),
         const SizedBox(height: 16),
