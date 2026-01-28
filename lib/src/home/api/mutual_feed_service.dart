@@ -13,6 +13,15 @@ class MutualFeedService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getUserSuggestions() async {
+    try {
+      final response = await _dio.get('/api/social/suggestions');
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      throw Exception('Failed to load user suggestions: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> getPostDetails(String postId) async {
     try {
       final response = await _dio.get('/api/post/$postId');

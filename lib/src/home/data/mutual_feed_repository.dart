@@ -1,6 +1,7 @@
 import '../../core/network/cache_manager.dart';
 import '../api/mutual_feed_service.dart';
 import '../../../core/helper/time_formatter.dart';
+import 'user_suggestion.dart';
 
 class LikedByUser {
   final String name;
@@ -588,6 +589,18 @@ class MutualFeedRepository {
         return _mapFeedData(List<Map<String, dynamic>>.from(cachedData));
       }
       throw Exception('Failed to load mutual feed: $e');
+    }
+  }
+
+  Future<List<UserSuggestion>> getSuggestions() async {
+    try {
+      final data = await _service.getUserSuggestions();
+      return data.map((json) => UserSuggestion.fromJson(json)).toList();
+    } catch (e) {
+      // Return empty list on failure rather than blocking UI?
+      // Or throw to handle in provider. Let's throw for now.
+      print('Failed to load suggestions: $e');
+      return [];
     }
   }
 

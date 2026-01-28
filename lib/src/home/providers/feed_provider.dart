@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../data/mutual_feed_repository.dart';
+import '../data/user_suggestion.dart';
 import '../data/profile_repository.dart';
 import '../../profile/data/profile_repository.dart' as profile_repo;
 
@@ -13,6 +14,7 @@ class FeedProvider extends ChangeNotifier {
 
   // Home feed posts
   List<FeedPost> _posts = [];
+  List<UserSuggestion> _suggestions = [];
 
   // User-specific posts (for profile pages) keyed by username
   Map<String, List<FeedPost>> _userPosts = {};
@@ -35,6 +37,7 @@ class FeedProvider extends ChangeNotifier {
 
   // Getters
   List<FeedPost> get posts => _posts;
+  List<UserSuggestion> get suggestions => _suggestions;
   bool get isLoading => _isLoading;
   bool get isRefreshing => _isRefreshing;
   String? get error => _error;
@@ -65,12 +68,22 @@ class FeedProvider extends ChangeNotifier {
 
     try {
       _posts = await _feedRepository.getMutualFeed();
+      await loadSuggestions(); // Load suggestions in parallel or sequence
       _isLoading = false;
       notifyListeners();
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> loadSuggestions() async {
+    try {
+      _suggestions = await _feedRepository.getSuggestions();
+    } catch (e) {
+      print('FeedProvider: Failed to load suggestions $e');
+      _suggestions = [];
     }
   }
 
@@ -81,6 +94,7 @@ class FeedProvider extends ChangeNotifier {
 
     try {
       _posts = await _feedRepository.getMutualFeed();
+      await loadSuggestions();
       _error = null;
     } catch (e) {
       _error = e.toString();
@@ -118,6 +132,18 @@ class FeedProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _error = 'Failed to refresh posts: $e';
+      notifyListeners();
+    }
+  }
+
+  /// Follow/Unfollow user
+  Future<void> followUser(String username) async {
+    // We could do optimistic update here if we want to immediately hide card
+    // or just assume API works. The carousel UI will handle hiding individual cards locally.
+    try {
+      await _feedRepository.followUser(username);
+    } catch (e) {
+      _error = 'Failed to follow user: $e';
       notifyListeners();
     }
   }

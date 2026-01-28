@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/mutual_feed_repository.dart';
+import '../providers/feed_provider.dart';
 import 'workout_post_card.dart';
 import 'nutrition_post_card.dart';
+import 'user_suggestions_carousel.dart';
 
 class TrackMutualsSection extends StatefulWidget {
   final List<FeedPost> posts;
@@ -120,47 +123,29 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
       );
     }
 
+    final feedProvider = context.watch<FeedProvider>();
+    final suggestions = feedProvider.suggestions;
+
     return Column(
       children: [
-        ...displayPosts.map<Widget>((post) {
-          if (post is WorkoutPost) {
-            return WorkoutPostCard(
-              id: post.id,
-              name: post.name,
-              username: post.username,
-              handle: post.handle,
-              profileImage: post.profileImage,
-              timeAgo: post.timeAgo,
-              content: post.content,
-              tags: post.tags,
-              images: post.images,
-              duration: post.duration,
-              volume: post.volume,
-              records: post.records,
-              exercises: post.exercises,
-              likes: post.likes,
-              likedBy: post.likedBy,
-              isLiked: post.isLiked,
-              isOwnPost: post.isOwnPost,
-              commentCount: post.commentCount,
-              onLike: () => widget.onLike(post.id),
-              onComment: () => widget.onComment(post.id),
-              onLikesClick: () => widget.onLikesClick(post.id),
-              onDelete: () => widget.onDeletePost(post.id),
-              onEdit: () => widget.onEditPost(post),
-            );
-          } else if (post is NutritionPost) {
-            return NutritionPostCard(
-              post: post,
-              onLike: () => widget.onLike(post.id),
-              onComment: () => widget.onComment(post.id),
-              onLikesClick: () => widget.onLikesClick(post.id),
-              onDelete: () => widget.onDeletePost(post.id),
-              // Nutrition post edit not requested yet
-            );
-          }
-          return const SizedBox.shrink();
-        }),
+        for (int i = 0; i < displayPosts.length; i++) ...[
+          _buildPostCard(displayPosts[i]),
+
+          // Suggestion injection logic
+          // 1st suggestion after 1st card (index 0)
+          // 2nd suggestion after 7 cards (index 7, so 7 cards after card 0)
+          // frequency: every 7 cards
+          if ((i == 0 || (i > 0 && i % 7 == 0)) && suggestions.isNotEmpty && _selectedFilter == 'All')
+             UserSuggestionsCarousel(
+               suggestions: suggestions, 
+               onFollow: (username) {
+                 feedProvider.followUser(username);
+               },
+               onSeeAll: () {
+                 // Navigate to all suggestions page if exists
+               },
+             ),
+        ],
         // "All caught up" message at the end
         Container(
           padding: const EdgeInsets.symmetric(vertical: 20),
@@ -191,5 +176,47 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
         ),
       ],
     );
+  }
+
+
+
+  Widget _buildPostCard(FeedPost post) {
+    if (post is WorkoutPost) {
+      return WorkoutPostCard(
+        id: post.id,
+        name: post.name,
+        username: post.username,
+        handle: post.handle,
+        profileImage: post.profileImage,
+        timeAgo: post.timeAgo,
+        content: post.content,
+        tags: post.tags,
+        images: post.images,
+        duration: post.duration,
+        volume: post.volume,
+        records: post.records,
+        exercises: post.exercises,
+        likes: post.likes,
+        likedBy: post.likedBy,
+        isLiked: post.isLiked,
+        isOwnPost: post.isOwnPost,
+        commentCount: post.commentCount,
+        onLike: () => widget.onLike(post.id),
+        onComment: () => widget.onComment(post.id),
+        onLikesClick: () => widget.onLikesClick(post.id),
+        onDelete: () => widget.onDeletePost(post.id),
+        onEdit: () => widget.onEditPost(post),
+      );
+    } else if (post is NutritionPost) {
+      return NutritionPostCard(
+        post: post,
+        onLike: () => widget.onLike(post.id),
+        onComment: () => widget.onComment(post.id),
+        onLikesClick: () => widget.onLikesClick(post.id),
+        onDelete: () => widget.onDeletePost(post.id),
+        // Nutrition post edit not requested yet
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
