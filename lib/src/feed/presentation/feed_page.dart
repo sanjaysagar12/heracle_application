@@ -229,7 +229,7 @@ class _FeedPageState extends State<FeedPage> {
           slivers: [
             // Top spacing for status bar
             const SliverToBoxAdapter(
-              child: SizedBox(height: 60),
+              child: SizedBox(height: 50),
             ),
 
             // Stories section - pass myStory and only other users' stories
@@ -245,7 +245,7 @@ class _FeedPageState extends State<FeedPage> {
             // Discover Stories title
             const SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 24, 16, 16),
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
                   'Discover Stories',
                   style: TextStyle(
@@ -269,7 +269,7 @@ class _FeedPageState extends State<FeedPage> {
                   );
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                   child: Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFF1E1E1E),

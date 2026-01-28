@@ -79,9 +79,7 @@ class StoriesSection extends StatelessWidget {
                             ? const LinearGradient(
                                 colors: [AppColors.primary, AppColors.primary],
                               )
-                            : (!isUploading ? const LinearGradient(
-                                colors: [Color(0xFFD4FC79), Color(0xFF8BC34A)],
-                              ) : null),
+                            : null, // No gradient (green ring) if no story
                       ),
                       padding: const EdgeInsets.all(2),
                       child: Container(
@@ -91,11 +89,13 @@ class StoriesSection extends StatelessWidget {
                         ),
                         child: CircleAvatar(
                           radius: 32,
-                          backgroundImage: (hasStory || isUploading) && (myStory?.profileImage.isNotEmpty ?? false)
+                          // Always show profile image if available
+                          backgroundImage: (myStory?.profileImage.isNotEmpty ?? false)
                               ? NetworkImage(myStory!.profileImage)
                               : null,
                           backgroundColor: AppColors.black100,
-                          child: (!hasStory && !isUploading) || (myStory?.profileImage.isEmpty ?? true)
+                          // Show person icon only if no profile image
+                          child: (myStory?.profileImage.isEmpty ?? true)
                               ? const Icon(Icons.person, color: AppColors.white60, size: 32)
                               : null,
                         ),
