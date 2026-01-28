@@ -87,10 +87,10 @@ class UserSuggestionCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isFollowing
                         ? Colors.transparent
-                        : const Color(0xFF4C6FFF),
+                        : AppColors.primary,
                     foregroundColor: isFollowing
                         ? AppColors.white60
-                        : Colors.white,
+                        : AppColors.black,
                     padding: EdgeInsets.zero,
                     elevation: isFollowing ? 0 : 2,
                     shape: RoundedRectangleBorder(
@@ -105,7 +105,7 @@ class UserSuggestionCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isFollowing ? AppColors.white60 : Colors.white,
+                      color: isFollowing ? AppColors.white60 : AppColors.black,
                     ),
                   ),
                 ),

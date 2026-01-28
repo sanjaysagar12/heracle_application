@@ -49,18 +49,27 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
       _post = widget.post;
     }
   }
-  
+
   Future<void> _confirmDelete() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.black100,
-        title: const Text('Delete Post', style: TextStyle(color: AppColors.pureWhite)),
-        content: const Text('Are you sure you want to delete this post?', style: TextStyle(color: AppColors.white60)),
+        title: const Text(
+          'Delete Post',
+          style: TextStyle(color: AppColors.pureWhite),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this post?',
+          style: TextStyle(color: AppColors.white60),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.white60)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.white60),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -96,7 +105,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
               Expanded(
                 child: GestureDetector(
                   onTap: () {
-                     Navigator.pushNamed(
+                    Navigator.pushNamed(
                       context,
                       AppRoutes.profile,
                       arguments: item.handle,
@@ -110,9 +119,11 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           image: DecorationImage(
-                            image: NetworkImage(item.profileImage.isNotEmpty 
-                              ? item.profileImage 
-                              : 'https://ui-avatars.com/api/?name=${item.username}&background=random'),
+                            image: NetworkImage(
+                              item.profileImage.isNotEmpty
+                                  ? item.profileImage
+                                  : 'https://ui-avatars.com/api/?name=${item.username}&background=random',
+                            ),
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -123,7 +134,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              item.name, 
+                              item.name,
                               style: const TextStyle(
                                 color: AppColors.pureWhite,
                                 fontSize: 16,
@@ -131,7 +142,9 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                               ),
                             ),
                             Text(
-                              item.handle.isNotEmpty ? item.handle : '@${item.username}',
+                              item.handle.isNotEmpty
+                                  ? item.handle
+                                  : '@${item.username}',
                               style: const TextStyle(
                                 color: AppColors.white60,
                                 fontSize: 12,
@@ -146,10 +159,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
               ),
               Text(
                 item.timeAgo,
-                style: const TextStyle(
-                  color: AppColors.white60,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: AppColors.white60, fontSize: 12),
               ),
               if (item.isOwnPost) ...[
                 const SizedBox(width: 8),
@@ -161,7 +171,10 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                       _confirmDelete();
                     } else if (value == 'edit') {
                       // Navigate to PostNutritionPage in Edit Mode
-                      final currentContent = (item.meals.isNotEmpty && _currentMealIndex < item.meals.length && item.meals[_currentMealIndex].content.isNotEmpty)
+                      final currentContent =
+                          (item.meals.isNotEmpty &&
+                              _currentMealIndex < item.meals.length &&
+                              item.meals[_currentMealIndex].content.isNotEmpty)
                           ? item.meals[_currentMealIndex].content
                           : item.content;
 
@@ -171,24 +184,28 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                       double totalFat = 0;
                       double totalCarbs = 0;
 
-                      if (item.meals.isNotEmpty && _currentMealIndex < item.meals.length) {
-                         final meal = item.meals[_currentMealIndex];
-                         totalCalories = meal.calories;
-                         totalProtein = meal.protein.toDouble();
-                         totalFat = meal.fats.toDouble();
-                         totalCarbs = meal.carbs.toDouble();
+                      if (item.meals.isNotEmpty &&
+                          _currentMealIndex < item.meals.length) {
+                        final meal = item.meals[_currentMealIndex];
+                        totalCalories = meal.calories;
+                        totalProtein = meal.protein.toDouble();
+                        totalFat = meal.fats.toDouble();
+                        totalCarbs = meal.carbs.toDouble();
                       }
 
                       // Use session ID from the specific meal being viewed
                       String? sessionId;
-                      if (item.meals.isNotEmpty && _currentMealIndex < item.meals.length) {
-                         sessionId = item.meals[_currentMealIndex].sessionId;
+                      if (item.meals.isNotEmpty &&
+                          _currentMealIndex < item.meals.length) {
+                        sessionId = item.meals[_currentMealIndex].sessionId;
                       }
 
                       // If no session ID found (e.g. empty meals list or parsing error), fall back or show error
                       if (sessionId == null || sessionId.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Cannot edit: Session ID missing')),
+                          const SnackBar(
+                            content: Text('Cannot edit: Session ID missing'),
+                          ),
                         );
                         return;
                       }
@@ -202,20 +219,26 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                             totalProtein: totalProtein,
                             totalFat: totalFat,
                             totalCarbs: totalCarbs,
-                            mealType: item.meals.isNotEmpty ? item.meals.first.mealType : 'Meal',
+                            mealType: item.meals.isNotEmpty
+                                ? item.meals.first.mealType
+                                : 'Meal',
                             sessionId: sessionId, // Pass MEAL Session ID
-                            initialCaption: currentContent, // Pass current caption
+                            initialCaption:
+                                currentContent, // Pass current caption
                           ),
                         ),
                       );
-                      
+
                       // Handle successful edit (optimistic update)
                       if (result != null && result is String) {
                         setState(() {
-                          final updatedMeals = List<NutritionMeal>.from(_post.meals);
-                          updatedMeals[_currentMealIndex] = updatedMeals[_currentMealIndex].copyWith(
-                            content: result,
+                          final updatedMeals = List<NutritionMeal>.from(
+                            _post.meals,
                           );
+                          updatedMeals[_currentMealIndex] =
+                              updatedMeals[_currentMealIndex].copyWith(
+                                content: result,
+                              );
                           _post = _post.copyWith(meals: updatedMeals);
                         });
                       }
@@ -224,11 +247,17 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'edit',
-                      child: Text('Edit', style: TextStyle(color: AppColors.pureWhite)),
+                      child: Text(
+                        'Edit',
+                        style: TextStyle(color: AppColors.pureWhite),
+                      ),
                     ),
                     const PopupMenuItem(
                       value: 'delete',
-                      child: Text('Delete', style: TextStyle(color: Colors.red)),
+                      child: Text(
+                        'Delete',
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ),
                   ],
                 ),
@@ -237,11 +266,14 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
           ),
 
           const SizedBox(height: 16),
-          
+
           // Dynamic Caption (Meal Content or Post Content)
           Builder(
             builder: (context) {
-              final currentContent = (item.meals.isNotEmpty && _currentMealIndex < item.meals.length && item.meals[_currentMealIndex].content.isNotEmpty)
+              final currentContent =
+                  (item.meals.isNotEmpty &&
+                      _currentMealIndex < item.meals.length &&
+                      item.meals[_currentMealIndex].content.isNotEmpty)
                   ? item.meals[_currentMealIndex].content
                   : item.content;
 
@@ -266,59 +298,59 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
 
           // Meal Carousel
           if (item.meals.isNotEmpty) ...[
-             // Add Tags here
-             _buildTags(item.meals[_currentMealIndex]),
-             const SizedBox(height: 16),
+            // Add Tags here
+            _buildTags(item.meals[_currentMealIndex]),
+            const SizedBox(height: 16),
 
-             AspectRatio(
-               aspectRatio: 16/10, // Adjust based on your image needs
-               child: GestureDetector(
-                 onTap: () {
-                    if (!widget.isDetailView) {
-                       Navigator.push(
-                         context,
-                         MaterialPageRoute(
-                           builder: (context) => NutritionDetailsPage(post: item),
-                         ),
-                       );
+            AspectRatio(
+              aspectRatio: 16 / 10, // Adjust based on your image needs
+              child: GestureDetector(
+                onTap: () {
+                  if (!widget.isDetailView) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NutritionDetailsPage(post: item),
+                      ),
+                    );
+                  }
+                },
+                child: PageView.builder(
+                  itemCount: item.meals.length,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentMealIndex = index;
+                    });
+                    if (widget.onPageChanged != null) {
+                      widget.onPageChanged!(index);
                     }
-                 },
-                 child: PageView.builder(
-                   itemCount: item.meals.length,
-                   onPageChanged: (index) {
-                     setState(() {
-                       _currentMealIndex = index;
-                     });
-                     if (widget.onPageChanged != null) {
-                       widget.onPageChanged!(index);
-                     }
-                   },
-                   itemBuilder: (context, index) {
-                     return _buildMealPage(item.meals[index]);
-                   },
-                 ),
-               ),
-             ),
-             const SizedBox(height: 12),
-             
-             // Indicators
-             if (item.meals.length > 1)
-               Row(
-                 mainAxisAlignment: MainAxisAlignment.center,
-                 children: List.generate(item.meals.length, (index) {
-                   return Container(
-                     width: 8,
-                     height: 8,
-                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                     decoration: BoxDecoration(
-                       shape: BoxShape.circle,
-                       color: _currentMealIndex == index 
-                           ? AppColors.white60 
-                           : AppColors.white10,
-                     ),
-                   );
-                 }),
-               ),
+                  },
+                  itemBuilder: (context, index) {
+                    return _buildMealPage(item.meals[index]);
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Indicators
+            if (item.meals.length > 1)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(item.meals.length, (index) {
+                  return Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentMealIndex == index
+                          ? AppColors.white60
+                          : AppColors.white10,
+                    ),
+                  );
+                }),
+              ),
           ],
 
           const SizedBox(height: 16),
@@ -352,7 +384,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
               ),
 
               const SizedBox(width: 24),
-              
+
               // Comment
               GestureDetector(
                 onTap: widget.onComment,
@@ -366,7 +398,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
               GestureDetector(
                 onTap: widget.onComment,
                 child: Text(
-                  '${item.commentCount}', 
+                  '${item.commentCount}',
                   style: const TextStyle(
                     color: AppColors.pureWhite,
                     fontSize: 16,
@@ -374,7 +406,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 24),
               // Share
               GestureDetector(
@@ -387,8 +419,10 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                     profileImageUrl: item.profileImage,
                     postId: item.id,
                     type: 'nutrition',
-                    imageUrl: item.meals.isNotEmpty && item.meals.first.images.isNotEmpty 
-                        ? item.meals.first.images.first 
+                    imageUrl:
+                        item.meals.isNotEmpty &&
+                            item.meals.first.images.isNotEmpty
+                        ? item.meals.first.images.first
                         : null,
                   );
                 },
@@ -406,14 +440,18 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
               onTap: widget.onLikesClick,
               child: Row(
                 children: [
-                  ...item.likedBy.take(3).map((user) => Align(
-                    widthFactor: 0.7,
-                    child: CircleAvatar(
-                      radius: 12,
-                      backgroundColor: AppColors.greyDark,
-                      backgroundImage: NetworkImage(user.profileImage),
-                    ),
-                  )),
+                  ...item.likedBy
+                      .take(3)
+                      .map(
+                        (user) => Align(
+                          widthFactor: 0.7,
+                          child: CircleAvatar(
+                            radius: 12,
+                            backgroundColor: AppColors.greyDark,
+                            backgroundImage: NetworkImage(user.profileImage),
+                          ),
+                        ),
+                      ),
                   const SizedBox(width: 8),
                   Text(
                     item.likes > 1
@@ -434,7 +472,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
 
   Widget _buildTags(NutritionMeal meal) {
     if (meal.mealType.isEmpty) return const SizedBox.shrink();
-    
+
     return Wrap(
       spacing: 8,
       children: [
@@ -446,10 +484,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
           ),
           child: Text(
             meal.mealType,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 13,
-            ),
+            style: const TextStyle(color: AppColors.primary, fontSize: 13),
           ),
         ),
       ],
@@ -463,6 +498,9 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
       children: [
         Expanded(
           child: Container(
+            margin: hasImage
+                ? null
+                : const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               color: hasImage ? null : AppColors.greyDark,
@@ -478,31 +516,53 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                 : const Center(
                     child: Text(
                       'Image not added',
-                      style: TextStyle(
-                        color: AppColors.white60,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: AppColors.white60, fontSize: 14),
                     ),
                   ),
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Macros
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-             _buildMacroItem('Calories', '${meal.calories}', 'assets/icons/calories.svg', AppColors.primary),
-             _buildMacroItem('Protein', '${meal.protein}g', 'assets/icons/protein.svg', AppColors.primary),
-             _buildMacroItem('Carbs', '${meal.carbs}g', 'assets/icons/carbs.svg', AppColors.primary),
-             _buildMacroItem('Fats', '${meal.fats}g', 'assets/icons/fat.svg', AppColors.primary),
+            _buildMacroItem(
+              'Calories',
+              '${meal.calories}',
+              'assets/icons/calories.svg',
+              AppColors.primary,
+            ),
+            _buildMacroItem(
+              'Protein',
+              '${meal.protein}g',
+              'assets/icons/protein.svg',
+              AppColors.primary,
+            ),
+            _buildMacroItem(
+              'Carbs',
+              '${meal.carbs}g',
+              'assets/icons/carbs.svg',
+              AppColors.primary,
+            ),
+            _buildMacroItem(
+              'Fats',
+              '${meal.fats}g',
+              'assets/icons/fat.svg',
+              AppColors.primary,
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildMacroItem(String label, String value, String assetPath, Color color) {
+  Widget _buildMacroItem(
+    String label,
+    String value,
+    String assetPath,
+    Color color,
+  ) {
     return Column(
       children: [
         Row(
@@ -524,9 +584,9 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
         Text(
           value,
           style: TextStyle(
-            color: color, 
-            fontWeight: FontWeight.bold, 
-            fontSize: 16
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
         ),
       ],
