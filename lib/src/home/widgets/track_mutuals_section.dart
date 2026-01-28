@@ -135,16 +135,19 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
           // 1st suggestion after 1st card (index 0)
           // 2nd suggestion after 7 cards (index 7, so 7 cards after card 0)
           // frequency: every 7 cards
-          if ((i == 0 || (i > 0 && i % 7 == 0)) && suggestions.isNotEmpty && _selectedFilter == 'All')
-             UserSuggestionsCarousel(
-               suggestions: suggestions, 
-               onFollow: (username) {
-                 feedProvider.followUser(username);
-               },
-               onSeeAll: () {
-                 // Navigate to all suggestions page if exists
-               },
-             ),
+          if ((i == 0 || (i > 0 && i % 7 == 0)) &&
+              suggestions.isNotEmpty &&
+              _selectedFilter == 'All')
+            UserSuggestionsCarousel(
+              suggestions: suggestions,
+              followedIds: feedProvider.followedIds,
+              onFollow: (username, userId) {
+                feedProvider.followUser(username, userId);
+              },
+              onSeeAll: () {
+                // Navigate to all suggestions page if exists
+              },
+            ),
         ],
         // "All caught up" message at the end
         Container(
@@ -177,8 +180,6 @@ class _TrackMutualsSectionState extends State<TrackMutualsSection> {
       ],
     );
   }
-
-
 
   Widget _buildPostCard(FeedPost post) {
     if (post is WorkoutPost) {

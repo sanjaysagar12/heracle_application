@@ -5,12 +5,14 @@ import 'user_suggestion_card.dart';
 
 class UserSuggestionsCarousel extends StatefulWidget {
   final List<UserSuggestion> suggestions;
-  final Function(String) onFollow;
+  final Set<String> followedIds;
+  final Function(String, String) onFollow;
   final VoidCallback onSeeAll;
 
   const UserSuggestionsCarousel({
     super.key,
     required this.suggestions,
+    required this.followedIds,
     required this.onFollow,
     required this.onSeeAll,
   });
@@ -23,14 +25,24 @@ class UserSuggestionsCarousel extends StatefulWidget {
 class _UserSuggestionsCarouselState extends State<UserSuggestionsCarousel> {
   // Keep track of dismissed suggestions locally
   final Set<String> _dismissedIds = {};
-  // Keep track of followed suggestions locally
-  final Set<String> _followedIds = {};
+  // Keep track of locally interacted suggestions (to keep them visible as "Following")
+  final Set<String> _localInteractedIds = {};
 
   @override
   Widget build(BuildContext context) {
-    final activeSuggestions = widget.suggestions
-        .where((s) => !_dismissedIds.contains(s.id))
-        .toList();
+    // Logic: Show suggestion if:
+    // 1. Not dismissed locally AND
+    // 2. (Not followed globally OR followed locally in this session)
+    final activeSuggestions = widget.suggestions.where((s) {
+      if (_dismissedIds.contains(s.id)) return false;
+
+      final isFollowedGlobally = widget.followedIds.contains(s.id);
+      final isInteractedLocally = _localInteractedIds.contains(s.id);
+
+      if (isFollowedGlobally && !isInteractedLocally) return false;
+
+      return true;
+    }).toList();
 
     if (activeSuggestions.isEmpty) {
       return const SizedBox.shrink();
@@ -76,11 +88,11 @@ class _UserSuggestionsCarouselState extends State<UserSuggestionsCarousel> {
               final suggestion = activeSuggestions[index];
               return UserSuggestionCard(
                 suggestion: suggestion,
-                isFollowing: _followedIds.contains(suggestion.id),
+                isFollowing: widget.followedIds.contains(suggestion.id),
                 onFollow: () {
-                  widget.onFollow(suggestion.username);
+                  widget.onFollow(suggestion.username, suggestion.id);
                   setState(() {
-                    _followedIds.add(suggestion.id);
+                    _localInteractedIds.add(suggestion.id);
                   });
                 },
                 onDismiss: () {

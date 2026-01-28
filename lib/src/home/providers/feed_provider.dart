@@ -15,6 +15,7 @@ class FeedProvider extends ChangeNotifier {
   // Home feed posts
   List<FeedPost> _posts = [];
   List<UserSuggestion> _suggestions = [];
+  Set<String> _followedIds = {};
 
   // User-specific posts (for profile pages) keyed by username
   Map<String, List<FeedPost>> _userPosts = {};
@@ -38,6 +39,7 @@ class FeedProvider extends ChangeNotifier {
   // Getters
   List<FeedPost> get posts => _posts;
   List<UserSuggestion> get suggestions => _suggestions;
+  Set<String> get followedIds => _followedIds;
   bool get isLoading => _isLoading;
   bool get isRefreshing => _isRefreshing;
   String? get error => _error;
@@ -137,12 +139,15 @@ class FeedProvider extends ChangeNotifier {
   }
 
   /// Follow/Unfollow user
-  Future<void> followUser(String username) async {
-    // We could do optimistic update here if we want to immediately hide card
-    // or just assume API works. The carousel UI will handle hiding individual cards locally.
+  Future<void> followUser(String username, String userId) async {
+    // Optimistically update
+    _followedIds.add(userId);
+    notifyListeners();
+
     try {
       await _feedRepository.followUser(username);
     } catch (e) {
+      _followedIds.remove(userId);
       _error = 'Failed to follow user: $e';
       notifyListeners();
     }
