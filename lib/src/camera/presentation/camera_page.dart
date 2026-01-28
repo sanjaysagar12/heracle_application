@@ -27,7 +27,9 @@ import 'package:heracle/src/nutrition/presentation/track_calories_page.dart'; //
 enum _CameraMode { story, calAI }
 
 class CameraPage extends StatefulWidget {
-  const CameraPage({super.key});
+  final bool returnItem;
+
+  const CameraPage({super.key, this.returnItem = false});
 
   @override
   State<CameraPage> createState() => _CameraPageState();
@@ -887,6 +889,11 @@ class _CameraPageState extends State<CameraPage>
         imagePath: imageFile.path,
         isLoading: true, // Mark as loading so TrackCaloriesPage knows to initiate flow
       );
+
+      if (widget.returnItem) {
+        Navigator.pop(context, item);
+        return;
+      }
 
       final result = await Navigator.push(
         context, 

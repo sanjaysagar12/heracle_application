@@ -240,10 +240,22 @@ class _TrackCaloriesPageState extends State<TrackCaloriesPage> {
             onPressed: () async {
               final result = await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CameraPage()),
+                MaterialPageRoute(
+                  builder: (context) => const CameraPage(returnItem: true),
+                ),
               );
-              if (result == true && mounted) {
-                Navigator.pop(context, true);
+
+              if (result is DietLogItem && mounted) {
+                setState(() {
+                  // If we have a single empty placeholder, replace it. Otherwise add.
+                  if (_items.length == 1 && _items.first.name.isEmpty) {
+                    _items[0] = result;
+                  } else {
+                    _items.add(result);
+                  }
+                });
+                // Launch analysis flow
+                _initiateAnalysis(result);
               }
             },
           ),
