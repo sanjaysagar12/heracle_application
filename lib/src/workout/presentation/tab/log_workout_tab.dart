@@ -35,11 +35,11 @@ class _SetLog {
   bool completed;
   String? placeholderKg; // placeholder from saved session
   String? placeholderReps; // placeholder from saved session
-  String? placeholderTime; 
+  String? placeholderTime;
   _SetLog({
     this.kg = '',
     this.reps = '',
-    this.time = '', 
+    this.time = '',
     this.completed = false,
     this.placeholderKg,
     this.placeholderReps,
@@ -64,7 +64,6 @@ class _ExerciseLog {
   });
 }
 
-
 class _LogWorkoutTabState extends State<LogWorkoutTab> {
   late List<_ExerciseLog> _exerciseLogs;
   late DateTime _startTime;
@@ -77,8 +76,11 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   @override
   void initState() {
     super.initState();
-    _startTime = widget.mode == 'resume' && widget.exercises.isNotEmpty 
-        ? DateTime.fromMillisecondsSinceEpoch(widget.exercises.first['startTime'] ?? DateTime.now().millisecondsSinceEpoch) 
+    _startTime = widget.mode == 'resume' && widget.exercises.isNotEmpty
+        ? DateTime.fromMillisecondsSinceEpoch(
+            widget.exercises.first['startTime'] ??
+                DateTime.now().millisecondsSinceEpoch,
+          )
         : DateTime.now();
 
     _exerciseLogs = widget.exercises.map((e) {
@@ -92,16 +94,17 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           final savedReps = sMap['reps']?.toString() ?? '';
           final savedTime = sMap['time']?.toString() ?? '';
           final isCompleted = sMap['completed'] == true;
-          
+
           // Determine if we are resuming (values exist in kg/reps/time) or starting from template (values in placeholders)
           // valid values in kg/reps/time imply a resume or pre-filled data
-          
+
           return _SetLog(
-            kg: savedKg == '0' ? '' : savedKg, 
+            kg: savedKg == '0' ? '' : savedKg,
             reps: savedReps == '0' ? '' : savedReps,
             time: savedTime == '0' ? '' : savedTime,
             completed: isCompleted,
-            placeholderKg: sMap['placeholderKg'], // Pass through placeholders if they exist
+            placeholderKg:
+                sMap['placeholderKg'], // Pass through placeholders if they exist
             placeholderReps: sMap['placeholderReps'],
             placeholderTime: sMap['placeholderTime'],
           );
@@ -123,18 +126,18 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   @override
   void dispose() {
     _saveDebounce?.cancel();
-    // Verify if we should save on dispose? 
-    // Usually dispose happens on finish/discard too. 
+    // Verify if we should save on dispose?
+    // Usually dispose happens on finish/discard too.
     // We handle deleteDraft explicitly in finish/discard, so if we just back out, we want to save.
-    // However, we can't do async work reliably in dispose. 
+    // However, we can't do async work reliably in dispose.
     // Deactivate is better, or relies on autosave.
     super.dispose();
   }
-  
+
   @override
   void deactivate() {
-     _saveDraft(); // Handle save when navigating away (e.g. back button)
-     super.deactivate();
+    _saveDraft(); // Handle save when navigating away (e.g. back button)
+    super.deactivate();
   }
 
   void _triggerSave() {
@@ -143,38 +146,43 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   }
 
   Future<void> _saveDraft() async {
-      // Serialize current state
-      final exercisesJson = _exerciseLogs.map((ex) {
-        return {
-           'id': ex.id,
-           'name': ex.name,
-           'desc': ex.desc,
-           'image': ex.image,
-           'trackingType': ex.trackingType,
-           'sets': ex.sets.map((s) => {
-             'kg': s.kg,
-             'reps': s.reps,
-             'time': s.time,
-             'completed': s.completed,
-             'placeholderKg': s.placeholderKg,
-             'placeholderReps': s.placeholderReps,
-             'placeholderTime': s.placeholderTime,
-           }).toList(),
-        };
-      }).toList();
+    // Serialize current state
+    final exercisesJson = _exerciseLogs.map((ex) {
+      return {
+        'id': ex.id,
+        'name': ex.name,
+        'desc': ex.desc,
+        'image': ex.image,
+        'trackingType': ex.trackingType,
+        'sets': ex.sets
+            .map(
+              (s) => {
+                'kg': s.kg,
+                'reps': s.reps,
+                'time': s.time,
+                'completed': s.completed,
+                'placeholderKg': s.placeholderKg,
+                'placeholderReps': s.placeholderReps,
+                'placeholderTime': s.placeholderTime,
+              },
+            )
+            .toList(),
+      };
+    }).toList();
 
-      final draft = DraftWorkout(
-        sessionId: widget.sessionId,
-        sessionName: widget.sessionName,
-        startTime: _startTime.millisecondsSinceEpoch,
-        data: jsonEncode(exercisesJson),
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-      );
+    final draft = DraftWorkout(
+      sessionId: widget.sessionId,
+      sessionName: widget.sessionName,
+      startTime: _startTime.millisecondsSinceEpoch,
+      data: jsonEncode(exercisesJson),
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+    );
 
-      await _draftRepository.saveDraft(draft);
+    await _draftRepository.saveDraft(draft);
   }
 
-  int get _totalSetCount => _exerciseLogs.fold(0, (s, ex) => s + ex.sets.length);
+  int get _totalSetCount =>
+      _exerciseLogs.fold(0, (s, ex) => s + ex.sets.length);
 
   int get _workoutCount => _exerciseLogs.length;
 
@@ -221,38 +229,45 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   void _discardWorkout() async {
     // Delete draft
     await _draftRepository.deleteDraft();
-    
+
     if (!mounted) return;
     setState(() {
       // reset all sets to default
       for (var ex in _exerciseLogs) {
-        ex.sets = [for (var i = 0; i < 3; i++) _SetLog(kg: '', reps: '', time: '')];
+        ex.sets = [
+          for (var i = 0; i < 3; i++) _SetLog(kg: '', reps: '', time: ''),
+        ];
       }
       _startTime = DateTime.now();
     });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout discarded')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Workout discarded')));
     Navigator.pop(context); // Go back after discard
   }
 
   Future<void> _addWorkout() async {
     final result = await Navigator.push<List<Map<String, String>>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const SelectWorkoutsTab(mode: 'add'),
-      ),
+      MaterialPageRoute(builder: (_) => const SelectWorkoutsTab(mode: 'add')),
     );
 
     if (result != null && result.isNotEmpty) {
       setState(() {
         for (var ex in result) {
-          _exerciseLogs.add(_ExerciseLog(
-            id: ex['id'] ?? '',
-            name: ex['name'] ?? '',
-            desc: ex['desc'] ?? '',
-            image: ex['image'] ?? '',
-            trackingType: ex['trackingType'] ?? 'WEIGHT_AND_REPS',
-            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '', time: '')),
-          ));
+          _exerciseLogs.add(
+            _ExerciseLog(
+              id: ex['id'] ?? '',
+              name: ex['name'] ?? '',
+              desc: ex['desc'] ?? '',
+              image: ex['image'] ?? '',
+              trackingType: ex['trackingType'] ?? 'WEIGHT_AND_REPS',
+              sets: List.generate(
+                3,
+                (_) => _SetLog(kg: '', reps: '', time: ''),
+              ),
+            ),
+          );
         }
       });
     }
@@ -265,16 +280,28 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.black100,
-        title: const Text('Finish Workout', style: TextStyle(color: AppColors.pureWhite)),
-        content: const Text('Do you want to post this workout to your feed?', style: TextStyle(color: AppColors.white60)),
+        title: const Text(
+          'Finish Workout',
+          style: TextStyle(color: AppColors.pureWhite),
+        ),
+        content: const Text(
+          'Do you want to post this workout to your feed?',
+          style: TextStyle(color: AppColors.white60),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, 'save'),
-            child: const Text('Save Only', style: TextStyle(color: AppColors.white60)),
+            child: const Text(
+              'Save Only',
+              style: TextStyle(color: AppColors.white60),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, 'post'),
-            child: const Text('Post Workout', style: TextStyle(color: AppColors.primary)),
+            child: const Text(
+              'Post Workout',
+              style: TextStyle(color: AppColors.primary),
+            ),
           ),
         ],
       ),
@@ -286,7 +313,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
     try {
       final logId = DateTime.now().millisecondsSinceEpoch.toString();
       final duration = DateTime.now().difference(_startTime).inSeconds;
-      
+
       final exercises = _exerciseLogs.map((ex) {
         return {
           'id': ex.id,
@@ -294,18 +321,25 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           'desc': ex.desc,
           'image': ex.image,
           'trackingType': ex.trackingType,
-          'sets': ex.sets.map((s) => {
-            'kg': int.tryParse(s.kg) ?? 0, 
-            'reps': int.tryParse(s.reps) ?? 0,
-            'time': int.tryParse(s.time) ?? 0
-          }).toList(),
+          'sets': ex.sets
+              .map(
+                (s) => {
+                  'kg': int.tryParse(s.kg) ?? 0,
+                  'reps': int.tryParse(s.reps) ?? 0,
+                  'time': int.tryParse(s.time) ?? 0,
+                },
+              )
+              .toList(),
         };
       }).toList();
 
       final workoutLog = WorkoutLog(
         id: logId,
-        sessionId: widget.sessionId, // link to original session if started from template
-        title: widget.sessionName ?? 'Workout ${DateTime.now().toIso8601String().split('T').first}',
+        sessionId: widget
+            .sessionId, // link to original session if started from template
+        title:
+            widget.sessionName ??
+            'Workout ${DateTime.now().toIso8601String().split('T').first}',
         completedAt: DateTime.now(),
         duration: duration,
         totalVolume: _totalVolume,
@@ -328,8 +362,9 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
               final kg = int.tryParse(s.kg) ?? 0;
               final reps = int.tryParse(s.reps) ?? 0;
               final time = int.tryParse(s.time) ?? 0;
-              
-              if (ex.trackingType == 'WEIGHT_AND_REPS' && kg == 0 && reps == 0) continue;
+
+              if (ex.trackingType == 'WEIGHT_AND_REPS' && kg == 0 && reps == 0)
+                continue;
               if (ex.trackingType == 'REPS_ONLY' && reps == 0) continue;
               if (ex.trackingType == 'TIME' && time == 0) continue;
 
@@ -346,15 +381,15 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
               apiExercises.add({
                 'exerciseId': ex.id,
                 'exercise': ex.name, // Keep for backend compatibility if needed
-                'name': ex.name,     // For UI
-                'desc': ex.desc,     // For UI
-                'image': ex.image,   // For UI
+                'name': ex.name, // For UI
+                'desc': ex.desc, // For UI
+                'image': ex.image, // For UI
                 'sets': validSets,
               });
             }
           }
 
-           Navigator.push(
+          Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => PostWorkoutScreen(
@@ -365,13 +400,17 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
             ),
           );
         } else {
-           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout logged successfully')));
-           Navigator.popUntil(context, (route) => route.isFirst);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Workout logged successfully')),
+          );
+          Navigator.popUntil(context, (route) => route.isFirst);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Save failed: $e')));
       }
     }
   }
@@ -399,10 +438,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -422,9 +458,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   Future<void> _handleReplaceExercise(_ExerciseLog exercise) async {
     final result = await Navigator.push<List<Map<String, String>>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const SelectWorkoutsTab(mode: 'add'),
-      ),
+      MaterialPageRoute(builder: (_) => const SelectWorkoutsTab(mode: 'add')),
     );
 
     if (result != null && result.isNotEmpty) {
@@ -466,12 +500,21 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(widget.sessionName ?? 'Log Workout', style: const TextStyle(color: AppColors.pureWhite)),
+        title: Text(
+          widget.sessionName ?? 'Log Workout',
+          style: const TextStyle(color: AppColors.pureWhite),
+        ),
         actions: [
           if (_isReordering)
             TextButton(
               onPressed: () => setState(() => _isReordering = false),
-              child: const Text('Done', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Done',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           if (_isReordering) const SizedBox(width: 8),
         ],
@@ -517,7 +560,9 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                   return AnimatedBuilder(
                     animation: animation,
                     builder: (BuildContext context, Widget? child) {
-                      final double animValue = Curves.easeInOut.transform(animation.value);
+                      final double animValue = Curves.easeInOut.transform(
+                        animation.value,
+                      );
                       final double scale = 1.0 + (0.05 * animValue);
                       return Transform.scale(
                         scale: scale,
@@ -567,7 +612,14 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                       height: 20,
                     ),
                     const SizedBox(width: 8),
-                    const Text('Finish Session', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+                    const Text(
+                      'Finish Session',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
                 style: ElevatedButton.styleFrom(
@@ -584,7 +636,14 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
               child: ElevatedButton.icon(
                 onPressed: _addWorkout,
                 icon: const Icon(Icons.add, color: AppColors.primary),
-                label: const Text('Add Workout', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w600)),
+                label: const Text(
+                  'Add Workout',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.black100,
                   shape: const StadiumBorder(),
@@ -599,7 +658,10 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
               height: 56,
               child: ElevatedButton(
                 onPressed: _discardWorkout,
-                child: const Text('Discard Workout', style: TextStyle(color: Colors.red, fontSize: 16)),
+                child: const Text(
+                  'Discard Workout',
+                  style: TextStyle(color: Colors.red, fontSize: 16),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.black100,
                   shape: const StadiumBorder(),
@@ -623,9 +685,18 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
       ),
       child: Column(
         children: [
-          Text(value, style: const TextStyle(color: AppColors.pureWhite, fontWeight: FontWeight.w700)),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.pureWhite,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(label, style: const TextStyle(color: AppColors.white60, fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(color: AppColors.white60, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -646,81 +717,112 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
               if (isReordering)
                 const Padding(
                   padding: EdgeInsets.only(right: 12.0),
-                  child: Icon(Icons.drag_indicator, color: AppColors.white60, size: 20),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    color: AppColors.white60,
+                    size: 20,
+                  ),
                 ),
-              CircleAvatar(backgroundImage: NetworkImage(ex.image), radius: 20, backgroundColor: AppColors.greyDark),
+              CircleAvatar(
+                backgroundImage: NetworkImage(ex.image),
+                radius: 20,
+                backgroundColor: AppColors.greyDark,
+              ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(ex.name, style: const TextStyle(color: AppColors.pureWhite, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 4),
-                  Text(ex.desc, style: const TextStyle(color: AppColors.white60, fontSize: 12)),
-                ]),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ex.name,
+                      style: const TextStyle(
+                        color: AppColors.pureWhite,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ex.desc,
+                      style: const TextStyle(
+                        color: AppColors.white60,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               if (!isReordering)
                 PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'reorder':
-                      setState(() => _isReordering = true);
-                      break;
-                    case 'replace':
-                      _handleReplaceExercise(ex);
-                      break;
-                    case 'delete':
-                      _handleDeleteExercise(ex);
-                      break;
-                  }
-                },
-                color: AppColors.black100,
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppColors.greyDark),
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'reorder':
+                        setState(() => _isReordering = true);
+                        break;
+                      case 'replace':
+                        _handleReplaceExercise(ex);
+                        break;
+                      case 'delete':
+                        _handleDeleteExercise(ex);
+                        break;
+                    }
+                  },
+                  color: AppColors.black100,
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: AppColors.greyDark),
+                  ),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'reorder',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.swap_vert,
+                            color: AppColors.white60,
+                            size: 20,
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Reorder',
+                            style: TextStyle(color: AppColors.pureWhite),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'replace',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.swap_horiz,
+                            color: AppColors.white60,
+                            size: 20,
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Replace Exercise',
+                            style: TextStyle(color: AppColors.pureWhite),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Colors.red, size: 20),
+                          SizedBox(width: 12),
+                          Text(
+                            'Delete Exercise',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  icon: const Icon(Icons.more_horiz, color: AppColors.white60),
                 ),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'reorder',
-                    child: Row(
-                      children: [
-                        Icon(Icons.swap_vert, color: AppColors.white60, size: 20),
-                        SizedBox(width: 12),
-                        Text(
-                          'Reorder',
-                          style: TextStyle(color: AppColors.pureWhite),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'replace',
-                    child: Row(
-                      children: [
-                        Icon(Icons.swap_horiz, color: AppColors.white60, size: 20),
-                        SizedBox(width: 12),
-                        Text(
-                          'Replace Exercise',
-                          style: TextStyle(color: AppColors.pureWhite),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, color: Colors.red, size: 20),
-                        SizedBox(width: 12),
-                        Text(
-                          'Delete Exercise',
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                icon: const Icon(Icons.more_horiz, color: AppColors.white60),
-              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -728,7 +830,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
           Column(
             children: List.generate(ex.sets.length, (si) {
               final set = ex.sets[si];
-              
+
               bool hasValues = false;
               if (ex.trackingType == 'WEIGHT_AND_REPS') {
                 hasValues = set.kg.isNotEmpty && set.reps.isNotEmpty;
@@ -737,7 +839,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
               } else if (ex.trackingType == 'TIME') {
                 hasValues = set.time.isNotEmpty;
               }
-              
+
               // Auto-complete when both values are entered
               if (hasValues && !set.completed) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -746,21 +848,34 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                   });
                 });
               }
-              
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
                   children: [
                     SizedBox(
                       width: 40,
-                      child: Text('Set ${si + 1}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+                      child: Text(
+                        'Set ${si + 1}',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 4),
                     if (ex.trackingType == 'WEIGHT_AND_REPS') ...[
                       Expanded(
                         child: Row(
                           children: [
-                            const Text('Kg', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const Text(
+                              'Kg',
+                              style: TextStyle(
+                                color: AppColors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
                             const SizedBox(width: 4),
                             SizedBox(
                               width: 50,
@@ -768,15 +883,32 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   hintText: set.placeholderKg ?? '',
-                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  hintStyle: const TextStyle(
+                                    color: AppColors.white60,
+                                  ),
                                   filled: true,
                                   fillColor: AppColors.greyDark,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide.none,
+                                  ),
                                 ),
-                                style: const TextStyle(color: AppColors.pureWhite),
-                                onChanged: (v) { setState(() => set.kg = v); _triggerSave(); },
-                                controller: TextEditingController(text: set.kg)..selection = TextSelection.fromPosition(TextPosition(offset: set.kg.length)),
+                                style: TextStyle(
+                                  color: AppColors.pureWhite,
+                                  fontSize: set.kg.length > 2 ? 12 : 14,
+                                ),
+                                onChanged: (v) {
+                                  setState(() => set.kg = v);
+                                  _triggerSave();
+                                },
+                                controller: TextEditingController(text: set.kg)
+                                  ..selection = TextSelection.fromPosition(
+                                    TextPosition(offset: set.kg.length),
+                                  ),
                               ),
                             ),
                           ],
@@ -786,7 +918,13 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                       Expanded(
                         child: Row(
                           children: [
-                            const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const Text(
+                              'Reps',
+                              style: TextStyle(
+                                color: AppColors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
                             const SizedBox(width: 4),
                             SizedBox(
                               width: 50,
@@ -794,15 +932,33 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   hintText: set.placeholderReps ?? '',
-                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  hintStyle: const TextStyle(
+                                    color: AppColors.white60,
+                                  ),
                                   filled: true,
                                   fillColor: AppColors.greyDark,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide.none,
+                                  ),
                                 ),
-                                style: const TextStyle(color: AppColors.pureWhite),
-                                onChanged: (v) { setState(() => set.reps = v); _triggerSave(); },
-                                controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
+                                style: TextStyle(
+                                  color: AppColors.pureWhite,
+                                  fontSize: set.reps.length > 2 ? 12 : 14,
+                                ),
+                                onChanged: (v) {
+                                  setState(() => set.reps = v);
+                                  _triggerSave();
+                                },
+                                controller:
+                                    TextEditingController(text: set.reps)
+                                      ..selection = TextSelection.fromPosition(
+                                        TextPosition(offset: set.reps.length),
+                                      ),
                               ),
                             ),
                           ],
@@ -812,7 +968,13 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                       Expanded(
                         child: Row(
                           children: [
-                            const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const Text(
+                              'Reps',
+                              style: TextStyle(
+                                color: AppColors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
                             const SizedBox(width: 4),
                             SizedBox(
                               width: 50,
@@ -820,15 +982,33 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   hintText: set.placeholderReps ?? '',
-                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  hintStyle: const TextStyle(
+                                    color: AppColors.white60,
+                                  ),
                                   filled: true,
                                   fillColor: AppColors.greyDark,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide.none,
+                                  ),
                                 ),
-                                style: const TextStyle(color: AppColors.pureWhite),
-                                onChanged: (v) { setState(() => set.reps = v); _triggerSave(); },
-                                controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
+                                style: TextStyle(
+                                  color: AppColors.pureWhite,
+                                  fontSize: set.reps.length > 2 ? 12 : 14,
+                                ),
+                                onChanged: (v) {
+                                  setState(() => set.reps = v);
+                                  _triggerSave();
+                                },
+                                controller:
+                                    TextEditingController(text: set.reps)
+                                      ..selection = TextSelection.fromPosition(
+                                        TextPosition(offset: set.reps.length),
+                                      ),
                               ),
                             ),
                           ],
@@ -838,7 +1018,13 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                       Expanded(
                         child: Row(
                           children: [
-                            const Text('Time (s)', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const Text(
+                              'Time (s)',
+                              style: TextStyle(
+                                color: AppColors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
                             const SizedBox(width: 4),
                             SizedBox(
                               width: 60,
@@ -846,15 +1032,33 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   hintText: set.placeholderTime ?? '',
-                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  hintStyle: const TextStyle(
+                                    color: AppColors.white60,
+                                  ),
                                   filled: true,
                                   fillColor: AppColors.greyDark,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide.none,
+                                  ),
                                 ),
-                                style: const TextStyle(color: AppColors.pureWhite),
-                                onChanged: (v) { setState(() => set.time = v); _triggerSave(); },
-                                controller: TextEditingController(text: set.time)..selection = TextSelection.fromPosition(TextPosition(offset: set.time.length)),
+                                style: TextStyle(
+                                  color: AppColors.pureWhite,
+                                  fontSize: set.time.length > 2 ? 12 : 14,
+                                ),
+                                onChanged: (v) {
+                                  setState(() => set.time = v);
+                                  _triggerSave();
+                                },
+                                controller:
+                                    TextEditingController(text: set.time)
+                                      ..selection = TextSelection.fromPosition(
+                                        TextPosition(offset: set.time.length),
+                                      ),
                               ),
                             ),
                           ],
@@ -863,7 +1067,9 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                     ],
                     const SizedBox(width: 8),
                     IconButton(
-                      onPressed: hasValues ? () => _toggleComplete(set) : () => _removeSet(ex, si),
+                      onPressed: hasValues
+                          ? () => _toggleComplete(set)
+                          : () => _removeSet(ex, si),
                       icon: Icon(
                         hasValues ? Icons.check_circle : Icons.close,
                         color: hasValues ? AppColors.primary : Colors.redAccent,
@@ -885,7 +1091,10 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
             child: OutlinedButton.icon(
               onPressed: () => _addSet(ex),
               icon: const Icon(Icons.add, color: AppColors.pureWhite, size: 20),
-              label: const Text('Add Set', style: TextStyle(color: AppColors.pureWhite)),
+              label: const Text(
+                'Add Set',
+                style: TextStyle(color: AppColors.pureWhite),
+              ),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: AppColors.white40),
                 padding: const EdgeInsets.symmetric(vertical: 12),

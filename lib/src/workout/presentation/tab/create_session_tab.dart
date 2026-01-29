@@ -10,12 +10,11 @@ class CreateSessionTab extends StatefulWidget {
   final List<Map<String, String>>? exercises;
   final Session? sessionToEdit; // Optional session to edit
 
-  const CreateSessionTab({
-    super.key,
-    this.exercises,
-    this.sessionToEdit,
-  }) : assert(exercises != null || sessionToEdit != null,
-            'Either exercises or sessionToEdit must be provided');
+  const CreateSessionTab({super.key, this.exercises, this.sessionToEdit})
+    : assert(
+        exercises != null || sessionToEdit != null,
+        'Either exercises or sessionToEdit must be provided',
+      );
 
   @override
   State<CreateSessionTab> createState() => _CreateSessionTabState();
@@ -72,10 +71,14 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       _exerciseLogs = session.exercises.map((e) {
         final existingSets = e['sets'] as List<dynamic>? ?? [];
         final sets = existingSets.isNotEmpty
-            ? existingSets.map((s) => _SetLog(
-                kg: s['kg']?.toString() ?? '',
-                reps: s['reps']?.toString() ?? '',
-              )).toList()
+            ? existingSets
+                  .map(
+                    (s) => _SetLog(
+                      kg: s['kg']?.toString() ?? '',
+                      reps: s['reps']?.toString() ?? '',
+                    ),
+                  )
+                  .toList()
             : List.generate(3, (_) => _SetLog(kg: '', reps: ''));
 
         return _ExerciseLog(
@@ -95,7 +98,10 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
           desc: e['desc'] ?? '',
           image: e['image'] ?? '',
           trackingType: e['trackingType'] ?? 'WEIGHT_AND_REPS',
-          sets: List.generate(3, (_) => _SetLog(kg: '', reps: '', time: '')), // start with 3 sets
+          sets: List.generate(
+            3,
+            (_) => _SetLog(kg: '', reps: '', time: ''),
+          ), // start with 3 sets
         );
       }).toList();
     }
@@ -145,26 +151,30 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
   Future<void> _addWorkout() async {
     final result = await Navigator.push<List<Map<String, String>>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const SelectWorkoutsTab(mode: 'add'),
-      ),
+      MaterialPageRoute(builder: (_) => const SelectWorkoutsTab(mode: 'add')),
     );
 
     if (result != null && result.isNotEmpty) {
       setState(() {
         for (var ex in result) {
-          _exerciseLogs.add(_ExerciseLog(
-            id: ex['id'] ?? '',
-            name: ex['name'] ?? '',
-            desc: ex['desc'] ?? '',
-            image: ex['image'] ?? '',
-            trackingType: ex['trackingType'] ?? 'WEIGHT_AND_REPS',
-            sets: List.generate(3, (_) => _SetLog(kg: '', reps: '', time: '')),
-          ));
+          _exerciseLogs.add(
+            _ExerciseLog(
+              id: ex['id'] ?? '',
+              name: ex['name'] ?? '',
+              desc: ex['desc'] ?? '',
+              image: ex['image'] ?? '',
+              trackingType: ex['trackingType'] ?? 'WEIGHT_AND_REPS',
+              sets: List.generate(
+                3,
+                (_) => _SetLog(kg: '', reps: '', time: ''),
+              ),
+            ),
+          );
         }
       });
     }
   }
+
   Future<void> _saveSession() async {
     if (_isSaving) return;
 
@@ -173,20 +183,30 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
     final category = _categoryController.text.trim();
 
     if (sessionName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a session name')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a session name')),
+      );
       return;
     }
 
     if (category.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a category')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a category')));
       return;
     }
 
     // Parse categories: split by comma, trim whitespace
-    final categoryList = category.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    final categoryList = category
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
 
     if (categoryList.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter at least one category')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter at least one category')),
+      );
       return;
     }
 
@@ -202,16 +222,22 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
         'desc': ex.desc,
         'image': ex.image,
         'trackingType': ex.trackingType,
-        'sets': ex.sets.map((s) => {
-          'kg': int.tryParse(s.kg) ?? 0, 
-          'reps': int.tryParse(s.reps) ?? 0,
-          'time': int.tryParse(s.time) ?? 0
-        }).toList(),
+        'sets': ex.sets
+            .map(
+              (s) => {
+                'kg': int.tryParse(s.kg) ?? 0,
+                'reps': int.tryParse(s.reps) ?? 0,
+                'time': int.tryParse(s.time) ?? 0,
+              },
+            )
+            .toList(),
       };
     }).toList();
 
     final session = Session(
-      id: _isEditMode ? widget.sessionToEdit!.id : DateTime.now().millisecondsSinceEpoch.toString(),
+      id: _isEditMode
+          ? widget.sessionToEdit!.id
+          : DateTime.now().millisecondsSinceEpoch.toString(),
       backendId: _isEditMode ? widget.sessionToEdit!.backendId : '',
       title: sessionName,
       content: description,
@@ -224,16 +250,27 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
     try {
       if (_isEditMode) {
         await _sessionRepository.updateSession(session);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session updated successfully')));
-        Navigator.pop(context, true); // Return to previous screen with success indicator
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Session updated successfully')),
+        );
+        Navigator.pop(
+          context,
+          true,
+        ); // Return to previous screen with success indicator
       } else {
         await _sessionRepository.saveSessionToDb(session);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Session created')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Session created')));
         // Pop CreateSessionTab, returning true to SelectWorkoutsTab
-        Navigator.pop(context, true); 
+        Navigator.pop(context, true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_isEditMode ? 'Update' : 'Save'} failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${_isEditMode ? 'Update' : 'Save'} failed: $e'),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -266,10 +303,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -288,9 +322,7 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
   Future<void> _handleReplaceExercise(_ExerciseLog exercise) async {
     final result = await Navigator.push<List<Map<String, String>>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const SelectWorkoutsTab(mode: 'add'),
-      ),
+      MaterialPageRoute(builder: (_) => const SelectWorkoutsTab(mode: 'add')),
     );
 
     if (result != null && result.isNotEmpty) {
@@ -332,12 +364,21 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(_isEditMode ? 'Edit Session' : 'Create Session', style: const TextStyle(color: AppColors.pureWhite)),
+        title: Text(
+          _isEditMode ? 'Edit Session' : 'Create Session',
+          style: const TextStyle(color: AppColors.pureWhite),
+        ),
         actions: [
           if (_isReordering)
             TextButton(
               onPressed: () => setState(() => _isReordering = false),
-              child: const Text('Done', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Done',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           if (_isReordering) const SizedBox(width: 8),
         ],
@@ -345,234 +386,268 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
-          children: [
-            // Session Name Input
-            TextField(
-              controller: _sessionNameController,
-              style: const TextStyle(color: AppColors.pureWhite),
-              decoration: InputDecoration(
-                labelText: 'Session Name',
-                labelStyle: const TextStyle(color: AppColors.white60),
-                hintText: 'e.g., Morning Workout',
-                hintStyle: const TextStyle(color: AppColors.white60),
-                filled: true,
-                fillColor: AppColors.black100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        children: [
+          // Session Name Input
+          TextField(
+            controller: _sessionNameController,
+            style: const TextStyle(color: AppColors.pureWhite),
+            decoration: InputDecoration(
+              labelText: 'Session Name',
+              labelStyle: const TextStyle(color: AppColors.white60),
+              hintText: 'e.g., Morning Workout',
+              hintStyle: const TextStyle(color: AppColors.white60),
+              filled: true,
+              fillColor: AppColors.black100,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
               ),
             ),
-            const SizedBox(height: 12),
-            // Description Input
-            TextField(
-              controller: _descriptionController,
-              style: const TextStyle(color: AppColors.pureWhite),
-              decoration: InputDecoration(
-                labelText: 'Description',
-                labelStyle: const TextStyle(color: AppColors.white60),
-                hintText: 'e.g., A quick morning routine',
-                hintStyle: const TextStyle(color: AppColors.white60),
-                filled: true,
-                fillColor: AppColors.black100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          const SizedBox(height: 12),
+          // Description Input
+          TextField(
+            controller: _descriptionController,
+            style: const TextStyle(color: AppColors.pureWhite),
+            decoration: InputDecoration(
+              labelText: 'Description',
+              labelStyle: const TextStyle(color: AppColors.white60),
+              hintText: 'e.g., A quick morning routine',
+              hintStyle: const TextStyle(color: AppColors.white60),
+              filled: true,
+              fillColor: AppColors.black100,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
               ),
             ),
-            const SizedBox(height: 12),
-            // Category Input with suggestions
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _categoryController,
-                  style: const TextStyle(color: AppColors.pureWhite),
-                  onTap: () {
-                    setState(() {
-                      _showCategorySuggestions = true;
-                    });
-                  },
-                  onChanged: (value) {
-                    setState(() {
-                      _showCategorySuggestions = value.isEmpty && _existingCategories.isNotEmpty;
-                    });
-                  },
-                  decoration: InputDecoration(
-                    labelText: 'Category',
-                    labelStyle: const TextStyle(color: AppColors.white60),
-                    hintText: 'e.g., Strength, Cardio, Custom',
-                    hintStyle: const TextStyle(color: AppColors.white60),
-                    filled: true,
-                    fillColor: AppColors.black100,
-                    suffixIcon: _existingCategories.isNotEmpty
-                        ? Icon(
-                            _showCategorySuggestions ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                            color: AppColors.white60,
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          const SizedBox(height: 12),
+          // Category Input with suggestions
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _categoryController,
+                style: const TextStyle(color: AppColors.pureWhite),
+                onTap: () {
+                  setState(() {
+                    _showCategorySuggestions = true;
+                  });
+                },
+                onChanged: (value) {
+                  setState(() {
+                    _showCategorySuggestions =
+                        value.isEmpty && _existingCategories.isNotEmpty;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: 'Category',
+                  labelStyle: const TextStyle(color: AppColors.white60),
+                  hintText: 'e.g., Strength, Cardio, Custom',
+                  hintStyle: const TextStyle(color: AppColors.white60),
+                  filled: true,
+                  fillColor: AppColors.black100,
+                  suffixIcon: _existingCategories.isNotEmpty
+                      ? Icon(
+                          _showCategorySuggestions
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
+                          color: AppColors.white60,
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
                   ),
                 ),
-                if (_showCategorySuggestions && _existingCategories.isNotEmpty)
+              ),
+              if (_showCategorySuggestions && _existingCategories.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.black100,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.greyDark),
+                  ),
+                  constraints: const BoxConstraints(maxHeight: 150),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _existingCategories.length,
+                    itemBuilder: (context, index) {
+                      final category = _existingCategories[index];
+                      return ListTile(
+                        dense: true,
+                        title: Text(
+                          category,
+                          style: const TextStyle(color: AppColors.pureWhite),
+                        ),
+                        onTap: () {
+                          setState(() {
+                            _categoryController.text = category;
+                            _showCategorySuggestions = false;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const SizedBox(height: 12),
+          // Exercise list
+          // Exercise list
+          if (_isReordering)
+            ReorderableListView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              onReorder: (oldIndex, newIndex) {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                setState(() {
+                  final item = _exerciseLogs.removeAt(oldIndex);
+                  _exerciseLogs.insert(newIndex, item);
+                });
+              },
+              onReorderStart: (index) {
+                HapticFeedback.heavyImpact();
+              },
+              proxyDecorator: (child, index, animation) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (BuildContext context, Widget? child) {
+                    final double animValue = Curves.easeInOut.transform(
+                      animation.value,
+                    );
+                    final double scale = 1.0 + (0.05 * animValue);
+                    return Transform.scale(
+                      scale: scale,
+                      child: Material(
+                        color: Colors.transparent,
+                        elevation: 8,
+                        shadowColor: Colors.black45,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: child,
+                );
+              },
+              children: [
+                for (final ex in _exerciseLogs)
                   Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.black100,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.greyDark),
-                    ),
-                    constraints: const BoxConstraints(maxHeight: 150),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _existingCategories.length,
-                      itemBuilder: (context, index) {
-                        final category = _existingCategories[index];
-                        return ListTile(
-                          dense: true,
-                          title: Text(
-                            category,
-                            style: const TextStyle(color: AppColors.pureWhite),
-                          ),
-                          onTap: () {
-                            setState(() {
-                              _categoryController.text = category;
-                              _showCategorySuggestions = false;
-                            });
-                          },
-                        );
-                      },
-                    ),
+                    key: ValueKey(ex.id), // Ensure each item has a unique key
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: _buildExerciseCard(ex, isReordering: true),
+                  ),
+              ],
+            )
+          else
+            Column(
+              children: [
+                for (final ex in _exerciseLogs)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildExerciseCard(ex, isReordering: false),
                   ),
               ],
             ),
-            const SizedBox(height: 12),
-            const SizedBox(height: 12),
-            // Exercise list
-            // Exercise list
-            if (_isReordering)
-              ReorderableListView(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                onReorder: (oldIndex, newIndex) {
-                  if (oldIndex < newIndex) {
-                    newIndex -= 1;
-                  }
-                  setState(() {
-                    final item = _exerciseLogs.removeAt(oldIndex);
-                    _exerciseLogs.insert(newIndex, item);
-                  });
-                },
-                onReorderStart: (index) {
-                  HapticFeedback.heavyImpact();
-                },
-                proxyDecorator: (child, index, animation) {
-                  return AnimatedBuilder(
-                    animation: animation,
-                    builder: (BuildContext context, Widget? child) {
-                      final double animValue = Curves.easeInOut.transform(animation.value);
-                      final double scale = 1.0 + (0.05 * animValue);
-                      return Transform.scale(
-                        scale: scale,
-                        child: Material(
-                          color: Colors.transparent,
-                          elevation: 8,
-                          shadowColor: Colors.black45,
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: child,
-                  );
-                },
-                children: [
-                  for (final ex in _exerciseLogs)
-                    Container(
-                      key: ValueKey(ex.id), // Ensure each item has a unique key
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: _buildExerciseCard(ex, isReordering: true),
-                    ),
-                ],
-              )
-            else
-              Column(
-                children: [
-                  for (final ex in _exerciseLogs)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildExerciseCard(ex, isReordering: false),
-                    ),
-                ],
-              ),
-            const SizedBox(height: 12),
-            // Save Session button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _isSaving ? null : _saveSession,
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.save, color: Colors.black, size: 20),
-                          const SizedBox(width: 8),
-                          Text(_isEditMode ? 'Save Session' : 'Create Session', style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
-                        ],
+          const SizedBox(height: 12),
+          // Save Session button
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _isSaving ? null : _saveSession,
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.black,
+                        strokeWidth: 2.5,
                       ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
-                  shape: const StadiumBorder(),
-                ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.save, color: Colors.black, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isEditMode ? 'Save Session' : 'Create Session',
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+                shape: const StadiumBorder(),
               ),
             ),
-            const SizedBox(height: 12),
-            // Add Workout button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: _addWorkout,
-                icon: const Icon(Icons.add, color: AppColors.primary),
-                label: const Text('Add Workout', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w600)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.black100,
-                  shape: const StadiumBorder(),
-                  elevation: 0,
+          ),
+          const SizedBox(height: 12),
+          // Add Workout button
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton.icon(
+              onPressed: _addWorkout,
+              icon: const Icon(Icons.add, color: AppColors.primary),
+              label: const Text(
+                'Add Workout',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            // Discard Workout button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _discardWorkout,
-                child: const Text('Discard Workout', style: TextStyle(color: Colors.red, fontSize: 16)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.black100,
-                  shape: const StadiumBorder(),
-                  elevation: 0,
-                ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.black100,
+                shape: const StadiumBorder(),
+                elevation: 0,
               ),
             ),
-            const SizedBox(height: 24),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          // Discard Workout button
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _discardWorkout,
+              child: const Text(
+                'Discard Workout',
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.black100,
+                shape: const StadiumBorder(),
+                elevation: 0,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 
@@ -591,81 +666,112 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
               if (isReordering)
                 const Padding(
                   padding: EdgeInsets.only(right: 12.0),
-                  child: Icon(Icons.drag_indicator, color: AppColors.white60, size: 20),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    color: AppColors.white60,
+                    size: 20,
+                  ),
                 ),
-              CircleAvatar(backgroundImage: NetworkImage(ex.image), radius: 20, backgroundColor: AppColors.greyDark),
+              CircleAvatar(
+                backgroundImage: NetworkImage(ex.image),
+                radius: 20,
+                backgroundColor: AppColors.greyDark,
+              ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(ex.name, style: const TextStyle(color: AppColors.pureWhite, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 4),
-                  Text(ex.desc, style: const TextStyle(color: AppColors.white60, fontSize: 12)),
-                ]),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ex.name,
+                      style: const TextStyle(
+                        color: AppColors.pureWhite,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ex.desc,
+                      style: const TextStyle(
+                        color: AppColors.white60,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               if (!isReordering)
                 PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'reorder':
-                      setState(() => _isReordering = true);
-                      break;
-                    case 'replace':
-                      _handleReplaceExercise(ex);
-                      break;
-                    case 'delete':
-                      _handleDeleteExercise(ex);
-                      break;
-                  }
-                },
-                color: AppColors.black100,
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppColors.greyDark),
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'reorder':
+                        setState(() => _isReordering = true);
+                        break;
+                      case 'replace':
+                        _handleReplaceExercise(ex);
+                        break;
+                      case 'delete':
+                        _handleDeleteExercise(ex);
+                        break;
+                    }
+                  },
+                  color: AppColors.black100,
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: AppColors.greyDark),
+                  ),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'reorder',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.swap_vert,
+                            color: AppColors.white60,
+                            size: 20,
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Reorder',
+                            style: TextStyle(color: AppColors.pureWhite),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'replace',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.swap_horiz,
+                            color: AppColors.white60,
+                            size: 20,
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Replace Exercise',
+                            style: TextStyle(color: AppColors.pureWhite),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Colors.red, size: 20),
+                          SizedBox(width: 12),
+                          Text(
+                            'Delete Exercise',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  icon: const Icon(Icons.more_horiz, color: AppColors.white60),
                 ),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'reorder',
-                    child: Row(
-                      children: [
-                        Icon(Icons.swap_vert, color: AppColors.white60, size: 20),
-                        SizedBox(width: 12),
-                        Text(
-                          'Reorder',
-                          style: TextStyle(color: AppColors.pureWhite),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'replace',
-                    child: Row(
-                      children: [
-                        Icon(Icons.swap_horiz, color: AppColors.white60, size: 20),
-                        SizedBox(width: 12),
-                        Text(
-                          'Replace Exercise',
-                          style: TextStyle(color: AppColors.pureWhite),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, color: Colors.red, size: 20),
-                        SizedBox(width: 12),
-                        Text(
-                          'Delete Exercise',
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                icon: const Icon(Icons.more_horiz, color: AppColors.white60),
-              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -679,14 +785,27 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                   children: [
                     SizedBox(
                       width: 40,
-                      child: Text('Set ${si + 1}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+                      child: Text(
+                        'Set ${si + 1}',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 4),
                     if (ex.trackingType == 'WEIGHT_AND_REPS') ...[
                       Expanded(
                         child: Row(
                           children: [
-                            const Text('Kg', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const Text(
+                              'Kg',
+                              style: TextStyle(
+                                color: AppColors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
                             const SizedBox(width: 4),
                             SizedBox(
                               width: 50,
@@ -694,15 +813,29 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   hintText: '0',
-                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  hintStyle: const TextStyle(
+                                    color: AppColors.white60,
+                                  ),
                                   filled: true,
                                   fillColor: AppColors.greyDark,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide.none,
+                                  ),
                                 ),
-                                style: const TextStyle(color: AppColors.pureWhite),
+                                style: TextStyle(
+                                  color: AppColors.pureWhite,
+                                  fontSize: set.kg.length > 2 ? 12 : 14,
+                                ),
                                 onChanged: (v) => setState(() => set.kg = v),
-                                controller: TextEditingController(text: set.kg)..selection = TextSelection.fromPosition(TextPosition(offset: set.kg.length)),
+                                controller: TextEditingController(text: set.kg)
+                                  ..selection = TextSelection.fromPosition(
+                                    TextPosition(offset: set.kg.length),
+                                  ),
                               ),
                             ),
                           ],
@@ -712,7 +845,13 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                       Expanded(
                         child: Row(
                           children: [
-                            const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const Text(
+                              'Reps',
+                              style: TextStyle(
+                                color: AppColors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
                             const SizedBox(width: 4),
                             SizedBox(
                               width: 50,
@@ -720,15 +859,30 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   hintText: '0',
-                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  hintStyle: const TextStyle(
+                                    color: AppColors.white60,
+                                  ),
                                   filled: true,
                                   fillColor: AppColors.greyDark,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide.none,
+                                  ),
                                 ),
-                                style: const TextStyle(color: AppColors.pureWhite),
+                                style: TextStyle(
+                                  color: AppColors.pureWhite,
+                                  fontSize: set.reps.length > 2 ? 12 : 14,
+                                ),
                                 onChanged: (v) => setState(() => set.reps = v),
-                                controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
+                                controller:
+                                    TextEditingController(text: set.reps)
+                                      ..selection = TextSelection.fromPosition(
+                                        TextPosition(offset: set.reps.length),
+                                      ),
                               ),
                             ),
                           ],
@@ -738,7 +892,13 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                       Expanded(
                         child: Row(
                           children: [
-                            const Text('Reps', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const Text(
+                              'Reps',
+                              style: TextStyle(
+                                color: AppColors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
                             const SizedBox(width: 4),
                             SizedBox(
                               width: 50,
@@ -746,15 +906,30 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   hintText: '0',
-                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  hintStyle: const TextStyle(
+                                    color: AppColors.white60,
+                                  ),
                                   filled: true,
                                   fillColor: AppColors.greyDark,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide.none,
+                                  ),
                                 ),
-                                style: const TextStyle(color: AppColors.pureWhite),
+                                style: TextStyle(
+                                  color: AppColors.pureWhite,
+                                  fontSize: set.reps.length > 2 ? 12 : 14,
+                                ),
                                 onChanged: (v) => setState(() => set.reps = v),
-                                controller: TextEditingController(text: set.reps)..selection = TextSelection.fromPosition(TextPosition(offset: set.reps.length)),
+                                controller:
+                                    TextEditingController(text: set.reps)
+                                      ..selection = TextSelection.fromPosition(
+                                        TextPosition(offset: set.reps.length),
+                                      ),
                               ),
                             ),
                           ],
@@ -764,7 +939,13 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                       Expanded(
                         child: Row(
                           children: [
-                            const Text('Time (s)', style: TextStyle(color: AppColors.white60, fontSize: 12)),
+                            const Text(
+                              'Time (s)',
+                              style: TextStyle(
+                                color: AppColors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
                             const SizedBox(width: 4),
                             SizedBox(
                               width: 60,
@@ -772,15 +953,30 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   hintText: '0',
-                                  hintStyle: const TextStyle(color: AppColors.white60),
+                                  hintStyle: const TextStyle(
+                                    color: AppColors.white60,
+                                  ),
                                   filled: true,
                                   fillColor: AppColors.greyDark,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide.none,
+                                  ),
                                 ),
-                                style: const TextStyle(color: AppColors.pureWhite),
+                                style: TextStyle(
+                                  color: AppColors.pureWhite,
+                                  fontSize: set.time.length > 2 ? 12 : 14,
+                                ),
                                 onChanged: (v) => setState(() => set.time = v),
-                                controller: TextEditingController(text: set.time)..selection = TextSelection.fromPosition(TextPosition(offset: set.time.length)),
+                                controller:
+                                    TextEditingController(text: set.time)
+                                      ..selection = TextSelection.fromPosition(
+                                        TextPosition(offset: set.time.length),
+                                      ),
                               ),
                             ),
                           ],
@@ -790,7 +986,11 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
                     const SizedBox(width: 8),
                     IconButton(
                       onPressed: () => _removeSet(ex, si),
-                      icon: const Icon(Icons.close, color: Colors.redAccent, size: 20),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       visualDensity: VisualDensity.compact,
@@ -807,7 +1007,10 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
             child: OutlinedButton.icon(
               onPressed: () => _addSet(ex),
               icon: const Icon(Icons.add, color: AppColors.pureWhite, size: 20),
-              label: const Text('Add Set', style: TextStyle(color: AppColors.pureWhite)),
+              label: const Text(
+                'Add Set',
+                style: TextStyle(color: AppColors.pureWhite),
+              ),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.white40),
                 padding: const EdgeInsets.symmetric(vertical: 12),
