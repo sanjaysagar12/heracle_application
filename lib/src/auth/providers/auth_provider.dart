@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../../core/storage/local_storage.dart';
 import '../data/auth_repository.dart';
 
@@ -58,6 +59,9 @@ class AuthProvider extends ChangeNotifier {
       _userFromToken = JwtDecoder.decode(token);
       _status = AuthStatus.authenticated;
       notifyListeners();
+
+      // Refresh FCM token on app start if authenticated
+      _registerFcmToken();
     } catch (e) {
       debugPrint('AuthProvider: Error checking auth status: $e');
       _status = AuthStatus.unauthenticated;
@@ -83,6 +87,10 @@ class AuthProvider extends ChangeNotifier {
       _status = AuthStatus.authenticated;
       _isLoading = false;
       notifyListeners();
+
+      // Register FCM token
+      _registerFcmToken();
+
       return true;
     } catch (e) {
       _error = e.toString();
@@ -109,6 +117,10 @@ class AuthProvider extends ChangeNotifier {
       _status = AuthStatus.authenticated;
       _isLoading = false;
       notifyListeners();
+
+      // Register FCM token
+      _registerFcmToken();
+
       return true;
     } catch (e) {
       _error = e.toString();
@@ -133,6 +145,20 @@ class AuthProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  /// Register FCM token with backend
+  Future<void> _registerFcmToken() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        print('Registering FCM token: $token');
+        await _authRepository.sendFcmToken(token);
+      }
+    } catch (e) {
+      print('Failed to register FCM token: $e');
+      // Non-blocking error
+    }
   }
 
   /// Clear any error

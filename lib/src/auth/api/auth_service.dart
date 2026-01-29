@@ -14,10 +14,11 @@ class AuthService {
       // Initialize GoogleSignIn (required in version 7.x)
       print("Initializing Google Sign In...");
       await GoogleSignIn.instance.initialize();
-      
+
       // Trigger the authentication flow
       print("Starting Google Sign In...");
-      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance
+          .authenticate();
 
       if (googleUser == null) {
         throw Exception('Google Sign In aborted by user');
@@ -26,7 +27,8 @@ class AuthService {
       print("Google User: ${googleUser.email}");
 
       // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       print("Got Google Auth tokens");
       print("ID Token: ${googleAuth.idToken != null ? 'Present' : 'Missing'}");
@@ -39,7 +41,9 @@ class AuthService {
       print("Signing in to Firebase...");
 
       // Once signed in, return the UserCredential
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(
+        credential,
+      );
       final User? user = userCredential.user;
 
       if (user != null) {
@@ -50,11 +54,11 @@ class AuthService {
         print('DisplayName: ${user.displayName}');
         print('PhotoURL: ${user.photoURL}');
         print('-----------------------------------------');
-        
+
         // Return the ID token
         final String? idToken = await user.getIdToken();
         if (idToken == null) throw Exception("Failed to retrieve ID Token");
-        
+
         // Verify with backend
         print("Verifying with backend...");
         final backendToken = await _verifyWithBackend(idToken);
@@ -77,7 +81,7 @@ class AuthService {
         "/api/auth/google/token",
         data: {"idToken": idToken},
       );
-      
+
       if (res.statusCode == 200 || res.statusCode == 201) {
         if (res.data['token'] != null) {
           return res.data['token'];
@@ -105,7 +109,8 @@ class AuthService {
         "/api/auth/dev/token",
         data: {"email": email},
       );
-      if ((res.statusCode == 200 || res.statusCode == 201) && res.data['token'] != null) {
+      if ((res.statusCode == 200 || res.statusCode == 201) &&
+          res.data['token'] != null) {
         return res.data['token'];
       } else {
         throw Exception("Unexpected response from backend");
@@ -117,6 +122,7 @@ class AuthService {
       return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkRldiBVc2VyIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
     }
   }
+
   Future<Map<String, dynamic>> getMyProfile() async {
     try {
       final res = await _dio.get("/api/user/my-profile");
@@ -157,20 +163,15 @@ class AuthService {
 
       // Add image if present
       if (image != null) {
-        formData.files.add(MapEntry(
-          'image',
-          await MultipartFile.fromFile(image.path),
-        ));
+        formData.files.add(
+          MapEntry('image', await MultipartFile.fromFile(image.path)),
+        );
       }
 
       final res = await _dio.patch(
         "/api/user/profile",
         data: formData,
-        options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'multipart/form-data'}),
       );
 
       if (res.statusCode != 200 && res.statusCode != 201) {
@@ -181,5 +182,13 @@ class AuthService {
       rethrow;
     }
   }
-}
 
+  Future<void> sendFcmToken(String token) async {
+    try {
+      await _dio.post("/api/user/fcm-token", data: {"token": token});
+    } catch (e) {
+      print("Error sending FCM token: $e");
+      // Don't rethrow, as this is a background text
+    }
+  }
+}
