@@ -504,19 +504,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             ),
                           ),
                           const Spacer(),
-                          // Show delete button for authorized users
-                          if (canDelete)
-                            GestureDetector(
-                              onTap: () => _showDeleteDialog(comment),
-                              child: const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 4),
-                                child: Icon(
-                                  Icons.more_horiz,
-                                  color: AppColors.white60,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                       const SizedBox(height: 4),
