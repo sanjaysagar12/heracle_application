@@ -8,20 +8,24 @@ class CommentsBottomSheet extends StatefulWidget {
   final List<Comment>? comments;
   final Future<void> Function(String) onAddComment;
   final Future<void> Function(String, String) onAddReply;
+  final Future<bool> Function(String)? onDeleteComment; // New: delete callback
   final bool isLoading;
   final Function(Comment)? onOptimisticCommentAdd;
   final Function(String, Comment)? onOptimisticReplyAdd;
-  final Profile? currentUserProfile; // Added
+  final Profile? currentUserProfile;
+  final String? postOwnerUsername; // New: to check if current user is post owner
 
   const CommentsBottomSheet({
     super.key,
     this.comments,
     required this.onAddComment,
     required this.onAddReply,
+    this.onDeleteComment,
     this.isLoading = false,
     this.onOptimisticCommentAdd,
     this.onOptimisticReplyAdd,
-    this.currentUserProfile, // Added
+    this.currentUserProfile,
+    this.postOwnerUsername,
   });
 
   @override
@@ -329,100 +333,226 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     );
   }
 
+  /// Check if current user can delete a comment
+  /// User can delete if they are the comment owner OR the post owner
+  bool _canDeleteComment(Comment comment) {
+    final currentUsername = widget.currentUserProfile?.username;
+    if (currentUsername == null) return false;
+    
+    // Check if user is comment owner
+    final isCommentOwner = comment.username == currentUsername;
+    
+    // Check if user is post owner
+    final isPostOwner = widget.postOwnerUsername != null && 
+                         widget.postOwnerUsername == currentUsername;
+    
+    return isCommentOwner || isPostOwner;
+  }
+
+  /// Show delete confirmation dialog
+  void _showDeleteDialog(Comment comment) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.black100,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Delete Comment',
+          style: TextStyle(color: AppColors.pureWhite),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this comment? This action cannot be undone.',
+          style: TextStyle(color: AppColors.white60),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.white60),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _handleDeleteComment(comment);
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Handle comment deletion
+  Future<void> _handleDeleteComment(Comment comment) async {
+    if (widget.onDeleteComment == null) return;
+    
+    // Optimistically remove comment locally
+    setState(() {
+      _localComments = _removeCommentLocally(_localComments, comment.id);
+    });
+    
+    final success = await widget.onDeleteComment!(comment.id);
+    
+    if (!success && mounted) {
+      // Revert on failure - refresh from parent
+      setState(() {
+        _localComments = List.from(widget.comments ?? []);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete comment'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Comment deleted'),
+          backgroundColor: AppColors.greyDark,
+        ),
+      );
+    }
+  }
+
+  /// Recursively remove a comment by ID
+  List<Comment> _removeCommentLocally(List<Comment> comments, String commentId) {
+    return comments
+        .where((comment) => comment.id != commentId)
+        .map((comment) {
+          if (comment.replies.isNotEmpty) {
+            return Comment(
+              id: comment.id,
+              username: comment.username,
+              handle: comment.handle,
+              profileImage: comment.profileImage,
+              timeAgo: comment.timeAgo,
+              content: comment.content,
+              replies: _removeCommentLocally(comment.replies, commentId),
+            );
+          }
+          return comment;
+        })
+        .toList();
+  }
+
   Widget _buildCommentItem(Comment comment, int depth) {
-    return Padding(
-      padding: EdgeInsets.only(left: depth * 24.0, bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProfilePage(username: comment.username),
-                    ),
-                  );
-                },
-                child: CircleAvatar(
-                  radius: 18,
-                  backgroundImage: NetworkImage(comment.profileImage),
+    final canDelete = _canDeleteComment(comment) && widget.onDeleteComment != null;
+    
+    return GestureDetector(
+      onLongPress: canDelete ? () => _showDeleteDialog(comment) : null,
+      child: Padding(
+        padding: EdgeInsets.only(left: depth * 24.0, bottom: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProfilePage(username: comment.username),
+                      ),
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundImage: NetworkImage(comment.profileImage),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ProfilePage(username: comment.username),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProfilePage(username: comment.username),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              comment.username,
+                              style: const TextStyle(
+                                color: AppColors.pureWhite,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
                               ),
-                            );
-                          },
-                          child: Text(
-                            comment.username,
-                            style: const TextStyle(
-                              color: AppColors.pureWhite,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          Text(
+                            comment.timeAgo,
+                            style: const TextStyle(
+                              color: AppColors.white60,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const Spacer(),
+                          // Show delete button for authorized users
+                          if (canDelete)
+                            GestureDetector(
+                              onTap: () => _showDeleteDialog(comment),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 4),
+                                child: Icon(
+                                  Icons.more_horiz,
+                                  color: AppColors.white60,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        comment.content,
+                        style: const TextStyle(
+                          color: AppColors.pureWhite,
+                          fontSize: 14,
+                          height: 1.4,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          comment.timeAgo,
-                          style: const TextStyle(
+                      ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => _startReply(comment.id, comment.username),
+                        child: const Text(
+                          'Reply',
+                          style: TextStyle(
                             color: AppColors.white60,
                             fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      comment.content,
-                      style: const TextStyle(
-                        color: AppColors.pureWhite,
-                        fontSize: 14,
-                        height: 1.4,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () => _startReply(comment.id, comment.username),
-                      child: const Text(
-                        'Reply',
-                        style: TextStyle(
-                          color: AppColors.white60,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (comment.replies.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Column(
+                  children: comment.replies
+                      .map((reply) => _buildCommentItem(reply, depth + 1))
+                      .toList(),
                 ),
               ),
-            ],
-          ),
-          if (comment.replies.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Column(
-                children: comment.replies
-                    .map((reply) => _buildCommentItem(reply, depth + 1))
-                    .toList(),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

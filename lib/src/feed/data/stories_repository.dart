@@ -390,6 +390,11 @@ class StoriesRepository {
     return _mapToComment(data);
   }
 
+  /// Delete a story comment
+  Future<void> deleteStoryComment(String commentId) async {
+    await _storiesService.deleteStoryComment(commentId);
+  }
+
   Future<StoryDetails> getStoryDetails(String storyId) async {
     final data = await _storiesService.getStoryDetails(storyId);
     final viewersList = (data['views'] as List?) ?? [];

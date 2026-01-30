@@ -296,53 +296,68 @@ class _ProfilePageState extends State<ProfilePage> {
       enableDrag: true,
       isDismissible: true,
       useSafeArea: true,
-      builder: (sheetContext) => Consumer<FeedProvider>(
-        builder: (sheetContext, feedProv, child) {
-          final comments = feedProv.getComments(postId);
-          final isLoading = feedProv.isCommentsLoading(postId);
+      isScrollControlled: true,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => Consumer<FeedProvider>(
+          builder: (sheetContext, feedProv, child) {
+            final comments = feedProv.getComments(postId);
+            final isLoading = feedProv.isCommentsLoading(postId);
 
-          // Convert to home_repo.Profile for CommentsBottomSheet
-          home_repo.Profile? userProfile;
-          if (_profile != null) {
-            userProfile = home_repo.Profile(
-              name: _profile!.name,
-              username: _profile!.username,
-              age: 0,
-              profileImageUrl: _profile!.profileImageUrl,
-              hasStory: _profile!.hasStory,
-            );
-          }
+            // Convert to home_repo.Profile for CommentsBottomSheet
+            home_repo.Profile? userProfile;
+            if (_profile != null) {
+              userProfile = home_repo.Profile(
+                name: _profile!.name,
+                username: _profile!.username,
+                age: 0,
+                profileImageUrl: _profile!.profileImageUrl,
+                hasStory: _profile!.hasStory,
+              );
+            }
 
-          return CommentsBottomSheet(
-            comments: comments,
-            isLoading: isLoading,
-            onAddComment: (content) async {
-              if (userProfile != null) {
-                await feedProv.addComment(
+            return CommentsBottomSheet(
+              comments: comments,
+              isLoading: isLoading,
+              onAddComment: (content) async {
+                if (userProfile != null) {
+                  await feedProv.addComment(
+                    postId,
+                    content,
+                    userProfile,
+                    isMeal: isMeal,
+                    username: _targetUsername,
+                  );
+                }
+              },
+              onAddReply: (commentId, content) async {
+                if (userProfile != null) {
+                  await feedProv.addReply(
+                    postId,
+                    commentId,
+                    content,
+                    userProfile,
+                    isMeal: isMeal,
+                  );
+                }
+              },
+              onDeleteComment: (commentId) async {
+                return await feedProv.deleteComment(
                   postId,
-                  content,
-                  userProfile,
+                  commentId,
                   isMeal: isMeal,
                   username: _targetUsername,
                 );
-              }
-            },
-            onAddReply: (commentId, content) async {
-              if (userProfile != null) {
-                await feedProv.addReply(
-                  postId,
-                  commentId,
-                  content,
-                  userProfile,
-                  isMeal: isMeal,
-                );
-              }
-            },
-            onOptimisticCommentAdd: (comment) {},
-            onOptimisticReplyAdd: (commentId, reply) {},
-            currentUserProfile: userProfile,
-          );
-        },
+              },
+              onOptimisticCommentAdd: (comment) {},
+              onOptimisticReplyAdd: (commentId, reply) {},
+              currentUserProfile: userProfile,
+              postOwnerUsername: post.username,
+            );
+          },
+        ),
       ),
     );
   }

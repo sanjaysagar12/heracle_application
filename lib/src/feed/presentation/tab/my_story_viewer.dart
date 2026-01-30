@@ -643,6 +643,27 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet>
     }
   }
 
+  /// Recursively remove a comment by ID
+  List<Comment> _removeCommentLocal(List<Comment> comments, String commentId) {
+    return comments
+        .where((comment) => comment.id != commentId)
+        .map((comment) {
+          if (comment.replies.isNotEmpty) {
+            return Comment(
+              id: comment.id,
+              username: comment.username,
+              handle: comment.handle,
+              profileImage: comment.profileImage,
+              timeAgo: comment.timeAgo,
+              content: comment.content,
+              replies: _removeCommentLocal(comment.replies, commentId),
+            );
+          }
+          return comment;
+        })
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -698,6 +719,17 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet>
                             commentId,
                             text,
                           );
+                        },
+                        onDeleteComment: (commentId) async {
+                          try {
+                            await widget.repository.deleteStoryComment(commentId);
+                            setState(() {
+                              _comments = _removeCommentLocal(_comments, commentId);
+                            });
+                            return true;
+                          } catch (e) {
+                            return false;
+                          }
                         },
                         onOptimisticCommentAdd: (comment) {
                           setState(() {

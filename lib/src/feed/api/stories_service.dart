@@ -251,6 +251,29 @@ class StoriesService {
     }
   }
 
+  /// Delete a story comment
+  Future<void> deleteStoryComment(String commentId) async {
+    try {
+      final response = await _dioClient.dio.delete('/api/story/comment/$commentId');
+      
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete comment: ${response.statusCode}');
+      }
+      developer.log('Story comment deleted successfully: $commentId');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // Treat 404 as success (comment already deleted)
+        developer.log('Comment deletion returned 404, treating as success: $commentId');
+        return;
+      }
+      developer.log('Error deleting story comment: $e');
+      rethrow;
+    } catch (e) {
+      developer.log('Error deleting story comment: $e');
+      rethrow;
+    }
+  }
+
   /// Highlight a story
   Future<void> highlightStory(String storyId, bool isHighlighted) async {
     try {
