@@ -302,34 +302,73 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
             _buildTags(item.meals[_currentMealIndex]),
             const SizedBox(height: 16),
 
-            AspectRatio(
-              aspectRatio: 16 / 10, // Adjust based on your image needs
-              child: GestureDetector(
-                onTap: () {
-                  if (!widget.isDetailView) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => NutritionDetailsPage(post: item),
+            Builder(
+              builder: (context) {
+                final hasAnyImages = item.meals.any(
+                  (m) => m.images.isNotEmpty && m.images.first.isNotEmpty,
+                );
+
+                if (!hasAnyImages) {
+                  // Scenario: No images in ANY meal
+                  // Render just macros.
+                  // If multiple meals, we need a small swiper for macros.
+                  if (item.meals.length == 1) {
+                    return _buildMacrosOnly(item.meals[0]);
+                  } else {
+                    return SizedBox(
+                      height: 80,
+                      child: PageView.builder(
+                        itemCount: item.meals.length,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentMealIndex = index;
+                          });
+                          if (widget.onPageChanged != null) {
+                            widget.onPageChanged!(index);
+                          }
+                        },
+                        itemBuilder: (context, index) {
+                          return Center(
+                            child: _buildMacrosOnly(item.meals[index]),
+                          );
+                        },
                       ),
                     );
                   }
-                },
-                child: PageView.builder(
-                  itemCount: item.meals.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentMealIndex = index;
-                    });
-                    if (widget.onPageChanged != null) {
-                      widget.onPageChanged!(index);
-                    }
-                  },
-                  itemBuilder: (context, index) {
-                    return _buildMealPage(item.meals[index]);
-                  },
-                ),
-              ),
+                }
+
+                // Standard Case: Images exist
+                return AspectRatio(
+                  aspectRatio: 16 / 10,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (!widget.isDetailView) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                NutritionDetailsPage(post: item),
+                          ),
+                        );
+                      }
+                    },
+                    child: PageView.builder(
+                      itemCount: item.meals.length,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentMealIndex = index;
+                        });
+                        if (widget.onPageChanged != null) {
+                          widget.onPageChanged!(index);
+                        }
+                      },
+                      itemBuilder: (context, index) {
+                        return _buildMealPage(item.meals[index]);
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
 
@@ -514,44 +553,49 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
             child: hasImage
                 ? null
                 : const Center(
-                    child: Text(
-                      'Image not added',
-                      style: TextStyle(color: AppColors.white60, fontSize: 14),
+                    child: Icon(
+                      Icons.image_not_supported,
+                      color: AppColors.white60,
+                      size: 40,
                     ),
                   ),
           ),
         ),
         const SizedBox(height: 16),
 
-        // Macros
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildMacroItem(
-              'Calories',
-              '${meal.calories}',
-              'assets/icons/calories.svg',
-              AppColors.primary,
-            ),
-            _buildMacroItem(
-              'Protein',
-              '${meal.protein}g',
-              'assets/icons/protein.svg',
-              AppColors.primary,
-            ),
-            _buildMacroItem(
-              'Carbs',
-              '${meal.carbs}g',
-              'assets/icons/carbs.svg',
-              AppColors.primary,
-            ),
-            _buildMacroItem(
-              'Fats',
-              '${meal.fats}g',
-              'assets/icons/fat.svg',
-              AppColors.primary,
-            ),
-          ],
+        _buildMacrosOnly(meal),
+      ],
+    );
+  }
+
+  // Refactored Macros section
+  Widget _buildMacrosOnly(NutritionMeal meal) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _buildMacroItem(
+          'Calories',
+          '${meal.calories}',
+          'assets/icons/calories.svg',
+          AppColors.primary,
+        ),
+        _buildMacroItem(
+          'Protein',
+          '${meal.protein}g',
+          'assets/icons/protein.svg',
+          AppColors.primary,
+        ),
+        _buildMacroItem(
+          'Carbs',
+          '${meal.carbs}g',
+          'assets/icons/carbs.svg',
+          AppColors.primary,
+        ),
+        _buildMacroItem(
+          'Fats',
+          '${meal.fats}g',
+          'assets/icons/fat.svg',
+          AppColors.primary,
         ),
       ],
     );

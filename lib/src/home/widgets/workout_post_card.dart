@@ -8,7 +8,7 @@ import '../presentation/workout_details_page.dart';
 
 class WorkoutPostCard extends StatefulWidget {
   final String id; // Add ID field
-  final String name; 
+  final String name;
   final String username;
   final String handle;
   final String profileImage;
@@ -34,7 +34,8 @@ class WorkoutPostCard extends StatefulWidget {
 
   const WorkoutPostCard({
     super.key,
-    this.id = '', // Default or required, depends. It should be required but existing calls might break if I don't default.
+    this.id =
+        '', // Default or required, depends. It should be required but existing calls might break if I don't default.
     required this.name,
     required this.username,
     required this.handle,
@@ -68,11 +69,7 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
   bool _isExpanded = false;
 
   void _navigateToProfile() {
-    Navigator.pushNamed(
-      context,
-      AppRoutes.profile,
-      arguments: widget.handle,
-    );
+    Navigator.pushNamed(context, AppRoutes.profile, arguments: widget.handle);
   }
 
   Future<void> _confirmDelete() async {
@@ -80,12 +77,21 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.black100,
-        title: const Text('Delete Post', style: TextStyle(color: AppColors.pureWhite)),
-        content: const Text('Are you sure you want to delete this post?', style: TextStyle(color: AppColors.white60)),
+        title: const Text(
+          'Delete Post',
+          style: TextStyle(color: AppColors.pureWhite),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this post?',
+          style: TextStyle(color: AppColors.white60),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.white60)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.white60),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -111,14 +117,14 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
       ),
       child: GestureDetector(
         onTap: () {
-            if (!widget.isDetailView && widget.id.isNotEmpty) {
-                 Navigator.push(
-                    context, 
-                    MaterialPageRoute(
-                        builder: (context) => WorkoutDetailsPage(postId: widget.id),
-                    ),
-                 );
-            }
+          if (!widget.isDetailView && widget.id.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => WorkoutDetailsPage(postId: widget.id),
+              ),
+            );
+          }
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +178,9 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
                         ),
                       ),
                       Text(
-                        widget.handle.isNotEmpty ? widget.handle : '@${widget.username}',
+                        widget.handle.isNotEmpty
+                            ? widget.handle
+                            : '@${widget.username}',
                         style: const TextStyle(
                           color: AppColors.white60,
                           fontSize: 14,
@@ -203,7 +211,10 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
             },
             icon: const Icon(Icons.more_vert, color: AppColors.white60),
             color: AppColors.black100,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.greyDark)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppColors.greyDark),
+            ),
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'edit',
@@ -232,6 +243,7 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
   }
 
   Widget _buildContent() {
+    if (widget.content.isEmpty) return const SizedBox.shrink();
     return Text(
       widget.content,
       style: const TextStyle(
@@ -245,20 +257,21 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
   Widget _buildTags() {
     return Wrap(
       spacing: 8,
-      children: widget.tags.map((tag) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.greyDark,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          tag,
-          style: const TextStyle(
-            color: AppColors.primary,
-            fontSize: 13,
-          ),
-        ),
-      )).toList(),
+      children: widget.tags
+          .map(
+            (tag) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.greyDark,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                tag,
+                style: const TextStyle(color: AppColors.primary, fontSize: 13),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -276,7 +289,8 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
             child: Image.network(
               widget.images[0],
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
+              errorBuilder: (context, error, stackTrace) =>
+                  Container(color: AppColors.greyDark),
             ),
           ),
         ),
@@ -298,7 +312,8 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
                     widget.images[0],
                     fit: BoxFit.cover,
                     height: double.infinity,
-                    errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
+                    errorBuilder: (context, error, stackTrace) =>
+                        Container(color: AppColors.greyDark),
                   ),
                 ),
               ),
@@ -316,7 +331,8 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
                     child: Image.network(
                       widget.images[1],
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(color: AppColors.greyDark),
+                      errorBuilder: (context, error, stackTrace) =>
+                          Container(color: AppColors.greyDark),
                     ),
                   ),
                   if (widget.images.length > 2)
@@ -374,10 +390,7 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: AppColors.white60,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: AppColors.white60, fontSize: 12),
         ),
         const SizedBox(height: 4),
         Text(
@@ -393,8 +406,10 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
   }
 
   Widget _buildExercises() {
-    final exercisesToShow = _isExpanded ? widget.exercises : widget.exercises.take(3).toList();
-    
+    final exercisesToShow = _isExpanded
+        ? widget.exercises
+        : widget.exercises.take(3).toList();
+
     return Column(
       children: [
         for (var exercise in exercisesToShow)
@@ -452,11 +467,10 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
-              _isExpanded ? 'Show less' : 'See ${widget.exercises.length - 3} more exercises',
-              style: const TextStyle(
-                color: AppColors.white60,
-                fontSize: 14,
-              ),
+              _isExpanded
+                  ? 'Show less'
+                  : 'See ${widget.exercises.length - 3} more exercises',
+              style: const TextStyle(color: AppColors.white60, fontSize: 14),
             ),
           ),
       ],
@@ -514,16 +528,18 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
             const SizedBox(width: 24),
             GestureDetector(
               onTap: () {
-                  ShareUtils.showShareOptions(
-                    context: context,
-                    title: 'Check out this workout by ${widget.name}',
-                    content: widget.content,
-                    username: widget.name,
-                    profileImageUrl: widget.profileImage,
-                    postId: widget.id,
-                    type: 'workout',
-                    imageUrl: widget.images.isNotEmpty ? widget.images.first : null,
-                  );
+                ShareUtils.showShareOptions(
+                  context: context,
+                  title: 'Check out this workout by ${widget.name}',
+                  content: widget.content,
+                  username: widget.name,
+                  profileImageUrl: widget.profileImage,
+                  postId: widget.id,
+                  type: 'workout',
+                  imageUrl: widget.images.isNotEmpty
+                      ? widget.images.first
+                      : null,
+                );
               },
               child: SvgPicture.asset(
                 'assets/icons/share.svg',
@@ -539,24 +555,28 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
             onTap: widget.onLikesClick,
             child: Row(
               children: [
-                ...widget.likedBy.take(3).map((user) => Align(
-                  widthFactor: 0.7,
-                  child: CircleAvatar(
-                    radius: 12,
-                    backgroundColor: AppColors.greyDark,
-                    backgroundImage: NetworkImage(user.profileImage),
-                  ),
-                )),
-                const SizedBox(width: 8),
-                  Text(
-                    widget.likes > 1
-                        ? 'Liked by ${widget.likedBy[0].name} and others'
-                        : 'Liked by ${widget.likedBy[0].name}',
-                    style: const TextStyle(
-                      color: AppColors.white60,
-                      fontSize: 13,
+                ...widget.likedBy
+                    .take(3)
+                    .map(
+                      (user) => Align(
+                        widthFactor: 0.7,
+                        child: CircleAvatar(
+                          radius: 12,
+                          backgroundColor: AppColors.greyDark,
+                          backgroundImage: NetworkImage(user.profileImage),
+                        ),
+                      ),
                     ),
+                const SizedBox(width: 8),
+                Text(
+                  widget.likes > 1
+                      ? 'Liked by ${widget.likedBy[0].name} and others'
+                      : 'Liked by ${widget.likedBy[0].name}',
+                  style: const TextStyle(
+                    color: AppColors.white60,
+                    fontSize: 13,
                   ),
+                ),
               ],
             ),
           ),

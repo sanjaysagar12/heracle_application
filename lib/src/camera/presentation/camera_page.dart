@@ -55,16 +55,21 @@ class _CameraPageState extends State<CameraPage>
   double _baseScale = 1.0;
   double _baseRotation = 0.0;
   Offset _basePosition = Offset.zero;
-  
+
   final GlobalKey _captureKey = GlobalKey(); // Added for capturing
 
   /// Helper to generate a path for the captured file
-  Future<cawesome.CaptureRequest> _path(List<cawesome.Sensor> sensors, cawesome.CaptureMode mode) async {
+  Future<cawesome.CaptureRequest> _path(
+    List<cawesome.Sensor> sensors,
+    cawesome.CaptureMode mode,
+  ) async {
     final Directory extDir = await getTemporaryDirectory();
     final testDir = await Directory(
       '${extDir.path}/camerawesome',
     ).create(recursive: true);
-    final String fileExtension = mode == cawesome.CaptureMode.photo ? 'jpg' : 'mp4';
+    final String fileExtension = mode == cawesome.CaptureMode.photo
+        ? 'jpg'
+        : 'mp4';
     final String filePath =
         '${testDir.path}/${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
     if (mode == cawesome.CaptureMode.video) {
@@ -74,12 +79,24 @@ class _CameraPageState extends State<CameraPage>
   }
 
   Future<void> _pickGallery() async {
-    final img = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (img != null) {
+    final XFile? file;
+    if (_selectedMode == _CameraMode.calAI) {
+      file = await ImagePicker().pickImage(source: ImageSource.gallery);
+    } else {
+      file = await ImagePicker().pickMedia();
+    }
+
+    if (file != null) {
       if (_selectedMode == _CameraMode.calAI) {
-        _handleCalAICapture(File(img.path));
+        _handleCalAICapture(File(file!.path));
       } else {
-        setState(() => _previewFile = File(img.path));
+        final path = file!.path;
+        setState(() {
+          _previewFile = File(path);
+          _isVideo =
+              path.toLowerCase().endsWith('.mp4') ||
+              path.toLowerCase().endsWith('.mov');
+        });
       }
     }
   }
@@ -218,9 +235,9 @@ class _CameraPageState extends State<CameraPage>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to save: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to save: $e")));
       }
     }
   }
@@ -233,11 +250,13 @@ class _CameraPageState extends State<CameraPage>
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      final RenderRepaintBoundary boundary = _captureKey.currentContext!
-          .findRenderObject() as RenderRepaintBoundary;
+      final RenderRepaintBoundary boundary =
+          _captureKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
       final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      final ByteData? byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       final Uint8List pngBytes = byteData!.buffer.asUint8List();
 
       final result = await ImageGallerySaverPlus.saveImage(
@@ -267,7 +286,9 @@ class _CameraPageState extends State<CameraPage>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Video saving with overlays coming soon!\nSaving thumbnail for now..."),
+          content: Text(
+            "Video saving with overlays coming soon!\nSaving thumbnail for now...",
+          ),
         ),
       );
     }
@@ -277,15 +298,18 @@ class _CameraPageState extends State<CameraPage>
 
   // Helper to capture RepaintBoundary to a temporary file
   Future<File> _capturePngToFile() async {
-    final RenderRepaintBoundary boundary = _captureKey.currentContext!
-        .findRenderObject() as RenderRepaintBoundary;
+    final RenderRepaintBoundary boundary =
+        _captureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
     final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-    final ByteData? byteData =
-        await image.toByteData(format: ui.ImageByteFormat.png);
+    final ByteData? byteData = await image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
     final Uint8List pngBytes = byteData!.buffer.asUint8List();
 
     final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/story_${DateTime.now().millisecondsSinceEpoch}.png');
+    final file = File(
+      '${tempDir.path}/story_${DateTime.now().millisecondsSinceEpoch}.png',
+    );
     await file.writeAsBytes(pngBytes);
     return file;
   }
@@ -328,7 +352,7 @@ class _CameraPageState extends State<CameraPage>
           ),
         );
 
-      // 3. Upload with UploadManager
+        // 3. Upload with UploadManager
         final uploadManager = UploadManager();
         final uploadId = uploadManager.startUpload(
           title: 'Posting Story',
@@ -342,42 +366,48 @@ class _CameraPageState extends State<CameraPage>
 
         // BACKGROUND: Actual Upload
         final repository = StoryRepository();
-        repository.createStory(
-          fileToUpload, 
-          caption, 
-          isHighlighted: isHighlighted,
-          mediaType: mediaType,
-          onProgress: (progress) {
-            uploadManager.updateProgress(uploadId, progress);
-          },
-        ).then((_) {
-            uploadManager.updateProgress(uploadId, 1.0);
-            uploadManager.completeUpload(uploadId);
+        repository
+            .createStory(
+              fileToUpload,
+              caption,
+              isHighlighted: isHighlighted,
+              mediaType: mediaType,
+              onProgress: (progress) {
+                uploadManager.updateProgress(uploadId, progress);
+              },
+            )
+            .then((_) {
+              uploadManager.updateProgress(uploadId, 1.0);
+              uploadManager.completeUpload(uploadId);
 
-            NotificationService().showNotification(
+              NotificationService().showNotification(
                 id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
                 title: 'Story Shared',
                 body: 'Your story has been created successfully!',
-            );
-            
-            // In-App Success
-            rootScaffoldMessengerKey.currentState?.showSnackBar(
-              const SnackBar(
-                content: Text('Your story is now live!'),
-                backgroundColor: AppColors.primary,
-                duration: Duration(seconds: 3),
-              ),
-            );
-        }).catchError((e) {
-             debugPrint("Background upload failed: $e");
-             uploadManager.failUpload(uploadId, errorMessage: 'Upload failed. Please try again.');
-             
-             NotificationService().showNotification(
+              );
+
+              // In-App Success
+              rootScaffoldMessengerKey.currentState?.showSnackBar(
+                const SnackBar(
+                  content: Text('Your story is now live!'),
+                  backgroundColor: AppColors.primary,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            })
+            .catchError((e) {
+              debugPrint("Background upload failed: $e");
+              uploadManager.failUpload(
+                uploadId,
+                errorMessage: 'Upload failed. Please try again.',
+              );
+
+              NotificationService().showNotification(
                 id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
                 title: 'Story Failed',
                 body: 'Failed to upload story. Please try again.',
-            );
-        });
+              );
+            });
 
         // Navigate to Home immediately
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
@@ -385,9 +415,9 @@ class _CameraPageState extends State<CameraPage>
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Dismiss loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to share story: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to share story: $e")));
       }
     }
   }
@@ -407,148 +437,172 @@ class _CameraPageState extends State<CameraPage>
             ),
       body: Stack(
         children: [
-            /// CAMERA VIEW
+          /// CAMERA VIEW
           if (!isPreviewMode)
             // ...existing code...
             cawesome.CameraAwesomeBuilder.custom(
-              saveConfig: cawesome.SaveConfig.photoAndVideo(
-                photoPathBuilder: (sensors) =>
-                    _path(sensors, cawesome.CaptureMode.photo),
-                videoPathBuilder: (sensors) =>
-                    _path(sensors, cawesome.CaptureMode.video),
-                initialCaptureMode: _captureMode,
-              ),
+              saveConfig: _selectedMode == _CameraMode.calAI
+                  ? cawesome.SaveConfig.photo(
+                      pathBuilder: (sensors) =>
+                          _path(sensors, cawesome.CaptureMode.photo),
+                    )
+                  : cawesome.SaveConfig.photoAndVideo(
+                      photoPathBuilder: (sensors) =>
+                          _path(sensors, cawesome.CaptureMode.photo),
+                      videoPathBuilder: (sensors) =>
+                          _path(sensors, cawesome.CaptureMode.video),
+                      initialCaptureMode: _captureMode,
+                    ),
               sensorConfig: cawesome.SensorConfig.single(
                 sensor: cawesome.Sensor.position(cawesome.SensorPosition.back),
                 aspectRatio: cawesome.CameraAspectRatios.ratio_4_3,
               ),
-              builder: (cawesome.CameraState state, cawesome.AnalysisPreview preview) {
-                // ...existing code...
-                if (_postSwitchRecord) {
-                  state.when(
-                    onVideoMode: (videoState) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          setState(() {
-                            _postSwitchRecord = false;
+              builder:
+                  (
+                    cawesome.CameraState state,
+                    cawesome.AnalysisPreview preview,
+                  ) {
+                    // ...existing code...
+                    if (_postSwitchRecord) {
+                      state.when(
+                        onVideoMode: (videoState) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              setState(() {
+                                _postSwitchRecord = false;
+                              });
+                              videoState.startRecording();
+                            }
                           });
-                          videoState.startRecording();
-                        }
-                      });
-                    },
-                    onPhotoMode: (p) {},
-                    onVideoRecordingMode: (v) {},
-                  );
-                }
+                        },
+                        onPhotoMode: (p) {},
+                        onVideoRecordingMode: (v) {},
+                      );
+                    }
 
-                return Stack(
-                  children: [
-                    /// MODES (Vertical Right Center)
-                    Positioned(
-                      right: 16,
-                      top: 0,
-                      bottom: 0,
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            _buildModeButton('Story', _selectedMode == _CameraMode.story),
-                            const SizedBox(height: 30),
-                            _buildModeButton('Cal AI', _selectedMode == _CameraMode.calAI),
-                          ],
+                    return Stack(
+                      children: [
+                        /// MODES (Vertical Right Center)
+                        Positioned(
+                          right: 16,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                _buildModeButton(
+                                  'Story',
+                                  _selectedMode == _CameraMode.story,
+                                ),
+                                const SizedBox(height: 30),
+                                _buildModeButton(
+                                  'Cal AI',
+                                  _selectedMode == _CameraMode.calAI,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
 
-                    /// CONTROLS
-                    Positioned(
-                      bottom: 35,
-                      left: 0,
-                      right: 0,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Mode Selector Removed
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        /// CONTROLS
+                        Positioned(
+                          bottom: 35,
+                          left: 0,
+                          right: 0,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              /// PICK FROM GALLERY
-                              GestureDetector(
-                                onTap: _pickGallery,
-                                child: const CircleAvatar(
-                                  radius: 30,
-                                  backgroundColor: Colors.white24,
-                                  child: Icon(
-                                    Icons.photo_library,
-                                    color: Colors.white,
+                              // Mode Selector Removed
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  /// PICK FROM GALLERY
+                                  GestureDetector(
+                                    onTap: _pickGallery,
+                                    child: const CircleAvatar(
+                                      radius: 30,
+                                      backgroundColor: Colors.white24,
+                                      child: Icon(
+                                        Icons.photo_library,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
 
-                              /// CAPTURE BUTTON
-                              AwesomeCaptureButton(
-                                state: state,
-                                onMediaCapture: (filePath) {
-                                  if (_selectedMode == _CameraMode.calAI) {
-                                    _handleCalAICapture(File(filePath));
-                                  } else {
-                                    setState(() {
-                                      _previewFile = File(filePath);
-                                      _isVideo = filePath.endsWith('.mp4');
-                                    });
-                                  }
-                                },
-                                getCurrentVideoPath: () => _currentVideoPath,
-                                onModeChange: (mode) {
-                                  setState(() => _captureMode = mode);
-                                },
-                                onSwitchToRecordingMode: () {
-                                  if (_selectedMode == _CameraMode.calAI) return; // Disable video for Cal AI
-                                  setState(() {
-                                    _postSwitchRecord = true;
-                                    _captureMode = cawesome.CaptureMode.video;
-                                  });
-                                  // Trigger the switch
-                                  state.when(
-                                    onPhotoMode: (photoState) {
-                                      photoState.setState(cawesome.CaptureMode.video);
+                                  /// CAPTURE BUTTON
+                                  AwesomeCaptureButton(
+                                    state: state,
+                                    onMediaCapture: (filePath) {
+                                      if (_selectedMode == _CameraMode.calAI) {
+                                        _handleCalAICapture(File(filePath));
+                                      } else {
+                                        setState(() {
+                                          _previewFile = File(filePath);
+                                          _isVideo = filePath.endsWith('.mp4');
+                                        });
+                                      }
                                     },
-                                    onVideoMode: (v) {},
-                                    onVideoRecordingMode: (v) {},
-                                  );
-                                },
-                              ),
+                                    getCurrentVideoPath: () =>
+                                        _currentVideoPath,
+                                    onModeChange: (mode) {
+                                      setState(() => _captureMode = mode);
+                                    },
+                                    onSwitchToRecordingMode: () {
+                                      // This callback usually handles UI updates before switching
+                                      if (_selectedMode == _CameraMode.calAI)
+                                        return;
 
-                              /// SWITCH CAMERA
-                              GestureDetector(
-                                onTap: () {
-                                  state.switchCameraSensor();
-                                },
-                                child: const CircleAvatar(
-                                  radius: 30,
-                                  backgroundColor: Colors.white24,
-                                  child: Icon(
-                                    Icons.cameraswitch,
-                                    color: Colors.white,
+                                      setState(() {
+                                        _postSwitchRecord = true;
+                                        _captureMode =
+                                            cawesome.CaptureMode.video;
+                                      });
+                                      state.when(
+                                        onPhotoMode: (photoState) {
+                                          photoState.setState(
+                                            cawesome.CaptureMode.video,
+                                          );
+                                        },
+                                        onVideoMode: (v) {},
+                                        onVideoRecordingMode: (v) {},
+                                      );
+                                    },
+                                    allowVideo:
+                                        _selectedMode != _CameraMode.calAI,
                                   ),
-                                ),
+
+                                  /// SWITCH CAMERA
+                                  GestureDetector(
+                                    onTap: () {
+                                      state.switchCameraSensor();
+                                    },
+                                    child: const CircleAvatar(
+                                      radius: 30,
+                                      backgroundColor: Colors.white24,
+                                      child: Icon(
+                                        Icons.cameraswitch,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
+                        ),
+                      ],
+                    );
+                  },
             ),
 
           /// IMAGE / VIDEO PREVIEW WITH OVERLAYS
           if (isPreviewMode)
             Positioned.fill(
-              child: RepaintBoundary( // Added RepaintBoundary
+              child: RepaintBoundary(
+                // Added RepaintBoundary
                 key: _captureKey,
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
@@ -566,7 +620,8 @@ class _CameraPageState extends State<CameraPage>
                                 (_baseScale * details.scale).clamp(0.3, 8.0);
                             _selectedOverlay!.rotation =
                                 _baseRotation + details.rotation;
-                            _selectedOverlay!.position += details.focalPointDelta;
+                            _selectedOverlay!.position +=
+                                details.focalPointDelta;
                           });
                         }
                       : null,
@@ -586,7 +641,9 @@ class _CameraPageState extends State<CameraPage>
                           child: InteractiveViewer(
                             minScale: 0.5,
                             maxScale: 4.0,
-                            boundaryMargin: const EdgeInsets.all(double.infinity),
+                            boundaryMargin: const EdgeInsets.all(
+                              double.infinity,
+                            ),
                             child: _isVideo
                                 ? FutureBuilder<void>(
                                     future: _initializeVideoPlayer(),
@@ -595,16 +652,18 @@ class _CameraPageState extends State<CameraPage>
                                           ConnectionState.done) {
                                         return _videoController != null &&
                                                 _videoController!
-                                                    .value.isInitialized
+                                                    .value
+                                                    .isInitialized
                                             ? GestureDetector(
                                                 onTap: () {
                                                   setState(() {
                                                     _videoController!
-                                                            .value.isPlaying
+                                                            .value
+                                                            .isPlaying
                                                         ? _videoController!
-                                                            .pause()
+                                                              .pause()
                                                         : _videoController!
-                                                            .play();
+                                                              .play();
                                                   });
                                                   _fadeController.forward();
                                                   Future.delayed(
@@ -613,7 +672,8 @@ class _CameraPageState extends State<CameraPage>
                                                       if (_fadeController
                                                               .isCompleted &&
                                                           mounted) {
-                                                        _fadeController.reverse();
+                                                        _fadeController
+                                                            .reverse();
                                                       }
                                                     },
                                                   );
@@ -636,27 +696,31 @@ class _CameraPageState extends State<CameraPage>
                                                       ),
                                                     ),
                                                     FadeTransition(
-                                                      opacity: Tween<double>(
-                                                        begin: 1.0,
-                                                        end: 0.0,
-                                                      ).animate(_fadeController),
+                                                      opacity:
+                                                          Tween<double>(
+                                                            begin: 1.0,
+                                                            end: 0.0,
+                                                          ).animate(
+                                                            _fadeController,
+                                                          ),
                                                       child: Center(
                                                         child: Container(
                                                           width: 70,
                                                           height: 70,
                                                           decoration:
                                                               BoxDecoration(
-                                                            shape:
-                                                                BoxShape.circle,
-                                                            color: Colors.black54,
-                                                          ),
+                                                                shape: BoxShape
+                                                                    .circle,
+                                                                color: Colors
+                                                                    .black54,
+                                                              ),
                                                           child: Icon(
                                                             _videoController!
                                                                     .value
                                                                     .isPlaying
                                                                 ? Icons.pause
                                                                 : Icons
-                                                                    .play_arrow,
+                                                                      .play_arrow,
                                                             color: Colors.white,
                                                             size: 40,
                                                           ),
@@ -684,8 +748,10 @@ class _CameraPageState extends State<CameraPage>
                                   )
                                 : Container(
                                     color: Colors.black,
-                                    child: Image.file(_previewFile!,
-                                        fit: BoxFit.contain),
+                                    child: Image.file(
+                                      _previewFile!,
+                                      fit: BoxFit.contain,
+                                    ),
                                   ),
                           ),
                         ),
@@ -718,7 +784,6 @@ class _CameraPageState extends State<CameraPage>
             ),
 
           // Delete button for selected overlay
-
 
           /// PREVIEW MODE CAPTION BAR
           if (isPreviewMode)
@@ -769,16 +834,14 @@ class _CameraPageState extends State<CameraPage>
                                 Navigator.pop(context);
                                 _saveStory();
                               },
-                              onShare: (index) { // Added callback
+                              onShare: (index) {
+                                // Added callback
                                 _shareStory(index);
                               },
                             ),
                           );
                         },
-                        icon: const Icon(
-                          Icons.telegram_sharp,
-                          size: 30,
-                        ),
+                        icon: const Icon(Icons.telegram_sharp, size: 30),
                         label: const Text(
                           "Share",
                           style: TextStyle(fontSize: 17),
@@ -811,8 +874,11 @@ class _CameraPageState extends State<CameraPage>
                     color: Colors.black54,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.text_fields,
-                      color: Colors.white, size: 30),
+                  child: const Icon(
+                    Icons.text_fields,
+                    color: Colors.white,
+                    size: 30,
+                  ),
                 ),
               ),
             ),
@@ -853,9 +919,12 @@ class _CameraPageState extends State<CameraPage>
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedMode = text == 'Story' ? _CameraMode.story : _CameraMode.calAI;
+          _selectedMode = text == 'Story'
+              ? _CameraMode.story
+              : _CameraMode.calAI;
           if (_selectedMode == _CameraMode.calAI) {
-            _captureMode = cawesome.CaptureMode.photo; // Force photo mode for Cal AI
+            _captureMode =
+                cawesome.CaptureMode.photo; // Force photo mode for Cal AI
           }
         });
       },
@@ -863,7 +932,8 @@ class _CameraPageState extends State<CameraPage>
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
         style: TextStyle(
-          fontFamily: 'Roboto', // Explicitly set font family to avoid jumping if it changes
+          fontFamily:
+              'Roboto', // Explicitly set font family to avoid jumping if it changes
           color: isSelected ? AppColors.pureWhite : AppColors.white40,
           fontSize: isSelected ? 24 : 16,
           fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
@@ -881,31 +951,32 @@ class _CameraPageState extends State<CameraPage>
   }
 
   Future<void> _handleCalAICapture(File imageFile) async {
-      if (!mounted) return;
+    if (!mounted) return;
 
-      // Navigate directly to Track Calories Page with the captured image
-      // The analysis and description prompt will handle there.
-      final item = DietLogItem(
-        imagePath: imageFile.path,
-        isLoading: true, // Mark as loading so TrackCaloriesPage knows to initiate flow
-      );
+    // Navigate directly to Track Calories Page with the captured image
+    // The analysis and description prompt will handle there.
+    final item = DietLogItem(
+      imagePath: imageFile.path,
+      isLoading:
+          true, // Mark as loading so TrackCaloriesPage knows to initiate flow
+    );
 
-      if (widget.returnItem) {
-        Navigator.pop(context, item);
-        return;
-      }
+    if (widget.returnItem) {
+      Navigator.pop(context, item);
+      return;
+    }
 
-      final result = await Navigator.push(
-        context, 
-        MaterialPageRoute(
-          builder: (context) => const TrackCaloriesPage(),
-          settings: RouteSettings(arguments: item),
-        ),
-      );
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TrackCaloriesPage(),
+        settings: RouteSettings(arguments: item),
+      ),
+    );
 
-      if (result == true && mounted) {
-        Navigator.pop(context, true);
-      }
+    if (result == true && mounted) {
+      Navigator.pop(context, true);
+    }
   }
 }
 
@@ -916,6 +987,7 @@ class AwesomeCaptureButton extends StatefulWidget {
   final String? Function() getCurrentVideoPath;
   final Function(cawesome.CaptureMode) onModeChange;
   final VoidCallback? onSwitchToRecordingMode;
+  final bool allowVideo;
 
   const AwesomeCaptureButton({
     super.key,
@@ -924,6 +996,7 @@ class AwesomeCaptureButton extends StatefulWidget {
     required this.getCurrentVideoPath,
     required this.onModeChange,
     this.onSwitchToRecordingMode,
+    this.allowVideo = true,
   });
 
   @override
@@ -968,7 +1041,8 @@ class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton>
         });
         _pulseController.forward();
       }
-    } else if (widget.state is! cawesome.VideoRecordingCameraState && _isRecording) {
+    } else if (widget.state is! cawesome.VideoRecordingCameraState &&
+        _isRecording) {
       // Only reset if we are not in the middle of a switch-and-record flow
       // But actually, if state is NOT recording, we should probably stop UI recording unless we are waiting for the switch.
       // However, the parent handles the switch logic.
@@ -1088,7 +1162,7 @@ class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton>
             }
           },
           onLongPress: () {
-            if (!_isLocked) {
+            if (!_isLocked && widget.allowVideo) {
               _startRecording();
             }
           },
@@ -1146,6 +1220,7 @@ class _AwesomeCaptureButtonState extends State<AwesomeCaptureButton>
     );
   }
 }
+
 /// Separate widget to handle individual text overlay gestures
 class _TextOverlayWidget extends StatelessWidget {
   final TextOverlay overlay;
@@ -1177,15 +1252,13 @@ class _TextOverlayWidget extends StatelessWidget {
             decoration: isSelected
                 ? BoxDecoration(
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.5),
-                        width: 2 / overlay.scale),
+                      color: Colors.white.withOpacity(0.5),
+                      width: 2 / overlay.scale,
+                    ),
                     borderRadius: BorderRadius.circular(4),
                   )
                 : null,
-            child: Text(
-              overlay.text,
-              style: overlay.style,
-            ),
+            child: Text(overlay.text, style: overlay.style),
           ),
         ),
       ),
