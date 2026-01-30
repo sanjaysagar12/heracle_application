@@ -163,4 +163,22 @@ class MutualFeedService {
       throw Exception('Failed to load meal likes: $e');
     }
   }
+
+  /// Delete a comment from a workout post
+  Future<void> deleteComment(String commentId) async {
+    try {
+      await _dio.delete('/api/post/comment/$commentId');
+    } catch (e) {
+      throw Exception('Failed to delete comment: $e');
+    }
+  }
+
+  /// Delete a comment from a meal post
+  Future<void> deleteMealComment(String commentId) async {
+    try {
+      await _dio.delete('/api/post/meal/comment/$commentId');
+    } catch (e) {
+      throw Exception('Failed to delete comment: $e');
+    }
+  }
 }

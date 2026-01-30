@@ -326,6 +326,49 @@ class FeedProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Delete a comment from a post with optimistic update
+  Future<bool> deleteComment(
+    String postId,
+    String commentId, {
+    bool isMeal = false,
+    String? username,
+  }) async {
+    // Store original comments for rollback
+    final originalComments = List<Comment>.from(_commentsCache[postId] ?? []);
+
+    // Optimistic remove - handles both top-level comments and nested replies
+    _commentsCache[postId] = _removeComment(originalComments, commentId);
+    _updatePostCommentCount(postId, -1, username: username);
+    notifyListeners();
+
+    try {
+      await _feedRepository.deleteComment(commentId, isMeal: isMeal);
+      return true;
+    } catch (e) {
+      // Revert on error
+      _commentsCache[postId] = originalComments;
+      _updatePostCommentCount(postId, 1, username: username);
+      _error = 'Failed to delete comment: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Helper to recursively remove a comment by ID (handles nested replies)
+  List<Comment> _removeComment(List<Comment> comments, String commentId) {
+    return comments
+        .where((comment) => comment.id != commentId)
+        .map((comment) {
+          if (comment.replies.isNotEmpty) {
+            return comment.copyWith(
+              replies: _removeComment(comment.replies, commentId),
+            );
+          }
+          return comment;
+        })
+        .toList();
+  }
+
   /// Update a post's likes data with fresh data from the API
   /// Called when LikesBottomSheet fetches fresh likes to sync the feed
   void updatePostLikes(String postId, List<LikedByUser> likedByUsers) {

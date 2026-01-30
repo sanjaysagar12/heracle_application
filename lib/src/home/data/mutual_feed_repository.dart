@@ -750,4 +750,20 @@ class MutualFeedRepository {
       throw Exception('Failed to follow/unfollow user: $e');
     }
   }
+
+  /// Delete a comment from a post
+  Future<void> deleteComment(
+    String commentId, {
+    bool isMeal = false,
+  }) async {
+    try {
+      if (isMeal) {
+        await _service.deleteMealComment(commentId);
+      } else {
+        await _service.deleteComment(commentId);
+      }
+    } catch (e) {
+      throw Exception('Failed to delete comment: $e');
+    }
+  }
 }

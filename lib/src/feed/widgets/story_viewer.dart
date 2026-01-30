@@ -97,6 +97,8 @@ class _StoryViewerState extends State<StoryViewer>
       builder: (context) => _StoryCommentsSheetWrapper(
         storyId: currentStory.id,
         repository: _storiesRepository,
+        storyOwnerUsername: currentUser.username,
+        isPostOwner: currentUser.isMyStory,
       ),
     ).then((_) {
       // Resume playback
@@ -1000,10 +1002,14 @@ class _StoryViewerState extends State<StoryViewer>
 class _StoryCommentsSheetWrapper extends StatefulWidget {
   final String storyId;
   final StoriesRepository repository;
+  final String? storyOwnerUsername; // Added for permission check
+  final bool isPostOwner;
 
   const _StoryCommentsSheetWrapper({
     required this.storyId,
     required this.repository,
+    this.storyOwnerUsername,
+    this.isPostOwner = false,
   });
 
   @override
@@ -1040,6 +1046,27 @@ class _StoryCommentsSheetWrapperState
     }
   }
 
+  /// Recursively remove a comment by ID
+  List<Comment> _removeCommentLocal(List<Comment> comments, String commentId) {
+    return comments
+        .where((comment) => comment.id != commentId)
+        .map((comment) {
+          if (comment.replies.isNotEmpty) {
+            return Comment(
+              id: comment.id,
+              username: comment.username,
+              handle: comment.handle,
+              profileImage: comment.profileImage,
+              timeAgo: comment.timeAgo,
+              content: comment.content,
+              replies: _removeCommentLocal(comment.replies, commentId),
+            );
+          }
+          return comment;
+        })
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return CommentsBottomSheet(
@@ -1051,6 +1078,17 @@ class _StoryCommentsSheetWrapperState
       onAddReply: (commentId, text) async {
         await widget.repository.replyToComment(commentId, text);
       },
+      onDeleteComment: (commentId) async {
+        try {
+          await widget.repository.deleteStoryComment(commentId);
+          setState(() {
+            _comments = _removeCommentLocal(_comments, commentId);
+          });
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
       onOptimisticCommentAdd: (comment) {
         setState(() {
           _comments.add(comment);
@@ -1061,6 +1099,8 @@ class _StoryCommentsSheetWrapperState
           _comments = _addReplyToCommentLocal(_comments, commentId, reply);
         });
       },
+      postOwnerUsername: widget.storyOwnerUsername,
+      isPostOwner: widget.isPostOwner,
     );
   }
 
