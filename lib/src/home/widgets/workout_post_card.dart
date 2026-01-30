@@ -130,15 +130,10 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
-            const SizedBox(height: 12),
             _buildContent(),
-            const SizedBox(height: 12),
             _buildTags(),
-            const SizedBox(height: 16),
             _buildImages(),
-            const SizedBox(height: 16),
             _buildStats(),
-            const SizedBox(height: 16),
             if (!widget.isDetailView) ...[
               const SizedBox(height: 16),
               _buildExercises(),
@@ -243,121 +238,136 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
   }
 
   Widget _buildContent() {
-    if (widget.content.isEmpty) return const SizedBox.shrink();
-    return Text(
-      widget.content,
-      style: const TextStyle(
-        color: AppColors.pureWhite,
-        fontSize: 15,
-        height: 1.4,
+    if (widget.content.trim().isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Text(
+        widget.content,
+        style: const TextStyle(
+          color: AppColors.pureWhite,
+          fontSize: 15,
+          height: 1.4,
+        ),
       ),
     );
   }
 
   Widget _buildTags() {
-    return Wrap(
-      spacing: 8,
-      children: widget.tags
-          .map(
-            (tag) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.greyDark,
-                borderRadius: BorderRadius.circular(16),
+    if (widget.tags.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Wrap(
+        spacing: 8,
+        children: widget.tags
+            .map(
+              (tag) => Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.greyDark,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  tag,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 13,
+                  ),
+                ),
               ),
-              child: Text(
-                tag,
-                style: const TextStyle(color: AppColors.primary, fontSize: 13),
-              ),
-            ),
-          )
-          .toList(),
+            )
+            .toList(),
+      ),
     );
   }
 
   Widget _buildImages() {
     if (widget.images.isEmpty) return const SizedBox.shrink();
 
-    if (widget.images.length == 1) {
-      return GestureDetector(
-        onTap: () => _showImageCarousel(context, 0),
-        child: SizedBox(
-          height: 200,
-          width: double.infinity,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              widget.images[0],
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  Container(color: AppColors.greyDark),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 200,
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: widget.images.length == 1
+          ? GestureDetector(
               onTap: () => _showImageCarousel(context, 0),
-              child: Container(
-                color: Colors.transparent,
+              child: SizedBox(
+                height: 200,
+                width: double.infinity,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
                     widget.images[0],
                     fit: BoxFit.cover,
-                    height: double.infinity,
                     errorBuilder: (context, error, stackTrace) =>
                         Container(color: AppColors.greyDark),
                   ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _showImageCarousel(context, 1),
-              child: Stack(
-                fit: StackFit.expand,
+            )
+          : SizedBox(
+              height: 200,
+              child: Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      widget.images[1],
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(color: AppColors.greyDark),
-                    ),
-                  ),
-                  if (widget.images.length > 2)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '+${widget.images.length - 2}',
-                          style: const TextStyle(
-                            color: AppColors.pureWhite,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _showImageCarousel(context, 0),
+                      child: Container(
+                        color: Colors.transparent,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            widget.images[0],
+                            fit: BoxFit.cover,
+                            height: double.infinity,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(color: AppColors.greyDark),
                           ),
                         ),
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _showImageCarousel(context, 1),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              widget.images[1],
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: AppColors.greyDark),
+                            ),
+                          ),
+                          if (widget.images.length > 2)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '+${widget.images.length - 2}',
+                                  style: const TextStyle(
+                                    color: AppColors.pureWhite,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -373,14 +383,17 @@ class _WorkoutPostCardState extends State<WorkoutPostCard> {
   }
 
   Widget _buildStats() {
-    return Row(
-      children: [
-        _buildStatItem('Duration', widget.duration),
-        const SizedBox(width: 24),
-        _buildStatItem('Volume', widget.volume),
-        const SizedBox(width: 24),
-        _buildStatItem('Records', widget.records),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        children: [
+          _buildStatItem('Duration', widget.duration),
+          const SizedBox(width: 24),
+          _buildStatItem('Volume', widget.volume),
+          const SizedBox(width: 24),
+          _buildStatItem('Records', widget.records),
+        ],
+      ),
     );
   }
 

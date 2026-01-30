@@ -277,7 +277,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
                   ? item.meals[_currentMealIndex].content
                   : item.content;
 
-              if (currentContent.isEmpty) return const SizedBox.shrink();
+              if (currentContent.trim().isEmpty) return const SizedBox.shrink();
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,7 +305,8 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
             Builder(
               builder: (context) {
                 final hasAnyImages = item.meals.any(
-                  (m) => m.images.isNotEmpty && m.images.first.isNotEmpty,
+                  (m) =>
+                      m.images.isNotEmpty && m.images.first.trim().isNotEmpty,
                 );
 
                 if (!hasAnyImages) {
@@ -510,7 +511,7 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
   }
 
   Widget _buildTags(NutritionMeal meal) {
-    if (meal.mealType.isEmpty) return const SizedBox.shrink();
+    if (meal.mealType.trim().isEmpty) return const SizedBox.shrink();
 
     return Wrap(
       spacing: 8,
@@ -531,7 +532,8 @@ class _NutritionPostCardState extends State<NutritionPostCard> {
   }
 
   Widget _buildMealPage(NutritionMeal meal) {
-    final hasImage = meal.images.isNotEmpty && meal.images.first.isNotEmpty;
+    final hasImage =
+        meal.images.isNotEmpty && meal.images.first.trim().isNotEmpty;
 
     return Column(
       children: [
