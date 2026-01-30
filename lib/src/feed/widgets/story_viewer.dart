@@ -97,6 +97,8 @@ class _StoryViewerState extends State<StoryViewer>
       builder: (context) => _StoryCommentsSheetWrapper(
         storyId: currentStory.id,
         repository: _storiesRepository,
+        storyOwnerUsername: currentUser.username,
+        isPostOwner: currentUser.isMyStory,
       ),
     ).then((_) {
       // Resume playback
@@ -1001,11 +1003,13 @@ class _StoryCommentsSheetWrapper extends StatefulWidget {
   final String storyId;
   final StoriesRepository repository;
   final String? storyOwnerUsername; // Added for permission check
+  final bool isPostOwner;
 
   const _StoryCommentsSheetWrapper({
     required this.storyId,
     required this.repository,
     this.storyOwnerUsername,
+    this.isPostOwner = false,
   });
 
   @override
@@ -1096,6 +1100,7 @@ class _StoryCommentsSheetWrapperState
         });
       },
       postOwnerUsername: widget.storyOwnerUsername,
+      isPostOwner: widget.isPostOwner,
     );
   }
 

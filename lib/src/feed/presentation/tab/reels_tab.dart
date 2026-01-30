@@ -305,6 +305,7 @@ class _ReelsTabState extends State<ReelsTab> {
               },
               currentUserProfile: _profile,
               postOwnerUsername: story.username,
+              isPostOwner: story.isOwner,
             );
           },
         ),

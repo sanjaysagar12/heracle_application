@@ -118,6 +118,7 @@ class _WorkoutDetailsPageState extends State<WorkoutDetailsPage> {
               },
               currentUserProfile: userProfile,
               postOwnerUsername: post.username,
+              isPostOwner: post.isOwnPost,
             );
           },
         ),

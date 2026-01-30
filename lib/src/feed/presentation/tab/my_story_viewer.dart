@@ -745,6 +745,7 @@ class _MyStoryDetailsSheetState extends State<_MyStoryDetailsSheet>
                             );
                           });
                         },
+                        isPostOwner: true,
                       ),
                     ],
                   ),

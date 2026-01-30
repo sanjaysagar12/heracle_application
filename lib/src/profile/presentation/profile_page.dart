@@ -355,6 +355,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onOptimisticReplyAdd: (commentId, reply) {},
               currentUserProfile: userProfile,
               postOwnerUsername: post.username,
+              isPostOwner: post.isOwnPost || (_profile?.isViewer ?? false),
             );
           },
         ),

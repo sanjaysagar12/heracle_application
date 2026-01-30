@@ -13,7 +13,8 @@ class CommentsBottomSheet extends StatefulWidget {
   final Function(Comment)? onOptimisticCommentAdd;
   final Function(String, Comment)? onOptimisticReplyAdd;
   final Profile? currentUserProfile;
-  final String? postOwnerUsername; // New: to check if current user is post owner
+  final String? postOwnerUsername; // Kept for display/reference if needed
+  final bool isPostOwner; // New: explicit flag for ownership
 
   const CommentsBottomSheet({
     super.key,
@@ -26,6 +27,7 @@ class CommentsBottomSheet extends StatefulWidget {
     this.onOptimisticReplyAdd,
     this.currentUserProfile,
     this.postOwnerUsername,
+    this.isPostOwner = false,
   });
 
   @override
@@ -343,8 +345,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     final isCommentOwner = comment.username == currentUsername;
     
     // Check if user is post owner
-    final isPostOwner = widget.postOwnerUsername != null && 
-                         widget.postOwnerUsername == currentUsername;
+    // Use the explicit flag if provided, otherwise fallback to username check (backward compatibility)
+    final isPostOwner = widget.isPostOwner || 
+        (widget.postOwnerUsername != null && widget.postOwnerUsername == currentUsername);
     
     return isCommentOwner || isPostOwner;
   }

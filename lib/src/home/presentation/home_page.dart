@@ -277,6 +277,7 @@ class _HomePageState extends State<HomePage> {
               onOptimisticReplyAdd: (commentId, reply) {},
               currentUserProfile: profile,
               postOwnerUsername: post.username,
+              isPostOwner: post.isOwnPost,
             );
           },
         ),

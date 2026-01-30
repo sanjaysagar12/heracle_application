@@ -147,6 +147,7 @@ class _NutritionDetailsPageState extends State<NutritionDetailsPage> {
               },
               currentUserProfile: userProfile,
               postOwnerUsername: post.username,
+              isPostOwner: post.isOwnPost,
             );
           },
         ),
