@@ -239,57 +239,99 @@ class _ReelsTabState extends State<ReelsTab> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          bool isLoadingComments = !_commentsCache.containsKey(story.id);
-          List<Comment> currentComments = _commentsCache[story.id] ?? [];
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => StatefulBuilder(
+          builder: (context, setModalState) {
+            bool isLoadingComments = !_commentsCache.containsKey(story.id);
+            List<Comment> currentComments = _commentsCache[story.id] ?? [];
 
-          // Fetch comments in background if not cached
-          if (isLoadingComments) {
-            _storiesRepository.getStoryComments(story.id).then((comments) {
-              if (mounted) {
+            // Fetch comments in background if not cached
+            if (isLoadingComments) {
+              _storiesRepository.getStoryComments(story.id).then((comments) {
+                if (mounted) {
+                  setState(() {
+                    _commentsCache[story.id] = comments;
+                  });
+                  setModalState(() {}); // Update modal to show comments
+                }
+              }).catchError((e) {
+                print('Error loading comments: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Failed to load comments'),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              });
+            }
+
+            return CommentsBottomSheet(
+              comments: currentComments,
+              isLoading: isLoadingComments,
+              onAddComment: (content) async {
+                final newComment = await _storiesRepository.commentOnStory(story.id, content);
                 setState(() {
-                  _commentsCache[story.id] = comments;
+                  _commentsCache[story.id] = [...(_commentsCache[story.id] ?? []), newComment];
                 });
-                setModalState(() {}); // Update modal to show comments
-              }
-            }).catchError((e) {
-              print('Error loading comments: $e');
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Failed to load comments'),
-                    backgroundColor: Colors.red,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-            });
-          }
-
-          return CommentsBottomSheet(
-            comments: currentComments,
-            isLoading: isLoadingComments,
-            onAddComment: (content) async {
-              final newComment = await _storiesRepository.commentOnStory(story.id, content);
-              setState(() {
-                _commentsCache[story.id] = [...(_commentsCache[story.id] ?? []), newComment];
-              });
-              setModalState(() {});
-            },
-            onAddReply: (commentId, content) async {
-              final newReply = await _storiesRepository.replyToComment(commentId, content);
-              setState(() {
-                final current = _commentsCache[story.id] ?? [];
-                _commentsCache[story.id] = _addReplyToComment(current, commentId, newReply);
-              });
-              setModalState(() {});
-            },
-            currentUserProfile: _profile,
-          );
-        },
+                setModalState(() {});
+              },
+              onAddReply: (commentId, content) async {
+                final newReply = await _storiesRepository.replyToComment(commentId, content);
+                setState(() {
+                  final current = _commentsCache[story.id] ?? [];
+                  _commentsCache[story.id] = _addReplyToComment(current, commentId, newReply);
+                });
+                setModalState(() {});
+              },
+              onDeleteComment: (commentId) async {
+                try {
+                  await _storiesRepository.deleteStoryComment(commentId);
+                  setState(() {
+                    _commentsCache[story.id] = _removeCommentLocally(_commentsCache[story.id] ?? [], commentId);
+                  });
+                  setModalState(() {});
+                  return true;
+                } catch (e) {
+                  print('Error deleting story comment: $e');
+                  return false;
+                }
+              },
+              currentUserProfile: _profile,
+              postOwnerUsername: story.username,
+              isPostOwner: story.isOwner,
+            );
+          },
+        ),
       ),
     );
+  }
+
+  /// Recursively remove a comment by ID from the list
+  List<Comment> _removeCommentLocally(List<Comment> comments, String commentId) {
+    return comments
+        .where((comment) => comment.id != commentId)
+        .map((comment) {
+          if (comment.replies.isNotEmpty) {
+            return Comment(
+              id: comment.id,
+              username: comment.username,
+              handle: comment.handle,
+              profileImage: comment.profileImage,
+              timeAgo: comment.timeAgo,
+              content: comment.content,
+              replies: _removeCommentLocally(comment.replies, commentId),
+            );
+          }
+          return comment;
+        })
+        .toList();
   }
 
   // Helper to add reply into nested comment list (returns new list)

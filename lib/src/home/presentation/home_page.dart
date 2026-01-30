@@ -231,41 +231,56 @@ class _HomePageState extends State<HomePage> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => Consumer<FeedProvider>(
-        builder: (sheetContext, feedProv, child) {
-          final comments = feedProv.getComments(postId);
-          final isLoading = feedProv.isCommentsLoading(postId);
-          final profile = context.read<UserProfileProvider>().profile;
+      isScrollControlled: true,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => Consumer<FeedProvider>(
+          builder: (sheetContext, feedProv, child) {
+            final comments = feedProv.getComments(postId);
+            final isLoading = feedProv.isCommentsLoading(postId);
+            final profile = context.read<UserProfileProvider>().profile;
 
-          return CommentsBottomSheet(
-            comments: comments,
-            isLoading: isLoading,
-            onAddComment: (content) async {
-              if (profile != null) {
-                await feedProv.addComment(
-                  postId,
-                  content,
-                  profile,
-                  isMeal: isMeal,
-                );
-              }
-            },
-            onAddReply: (commentId, content) async {
-              if (profile != null) {
-                await feedProv.addReply(
+            return CommentsBottomSheet(
+              comments: comments,
+              isLoading: isLoading,
+              onAddComment: (content) async {
+                if (profile != null) {
+                  await feedProv.addComment(
+                    postId,
+                    content,
+                    profile,
+                    isMeal: isMeal,
+                  );
+                }
+              },
+              onAddReply: (commentId, content) async {
+                if (profile != null) {
+                  await feedProv.addReply(
+                    postId,
+                    commentId,
+                    content,
+                    profile,
+                    isMeal: isMeal,
+                  );
+                }
+              },
+              onDeleteComment: (commentId) async {
+                return await feedProv.deleteComment(
                   postId,
                   commentId,
-                  content,
-                  profile,
                   isMeal: isMeal,
                 );
-              }
-            },
-            onOptimisticCommentAdd: (comment) {},
-            onOptimisticReplyAdd: (commentId, reply) {},
-            currentUserProfile: profile,
-          );
-        },
+              },
+              onOptimisticCommentAdd: (comment) {},
+              onOptimisticReplyAdd: (commentId, reply) {},
+              currentUserProfile: profile,
+              postOwnerUsername: post.username,
+              isPostOwner: post.isOwnPost,
+            );
+          },
+        ),
       ),
     );
   }
