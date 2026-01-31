@@ -6,6 +6,7 @@ class UserSuggestionCard extends StatelessWidget {
   final UserSuggestion suggestion;
   final VoidCallback onFollow;
   final VoidCallback onDismiss;
+  final VoidCallback? onTap;
   final bool isFollowing;
 
   const UserSuggestionCard({
@@ -13,12 +14,15 @@ class UserSuggestionCard extends StatelessWidget {
     required this.suggestion,
     required this.onFollow,
     required this.onDismiss,
+    this.onTap,
     this.isFollowing = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       width: 160,
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.all(12),
@@ -127,6 +131,7 @@ class UserSuggestionCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
