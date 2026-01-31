@@ -115,9 +115,17 @@ class _ProfilePageState extends State<ProfilePage> {
   void _onFollowTap() {
     if (_profile != null) {
       final oldProfile = _profile;
+      final isNowFollowing = !_profile!.isFollowing;
+      
       setState(() {
         _profile = _repository.toggleFollow(_profile!);
       });
+
+      // Update FeedProvider locally so suggestions carousel reflects the change
+      // Use markUserAsFollowed (not followUser) to avoid double API call
+      if (isNowFollowing) {
+        context.read<FeedProvider>().markUserAsFollowed(_profile!.id);
+      }
 
       _repository.followUser(_profile!.username).catchError((e) {
         if (mounted) {

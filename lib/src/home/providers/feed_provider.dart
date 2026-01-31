@@ -153,6 +153,13 @@ class FeedProvider extends ChangeNotifier {
     }
   }
 
+  /// Mark a user as followed locally (when API is called elsewhere, e.g., profile page)
+  /// This prevents double API calls when following from profile page
+  void markUserAsFollowed(String userId) {
+    _followedIds.add(userId);
+    notifyListeners();
+  }
+
   /// Like/unlike a post with optimistic update (works for both home and user posts)
   Future<void> toggleLike(String postId, {String? username}) async {
     if (_likeInProgress.contains(postId)) return;
