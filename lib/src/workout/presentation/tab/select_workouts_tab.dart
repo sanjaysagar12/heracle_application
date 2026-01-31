@@ -21,7 +21,8 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
   List<Map<String, String>> _items = [];
   final ExerciseRepository _exerciseRepository = ExerciseRepository();
 
-  final Set<String> _selectedIds = {};
+  // Use List instead of Set to maintain selection order
+  final List<String> _selectedIds = [];
 
   List<Map<String, String>> get _filteredItems {
     var list = _items;
@@ -198,7 +199,10 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
               height: 56,
               child: FloatingActionButton.extended(
                 onPressed: _selectedIds.isEmpty ? null : () async {
-                  final selectedItems = _items.where((it) => _selectedIds.contains(it['id'])).toList();
+                  // Map through _selectedIds to maintain selection order
+                  final selectedItems = _selectedIds
+                      .map((id) => _items.firstWhere((it) => it['id'] == id))
+                      .toList();
                   
                   // if mode is 'add', return selected exercises to caller
                   if (isAddMode) {
