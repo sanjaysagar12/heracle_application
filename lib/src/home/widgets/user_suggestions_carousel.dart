@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../profile/presentation/profile_page.dart';
 import '../data/user_suggestion.dart';
 import 'user_suggestion_card.dart';
 
@@ -89,6 +90,14 @@ class _UserSuggestionsCarouselState extends State<UserSuggestionsCarousel> {
               return UserSuggestionCard(
                 suggestion: suggestion,
                 isFollowing: widget.followedIds.contains(suggestion.id),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProfilePage(username: suggestion.username),
+                    ),
+                  );
+                },
                 onFollow: () {
                   widget.onFollow(suggestion.username, suggestion.id);
                   setState(() {
