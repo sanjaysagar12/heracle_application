@@ -123,13 +123,18 @@ class _AuthScreenState extends State<AuthScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
+                      disabledBackgroundColor: Colors.white.withOpacity(0.6),
+                      disabledForegroundColor: Colors.black.withOpacity(0.6),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
                       elevation: 0,
                     ),
-                    child: _isSigningIn
-                        ? const SizedBox(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_isSigningIn)
+                          const SizedBox(
                             height: 24,
                             width: 24,
                             child: CircularProgressIndicator(
@@ -139,24 +144,22 @@ class _AuthScreenState extends State<AuthScreen> {
                               ),
                             ),
                           )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SvgPicture.asset(
-                                'assets/icons/google.svg',
-                                height: 24,
-                                width: 24,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Sign up with Google',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                        else
+                          SvgPicture.asset(
+                            'assets/icons/google.svg',
+                            height: 24,
+                            width: 24,
                           ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Sign up with Google',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),

@@ -72,6 +72,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   final StreakStorage _streakStorage = StreakStorage();
   final DraftRepository _draftRepository = DraftRepository();
   Timer? _saveDebounce;
+  bool _isFinished = false;
 
   @override
   void initState() {
@@ -146,6 +147,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   }
 
   Future<void> _saveDraft() async {
+    if (_isFinished) return;
     // Serialize current state
     final exercisesJson = _exerciseLogs.map((ex) {
       return {
@@ -227,6 +229,8 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   }
 
   void _discardWorkout() async {
+    _isFinished = true;
+    _saveDebounce?.cancel();
     // Delete draft
     await _draftRepository.deleteDraft();
 
@@ -349,6 +353,8 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
       );
 
       await _sessionRepository.saveWorkoutLogToDb(workoutLog);
+      _isFinished = true;
+      _saveDebounce?.cancel();
       await _draftRepository.deleteDraft(); // Clear draft on success
       await _streakStorage.incrementStreak(); // Update streak
 
