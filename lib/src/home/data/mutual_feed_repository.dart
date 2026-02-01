@@ -484,6 +484,7 @@ class Comment {
   final String timeAgo;
   final String content;
   final List<Comment> replies;
+  final bool isOwner;
 
   Comment({
     required this.id,
@@ -493,6 +494,7 @@ class Comment {
     required this.timeAgo,
     required this.content,
     required this.replies,
+    this.isOwner = false,
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
@@ -533,6 +535,7 @@ class Comment {
       replies: (json['replies'] as List? ?? [])
           .map((reply) => Comment.fromJson(reply))
           .toList(),
+      isOwner: json['isOwner'] as bool? ?? false,
     );
   }
 
@@ -544,6 +547,7 @@ class Comment {
     String? timeAgo,
     String? content,
     List<Comment>? replies,
+    bool? isOwner,
   }) {
     return Comment(
       id: id ?? this.id,
@@ -553,6 +557,7 @@ class Comment {
       timeAgo: timeAgo ?? this.timeAgo,
       content: content ?? this.content,
       replies: replies ?? this.replies,
+      isOwner: isOwner ?? this.isOwner,
     );
   }
 
@@ -565,6 +570,7 @@ class Comment {
       timeAgo: timeAgo,
       content: content,
       replies: [...replies, newReply],
+      isOwner: isOwner,
     );
   }
 }
@@ -752,10 +758,7 @@ class MutualFeedRepository {
   }
 
   /// Delete a comment from a post
-  Future<void> deleteComment(
-    String commentId, {
-    bool isMeal = false,
-  }) async {
+  Future<void> deleteComment(String commentId, {bool isMeal = false}) async {
     try {
       if (isMeal) {
         await _service.deleteMealComment(commentId);

@@ -461,9 +461,7 @@ class _StoryViewerState extends State<StoryViewer>
 
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ProfilePage(username: username),
-      ),
+      MaterialPageRoute(builder: (context) => ProfilePage(username: username)),
     ).then((_) {
       if (mounted && _isContentLoaded) {
         if (_isVideoProgressTracking) {
@@ -1048,23 +1046,21 @@ class _StoryCommentsSheetWrapperState
 
   /// Recursively remove a comment by ID
   List<Comment> _removeCommentLocal(List<Comment> comments, String commentId) {
-    return comments
-        .where((comment) => comment.id != commentId)
-        .map((comment) {
-          if (comment.replies.isNotEmpty) {
-            return Comment(
-              id: comment.id,
-              username: comment.username,
-              handle: comment.handle,
-              profileImage: comment.profileImage,
-              timeAgo: comment.timeAgo,
-              content: comment.content,
-              replies: _removeCommentLocal(comment.replies, commentId),
-            );
-          }
-          return comment;
-        })
-        .toList();
+    return comments.where((comment) => comment.id != commentId).map((comment) {
+      if (comment.replies.isNotEmpty) {
+        return Comment(
+          id: comment.id,
+          username: comment.username,
+          handle: comment.handle,
+          profileImage: comment.profileImage,
+          timeAgo: comment.timeAgo,
+          content: comment.content,
+          replies: _removeCommentLocal(comment.replies, commentId),
+          isOwner: comment.isOwner,
+        );
+      }
+      return comment;
+    }).toList();
   }
 
   @override
@@ -1126,6 +1122,7 @@ class _StoryCommentsSheetWrapperState
             commentId,
             newReply,
           ),
+          isOwner: comment.isOwner,
         );
       }
       return comment;

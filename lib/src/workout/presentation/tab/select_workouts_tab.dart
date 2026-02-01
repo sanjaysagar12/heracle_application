@@ -20,6 +20,7 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
   List<String> _filters = ['All'];
   List<Map<String, String>> _items = [];
   final ExerciseRepository _exerciseRepository = ExerciseRepository();
+  bool _isLoading = true;
 
   // Use List instead of Set to maintain selection order
   final List<String> _selectedIds = [];
@@ -30,7 +31,11 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
       list = list.where((it) => it['category'] == _selectedFilter).toList();
     }
     if (_query.isNotEmpty) {
-      list = list.where((it) => it['name']!.toLowerCase().contains(_query.toLowerCase())).toList();
+      list = list
+          .where(
+            (it) => it['name']!.toLowerCase().contains(_query.toLowerCase()),
+          )
+          .toList();
     }
     return list;
   }
@@ -46,14 +51,16 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
       final categoriesData = await _exerciseRepository.getCategories();
       final exercisesData = await _exerciseRepository.getExercises();
 
-      setState(() {
-        _items = exercisesData;
-        _filters = ['All', ...categoriesData.map((c) => c['name']!).toList()];
-        // ensure unique filters if any overlap or duplicates
-        _filters = _filters.toSet().toList();
-      });
+      if (mounted) {
+        setState(() {
+          _items = exercisesData;
+          _filters = ['All', ...categoriesData.map((c) => c['name']!).toList()];
+          _filters = _filters.toSet().toList(); // ensure unique
+          _isLoading = false;
+        });
+      }
     } catch (_) {
-      // keep defaults on error
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -65,7 +72,10 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
 
   void _toggleSelection(String id) {
     setState(() {
-      if (_selectedIds.contains(id)) _selectedIds.remove(id); else _selectedIds.add(id);
+      if (_selectedIds.contains(id))
+        _selectedIds.remove(id);
+      else
+        _selectedIds.add(id);
     });
   }
 
@@ -90,13 +100,19 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Select Workouts', style: TextStyle(color: AppColors.pureWhite)),
+        title: const Text(
+          'Select Workouts',
+          style: TextStyle(color: AppColors.pureWhite),
+        ),
       ),
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12,
+              ),
               child: Column(
                 children: [
                   TextField(
@@ -108,9 +124,18 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
                       hintStyle: const TextStyle(color: AppColors.white60),
                       filled: true,
                       fillColor: AppColors.black100,
-                      suffixIcon: const Icon(Icons.search, color: AppColors.white60),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                      suffixIcon: const Icon(
+                        Icons.search,
+                        color: AppColors.white60,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 16,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -126,13 +151,25 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
                         return GestureDetector(
                           onTap: () => setState(() => _selectedFilter = label),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
-                              color: selected ? AppColors.primary : AppColors.black100,
+                              color: selected
+                                  ? AppColors.primary
+                                  : AppColors.black100,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Center(
-                              child: Text(label, style: TextStyle(color: selected ? AppColors.black : AppColors.white60)),
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  color: selected
+                                      ? AppColors.black
+                                      : AppColors.white60,
+                                ),
+                              ),
                             ),
                           ),
                         );
@@ -143,43 +180,69 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
               ),
             ),
           ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final item = _filteredItems[index];
-                final id = item['id']!;
-                final selected = _selectedIds.contains(id);
-                return Column(
-                  children: [
-                    ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      leading: CircleAvatar(radius: 22, backgroundImage: NetworkImage(item['image']!)),
-                      title: Text(item['name']!, style: const TextStyle(color: AppColors.pureWhite)),
-                      subtitle: Text(item['desc']!, style: const TextStyle(color: AppColors.white60)),
-                      trailing: GestureDetector(
-                        onTap: () => _toggleSelection(id),
-                        child: Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: selected ? AppColors.primary : Colors.transparent,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.white40),
+          _isLoading
+              ? SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => const _SkeletonTile(),
+                    childCount: 8,
+                  ),
+                )
+              : SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final item = _filteredItems[index];
+                    final id = item['id']!;
+                    final selected = _selectedIds.contains(id);
+                    return Column(
+                      children: [
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
                           ),
-                          child: Icon(selected ? Icons.check : Icons.add, color: selected ? AppColors.black : AppColors.white60, size: 20),
+                          leading: CircleAvatar(
+                            radius: 22,
+                            backgroundImage: NetworkImage(item['image']!),
+                          ),
+                          title: Text(
+                            item['name']!,
+                            style: const TextStyle(color: AppColors.pureWhite),
+                          ),
+                          subtitle: Text(
+                            item['desc']!,
+                            style: const TextStyle(color: AppColors.white60),
+                          ),
+                          trailing: GestureDetector(
+                            onTap: () => _toggleSelection(id),
+                            child: Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? AppColors.primary
+                                    : Colors.transparent,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.white40),
+                              ),
+                              child: Icon(
+                                selected ? Icons.check : Icons.add,
+                                color: selected
+                                    ? AppColors.black
+                                    : AppColors.white60,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          onTap: () => _toggleSelection(id),
                         ),
-                      ),
-                      onTap: () => _toggleSelection(id),
-                    ),
-                    if (index < _filteredItems.length - 1)
-                      const Divider(color: AppColors.greyDark, height: 1),
-                  ],
-                );
-              },
-              childCount: _filteredItems.length,
-            ),
+                        if (index < _filteredItems.length - 1)
+                          const Divider(color: AppColors.greyDark, height: 1),
+                      ],
+                    );
+                  }, childCount: _filteredItems.length),
+                ),
+          SliverPadding(
+            padding: EdgeInsets.only(bottom: _selectedIds.isEmpty ? 16 : 96),
           ),
-          SliverPadding(padding: EdgeInsets.only(bottom: _selectedIds.isEmpty ? 16 : 96)),
         ],
       ),
       // show floating action button only when at least one item is selected
@@ -198,50 +261,72 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
               width: double.infinity,
               height: 56,
               child: FloatingActionButton.extended(
-                onPressed: _selectedIds.isEmpty ? null : () async {
-                  // Map through _selectedIds to maintain selection order
-                  final selectedItems = _selectedIds
-                      .map((id) => _items.firstWhere((it) => it['id'] == id))
-                      .toList();
-                  
-                  // if mode is 'add', return selected exercises to caller
-                  if (isAddMode) {
-                    Navigator.pop(context, selectedItems);
-                    return;
-                  }
+                onPressed: _selectedIds.isEmpty
+                    ? null
+                    : () async {
+                        // Map through _selectedIds to maintain selection order
+                        final selectedItems = _selectedIds
+                            .map(
+                              (id) => _items.firstWhere((it) => it['id'] == id),
+                            )
+                            .toList();
 
-                  if (widget.mode == 'create') {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => CreateSessionTab(exercises: selectedItems)),
-                    );
-                    
-                    // If session was created successfully, return to workout page
-                    if (result == true && mounted) {
-                      Navigator.pop(context, true);
-                    }
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => LogWorkoutTab(
-                          mode: widget.mode,
-                          exercises: selectedItems.map((e) => <String, dynamic>{
-                            'id': e['id'],
-                            'name': e['name'],
-                            'desc': e['desc'],
-                            'image': e['image'],
-                            'trackingType': e['trackingType'] ?? 'WEIGHT_AND_REPS', // Pass trackingType
-                          }).toList(),
-                        ),
-                      ),
-                    );
-                  }
-                },
+                        // if mode is 'add', return selected exercises to caller
+                        if (isAddMode) {
+                          Navigator.pop(context, selectedItems);
+                          return;
+                        }
+
+                        if (widget.mode == 'create') {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  CreateSessionTab(exercises: selectedItems),
+                            ),
+                          );
+
+                          // If session was created successfully, return to workout page
+                          if (result == true && mounted) {
+                            Navigator.pop(context, true);
+                          }
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => LogWorkoutTab(
+                                mode: widget.mode,
+                                exercises: selectedItems
+                                    .map(
+                                      (e) => <String, dynamic>{
+                                        'id': e['id'],
+                                        'name': e['name'],
+                                        'desc': e['desc'],
+                                        'image': e['image'],
+                                        'trackingType':
+                                            e['trackingType'] ??
+                                            'WEIGHT_AND_REPS', // Pass trackingType
+                                      },
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                          );
+                        }
+                      },
                 backgroundColor: AppColors.primary,
-                label: Text(buttonLabel, style: const TextStyle(color: AppColors.black, fontSize: 16, fontWeight: FontWeight.w700)),
+                label: Text(
+                  buttonLabel,
+                  style: const TextStyle(
+                    color: AppColors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 icon: const SizedBox.shrink(),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
                 elevation: 4,
                 isExtended: true,
               ),
@@ -249,6 +334,95 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SkeletonTile extends StatelessWidget {
+  const _SkeletonTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          const _ShimmerBox(width: 44, height: 44, shape: BoxShape.circle),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _ShimmerBox(width: 150, height: 16),
+                const SizedBox(height: 8),
+                const _ShimmerBox(width: 100, height: 12),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          const _ShimmerBox(width: 34, height: 34, shape: BoxShape.circle),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShimmerBox extends StatefulWidget {
+  final double width;
+  final double height;
+  final BoxShape shape;
+
+  const _ShimmerBox({
+    required this.width,
+    required this.height,
+    this.shape = BoxShape.rectangle,
+  });
+
+  @override
+  State<_ShimmerBox> createState() => _ShimmerBoxState();
+}
+
+class _ShimmerBoxState extends State<_ShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Color?> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _animation = ColorTween(
+      begin: AppColors.white10,
+      end: AppColors.white40, // Slightly lighter grey for highlighting
+    ).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: _animation.value,
+            shape: widget.shape,
+            borderRadius: widget.shape == BoxShape.rectangle
+                ? BorderRadius.circular(8)
+                : null,
+          ),
+        );
+      },
     );
   }
 }

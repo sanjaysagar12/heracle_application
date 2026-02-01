@@ -74,8 +74,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     try {
       // Use passed profile or fallback
       final username = widget.currentUserProfile?.username ?? 'User';
-      final handle = widget.currentUserProfile != null ? '@${widget.currentUserProfile!.username}' : '@user';
-      final profileImage = widget.currentUserProfile?.profileImageUrl ?? 'https://ui-avatars.com/api/?name=User&background=random';
+      final handle = widget.currentUserProfile != null
+          ? '@${widget.currentUserProfile!.username}'
+          : '@user';
+      final profileImage =
+          widget.currentUserProfile?.profileImageUrl ??
+          'https://ui-avatars.com/api/?name=User&background=random';
 
       if (_replyingToId != null) {
         // Create optimistic reply
@@ -87,11 +91,16 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           timeAgo: 'Just now',
           content: content,
           replies: [],
+          isOwner: true,
         );
 
         // Update UI optimistically
         setState(() {
-          _localComments = _addReplyToCommentLocal(_localComments, _replyingToId!, optimisticReply);
+          _localComments = _addReplyToCommentLocal(
+            _localComments,
+            _replyingToId!,
+            optimisticReply,
+          );
         });
 
         // Call parent callback for optimistic update
@@ -133,7 +142,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       setState(() {
         _localComments = List.from(widget.comments ?? []);
       });
-      
+
       // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -152,7 +161,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     }
   }
 
-  List<Comment> _addReplyToCommentLocal(List<Comment> comments, String commentId, Comment newReply) {
+  List<Comment> _addReplyToCommentLocal(
+    List<Comment> comments,
+    String commentId,
+    Comment newReply,
+  ) {
     return comments.map((comment) {
       if (comment.id == commentId) {
         return comment.copyWithReply(newReply);
@@ -165,7 +178,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           profileImage: comment.profileImage,
           timeAgo: comment.timeAgo,
           content: comment.content,
-          replies: _addReplyToCommentLocal(comment.replies, commentId, newReply),
+          replies: _addReplyToCommentLocal(
+            comment.replies,
+            commentId,
+            newReply,
+          ),
+          isOwner: comment.isOwner,
         );
       }
       return comment;
@@ -189,7 +207,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       padding: EdgeInsets.only(bottom: keyboardHeight),
@@ -204,23 +222,23 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             child: widget.isLoading
                 ? _buildSkeletonLoading()
                 : (_localComments.isEmpty)
-                    ? const Center(
-                        child: Text(
-                          'No comments yet\nBe the first to comment!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.white60,
-                            fontSize: 16,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        itemCount: _localComments.length,
-                        itemBuilder: (context, index) {
-                          return _buildCommentItem(_localComments[index], 0);
-                        },
-                      ),
+                ? const Center(
+                    child: Text(
+                      'No comments yet\nBe the first to comment!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.white60, fontSize: 16),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    itemCount: _localComments.length,
+                    itemBuilder: (context, index) {
+                      return _buildCommentItem(_localComments[index], 0);
+                    },
+                  ),
           ),
           if (_replyingToUsername != null) _buildReplyingToBar(),
           _buildCommentInput(),
@@ -338,17 +356,24 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   /// Check if current user can delete a comment
   /// User can delete if they are the comment owner OR the post owner
   bool _canDeleteComment(Comment comment) {
-    final currentUsername = widget.currentUserProfile?.username;
-    if (currentUsername == null) return false;
-    
-    // Check if user is comment owner
-    final isCommentOwner = comment.username == currentUsername;
-    
+    // Check if user is comment owner (using backend flag)
+    bool isCommentOwner = comment.isOwner;
+
+    // Fallback: Check username if backend flag not reliable or during optimistic updates?
+    // Optimistic comments created in this file don't have isOwner=true set explicitly in _handleAddComment
+    // I should probably set isOwner=true for optimistic comments too.
+    if (!isCommentOwner && widget.currentUserProfile?.username != null) {
+      isCommentOwner = comment.username == widget.currentUserProfile!.username;
+    }
+
     // Check if user is post owner
-    // Use the explicit flag if provided, otherwise fallback to username check (backward compatibility)
-    final isPostOwner = widget.isPostOwner || 
-        (widget.postOwnerUsername != null && widget.postOwnerUsername == currentUsername);
-    
+    final currentUsername = widget.currentUserProfile?.username;
+    final isPostOwner =
+        widget.isPostOwner ||
+        (widget.postOwnerUsername != null &&
+            currentUsername != null &&
+            widget.postOwnerUsername == currentUsername);
+
     return isCommentOwner || isPostOwner;
   }
 
@@ -393,14 +418,14 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   /// Handle comment deletion
   Future<void> _handleDeleteComment(Comment comment) async {
     if (widget.onDeleteComment == null) return;
-    
+
     // Optimistically remove comment locally
     setState(() {
       _localComments = _removeCommentLocally(_localComments, comment.id);
     });
-    
+
     final success = await widget.onDeleteComment!(comment.id);
-    
+
     if (!success && mounted) {
       // Revert on failure - refresh from parent
       setState(() {
@@ -423,29 +448,31 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }
 
   /// Recursively remove a comment by ID
-  List<Comment> _removeCommentLocally(List<Comment> comments, String commentId) {
-    return comments
-        .where((comment) => comment.id != commentId)
-        .map((comment) {
-          if (comment.replies.isNotEmpty) {
-            return Comment(
-              id: comment.id,
-              username: comment.username,
-              handle: comment.handle,
-              profileImage: comment.profileImage,
-              timeAgo: comment.timeAgo,
-              content: comment.content,
-              replies: _removeCommentLocally(comment.replies, commentId),
-            );
-          }
-          return comment;
-        })
-        .toList();
+  List<Comment> _removeCommentLocally(
+    List<Comment> comments,
+    String commentId,
+  ) {
+    return comments.where((comment) => comment.id != commentId).map((comment) {
+      if (comment.replies.isNotEmpty) {
+        return Comment(
+          id: comment.id,
+          username: comment.username,
+          handle: comment.handle,
+          profileImage: comment.profileImage,
+          timeAgo: comment.timeAgo,
+          content: comment.content,
+          replies: _removeCommentLocally(comment.replies, commentId),
+          isOwner: comment.isOwner,
+        );
+      }
+      return comment;
+    }).toList();
   }
 
   Widget _buildCommentItem(Comment comment, int depth) {
-    final canDelete = _canDeleteComment(comment) && widget.onDeleteComment != null;
-    
+    final canDelete =
+        _canDeleteComment(comment) && widget.onDeleteComment != null;
+
     return GestureDetector(
       onLongPress: canDelete ? () => _showDeleteDialog(comment) : null,
       child: Padding(
@@ -461,7 +488,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProfilePage(username: comment.username),
+                        builder: (context) =>
+                            ProfilePage(username: comment.username),
                       ),
                     );
                   },
@@ -482,7 +510,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ProfilePage(username: comment.username),
+                                  builder: (context) =>
+                                      ProfilePage(username: comment.username),
                                 ),
                               );
                             },
@@ -552,18 +581,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: const BoxDecoration(
         color: AppColors.greyDark,
-        border: Border(
-          top: BorderSide(color: AppColors.greyLight, width: 1),
-        ),
+        border: Border(top: BorderSide(color: AppColors.greyLight, width: 1)),
       ),
       child: Row(
         children: [
           Text(
             'Replying to $_replyingToUsername',
-            style: const TextStyle(
-              color: AppColors.white60,
-              fontSize: 13,
-            ),
+            style: const TextStyle(color: AppColors.white60, fontSize: 13),
           ),
           const Spacer(),
           IconButton(
@@ -581,16 +605,15 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: AppColors.greyDark, width: 1),
-        ),
+        border: Border(top: BorderSide(color: AppColors.greyDark, width: 1)),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 18,
             backgroundImage: NetworkImage(
-              widget.currentUserProfile?.profileImageUrl ?? 'https://ui-avatars.com/api/?name=User&background=random',
+              widget.currentUserProfile?.profileImageUrl ??
+                  'https://ui-avatars.com/api/?name=User&background=random',
             ),
           ),
           const SizedBox(width: 12),
@@ -624,7 +647,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   height: 24,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
                   ),
                 )
               : IconButton(
