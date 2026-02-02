@@ -86,6 +86,41 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
 
     try {
       // Create a new session object with a new ID
+      // Create deep copy of exercises with values moved to placeholders
+      final newExercises = widget.session.exercises.map((ex) {
+        final newEx = Map<String, dynamic>.from(ex);
+        if (newEx['sets'] != null && newEx['sets'] is List) {
+          final oldSets = newEx['sets'] as List;
+          newEx['sets'] = oldSets.map((s) {
+            final sMap = Map<String, dynamic>.from(s as Map);
+            // Move current values to placeholders
+            final kg = sMap['kg'] ?? sMap['weight'];
+            final reps = sMap['reps'];
+            final time = sMap['time'];
+
+            if (kg != null && kg.toString() != '0') {
+              sMap['placeholderKg'] = kg.toString();
+            }
+            if (reps != null && reps.toString() != '0') {
+              sMap['placeholderReps'] = reps.toString();
+            }
+            if (time != null && time.toString() != '0') {
+              sMap['placeholderTime'] = time.toString();
+            }
+
+            // Clear actual values
+            sMap['kg'] = '';
+            sMap['weight'] = '';
+            sMap['reps'] = '';
+            sMap['time'] = '';
+            sMap['completed'] = false;
+
+            return sMap;
+          }).toList();
+        }
+        return newEx;
+      }).toList();
+
       final newSession = Session(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: widget.session.title,
@@ -93,7 +128,7 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
         categories: widget.session.categories,
         exercisesCount: widget.session.exercisesCount,
         position: 0, // Should be handled by repository or added to end
-        exercises: widget.session.exercises,
+        exercises: newExercises,
       );
 
       // Save to local database
@@ -140,6 +175,7 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
       appBar: AppBar(
         backgroundColor: AppColors.black,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: SvgPicture.asset(
             'assets/icons/back.svg',
@@ -162,7 +198,12 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
           children: [
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                  bottom: widget.isViewOnly ? 100 : 160,
+                ),
                 itemCount: widget.session.exercises.length,
                 itemBuilder: (context, index) {
                   final exercise = widget.session.exercises[index];
@@ -173,72 +214,73 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Copy Session Button
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Copy Session Button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton.icon(
+                onPressed: _isCopying ? null : _handleCopySession,
+                icon: _isCopying
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
+                      )
+                    : const Icon(Icons.copy, color: Colors.black),
+                label: Text(
+                  _isCopying ? 'Copying...' : 'Copy Session',
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shadowColor: Colors.black45,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+            ),
+            if (!widget.isViewOnly) ...[
+              const SizedBox(height: 12),
+              // Finish Workout Button
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton.icon(
-                  onPressed: _isCopying ? null : _handleCopySession,
-                  icon: _isCopying
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.black,
-                          ),
-                        )
-                      : const Icon(Icons.copy, color: Colors.black),
-                  label: Text(
-                    _isCopying ? 'Copying...' : 'Copy Session',
-                    style: const TextStyle(
+                  onPressed: _handleFinishWorkout,
+                  icon: const Icon(Icons.check_circle, color: Colors.black),
+                  label: const Text(
+                    'Finish Workout',
+                    style: TextStyle(
                       color: Colors.black,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.white60,
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
                 ),
               ),
-              if (!widget.isViewOnly) ...[
-                const SizedBox(height: 12),
-                // Finish Workout Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton.icon(
-                    onPressed: _handleFinishWorkout,
-                    icon: const Icon(Icons.check_circle, color: Colors.black),
-                    label: const Text(
-                      'Finish Workout',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );

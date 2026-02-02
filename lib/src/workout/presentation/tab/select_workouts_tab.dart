@@ -236,7 +236,20 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
                           ),
                           leading: CircleAvatar(
                             radius: 22,
-                            backgroundImage: NetworkImage(item['image']!),
+                            backgroundImage:
+                                item['image'] != null &&
+                                    item['image']!.isNotEmpty
+                                ? NetworkImage(item['image']!)
+                                : null,
+                            backgroundColor: AppColors.greyDark,
+                            child:
+                                item['image'] == null || item['image']!.isEmpty
+                                ? const Icon(
+                                    Icons.fitness_center,
+                                    color: AppColors.white60,
+                                    size: 20,
+                                  )
+                                : null,
                           ),
                           title: Text(
                             item['name']!,

@@ -189,26 +189,12 @@ class _CreateSessionTabState extends State<CreateSessionTab> {
       return;
     }
 
-    if (category.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter a category')));
-      return;
-    }
-
     // Parse categories: split by comma, trim whitespace
     final categoryList = category
         .split(',')
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
         .toList();
-
-    if (categoryList.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter at least one category')),
-      );
-      return;
-    }
 
     setState(() {
       _isSaving = true;

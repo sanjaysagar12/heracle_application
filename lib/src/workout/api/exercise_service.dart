@@ -45,12 +45,20 @@ class ExerciseService {
           // Batch insert
           final batch = txn.batch();
           for (var exercise in exercises) {
+            final categoryRaw = exercise['category'];
+            String categoryStr = 'Other';
+            if (categoryRaw is List) {
+              categoryStr = categoryRaw.join(', ');
+            } else if (categoryRaw is String) {
+              categoryStr = categoryRaw;
+            }
+
             batch.insert('exercises', {
               'id': exercise['id'],
               'name': exercise['name'],
               'description': exercise['description'] ?? '',
               'image_url': exercise['imageUrl'] ?? '',
-              'category': exercise['category'] ?? 'Other',
+              'category': categoryStr,
               'tracking_type': exercise['trackingType'] ?? 'reps_weight',
               'created_at': DateTime.now().millisecondsSinceEpoch,
             });

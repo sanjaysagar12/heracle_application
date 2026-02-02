@@ -72,6 +72,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   final StreakStorage _streakStorage = StreakStorage();
   final DraftRepository _draftRepository = DraftRepository();
   Timer? _saveDebounce;
+  Timer? _durationTimer; // Timer for duration updates
   bool _isFinished = false;
 
   @override
@@ -83,6 +84,11 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                 DateTime.now().millisecondsSinceEpoch,
           )
         : DateTime.now();
+
+    // Start timer to update UI every second
+    _durationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) setState(() {});
+    });
 
     _exerciseLogs = widget.exercises.map((e) {
       // if exercise has saved sets, use them; otherwise create 3 empty sets
@@ -127,6 +133,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
   @override
   void dispose() {
     _saveDebounce?.cancel();
+    _durationTimer?.cancel(); // Cancel duration timer
     // Verify if we should save on dispose?
     // Usually dispose happens on finish/discard too.
     // We handle deleteDraft explicitly in finish/discard, so if we just back out, we want to save.
@@ -495,6 +502,7 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
       appBar: AppBar(
         backgroundColor: AppColors.black,
         elevation: 0,
+        scrolledUnderElevation: 0,
         toolbarHeight: 40,
         leading: IconButton(
           padding: EdgeInsets.zero,
@@ -603,6 +611,47 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                 ],
               ),
             const SizedBox(height: 12),
+            // Add Workout button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton.icon(
+                onPressed: _addWorkout,
+                icon: const Icon(Icons.add, color: AppColors.primary),
+                label: const Text(
+                  'Add Workout',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.black100,
+                  shape: const StadiumBorder(),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Discard Workout button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _discardWorkout,
+                child: const Text(
+                  'Discard Workout',
+                  style: TextStyle(color: Colors.red, fontSize: 16),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.black100,
+                  shape: const StadiumBorder(),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             // Finish Session button
             SizedBox(
               width: double.infinity,
@@ -631,47 +680,6 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   shape: const StadiumBorder(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Add Workout button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: _addWorkout,
-                icon: const Icon(Icons.add, color: AppColors.primary),
-                label: const Text(
-                  'Add Workout',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.black100,
-                  shape: const StadiumBorder(),
-                  elevation: 0,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Discard Workout button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _discardWorkout,
-                child: const Text(
-                  'Discard Workout',
-                  style: TextStyle(color: Colors.red, fontSize: 16),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.black100,
-                  shape: const StadiumBorder(),
-                  elevation: 0,
                 ),
               ),
             ),
@@ -730,9 +738,18 @@ class _LogWorkoutTabState extends State<LogWorkoutTab> {
                   ),
                 ),
               CircleAvatar(
-                backgroundImage: NetworkImage(ex.image),
+                backgroundImage: ex.image.isNotEmpty
+                    ? NetworkImage(ex.image)
+                    : null,
                 radius: 20,
                 backgroundColor: AppColors.greyDark,
+                child: ex.image.isEmpty
+                    ? const Icon(
+                        Icons.fitness_center,
+                        color: AppColors.white60,
+                        size: 20,
+                      )
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
