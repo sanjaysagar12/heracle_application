@@ -168,6 +168,46 @@ class _SessionsSectionState extends State<SessionsSection> {
     }
   }
 
+  Future<void> _handleCopySession(Session session) async {
+    try {
+      // Show loading
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Copying session...')));
+      }
+
+      // Create new session object with new ID
+      final newSession = Session(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        backendId: '', // New session on backend
+        title: session.title,
+        content: session.content,
+        categories: session.categories,
+        exercisesCount: session.exercisesCount,
+        position: 0,
+        exercises: session.exercises,
+      );
+
+      // Save to local DB (and sync to backend)
+      // Always use default SessionRepository for saving to MY list
+      final repo = SessionRepository();
+      await repo.saveSessionToDb(newSession);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Session copied to your list')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to copy session: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
@@ -391,9 +431,7 @@ class _SessionsSectionState extends State<SessionsSection> {
 
     return Container(
       // margin handled by parent in ReorderableListView, or here if Column
-      margin: (!isReorderable && widget.isViewOnly)
-          ? const EdgeInsets.only(bottom: 12)
-          : null,
+      margin: !isReorderable ? const EdgeInsets.only(bottom: 12) : null,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.black100,
@@ -438,28 +476,66 @@ class _SessionsSectionState extends State<SessionsSection> {
                   ],
                 ),
               ),
-              if (!widget.isViewOnly)
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'reorder':
-                        setState(() => _isReordering = true);
-                        break;
-                      case 'edit':
-                        _handleEditSession(s);
-                        break;
-                      case 'delete':
-                        _handleDeleteSession(s);
-                        break;
-                    }
-                  },
-                  color: AppColors.black100,
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: AppColors.greyDark),
-                  ),
-                  itemBuilder: (context) => [
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'duplicate':
+                      _handleCopySession(s);
+                      break;
+                    case 'reorder':
+                      setState(() => _isReordering = true);
+                      break;
+                    case 'edit':
+                      _handleEditSession(s);
+                      break;
+                    case 'delete':
+                      _handleDeleteSession(s);
+                      break;
+                  }
+                },
+                color: AppColors.black100,
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppColors.greyDark),
+                ),
+                itemBuilder: (context) {
+                  if (widget.isViewOnly) {
+                    return [
+                      const PopupMenuItem(
+                        value: 'duplicate',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.copy,
+                              color: AppColors.white60,
+                              size: 20,
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Duplicate to My Sessions',
+                              style: TextStyle(color: AppColors.pureWhite),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ];
+                  }
+
+                  return [
+                    const PopupMenuItem(
+                      value: 'duplicate',
+                      child: Row(
+                        children: [
+                          Icon(Icons.copy, color: AppColors.white60, size: 20),
+                          SizedBox(width: 12),
+                          Text(
+                            'Duplicate',
+                            style: TextStyle(color: AppColors.pureWhite),
+                          ),
+                        ],
+                      ),
+                    ),
                     const PopupMenuItem(
                       value: 'reorder',
                       child: Row(
@@ -503,9 +579,10 @@ class _SessionsSectionState extends State<SessionsSection> {
                         ],
                       ),
                     ),
-                  ],
-                  icon: const Icon(Icons.more_horiz, color: AppColors.white60),
-                ),
+                  ];
+                },
+                icon: const Icon(Icons.more_horiz, color: AppColors.white60),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -573,7 +650,10 @@ class _SessionsSectionState extends State<SessionsSection> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ViewSessionPage(session: s),
+                          builder: (_) => ViewSessionPage(
+                            session: s,
+                            isViewOnly: widget.isViewOnly,
+                          ),
                         ),
                       );
                     },
@@ -597,50 +677,64 @@ class _SessionsSectionState extends State<SessionsSection> {
                       final hasDraft = await draftRepo.hasDraft();
 
                       if (hasDraft && context.mounted) {
-                         final shouldResume = await showDialog<String>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                               backgroundColor: AppColors.black100,
-                               title: const Text('Unfinished Workout', style: TextStyle(color: AppColors.pureWhite)),
-                               content: const Text('You have an unfinished workout session. Do you want to resume it or start this new one?', style: TextStyle(color: AppColors.white60)),
-                               actions: [
-                                  TextButton(
-                                     onPressed: () => Navigator.pop(ctx, 'new'),
-                                     child: const Text('Start New', style: TextStyle(color: AppColors.white60)),
-                                  ),
-                                  TextButton(
-                                     onPressed: () => Navigator.pop(ctx, 'resume'),
-                                     child: const Text('Resume', style: TextStyle(color: AppColors.primary)),
-                                  ),
-                               ],
+                        final shouldResume = await showDialog<String>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: AppColors.black100,
+                            title: const Text(
+                              'Unfinished Workout',
+                              style: TextStyle(color: AppColors.pureWhite),
                             ),
-                         );
-                         
-                         if (shouldResume == 'resume') {
-                             final draft = await draftRepo.getDraft();
-                             if (draft != null && context.mounted) {
-                                final exercises = List<Map<String, dynamic>>.from(jsonDecode(draft.data));
-                                // Inject startTime if needed, but LogWorkoutTab can handle it if we pass a special flag or just the data
-                                // We'll pass the exercises, and set title/id from draft
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => LogWorkoutTab(
-                                      mode: 'resume',
-                                      exercises: exercises,
-                                      sessionId: draft.sessionId,
-                                      sessionName: draft.sessionName,
-                                    ),
-                                  ),
-                                );
-                                return;
-                             }
-                         } else if (shouldResume == 'new') {
-                             await draftRepo.deleteDraft();
-                         } else {
-                             // User cancelled dialog
-                             return;
-                         }
+                            content: const Text(
+                              'You have an unfinished workout session. Do you want to resume it or start this new one?',
+                              style: TextStyle(color: AppColors.white60),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, 'new'),
+                                child: const Text(
+                                  'Start New',
+                                  style: TextStyle(color: AppColors.white60),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, 'resume'),
+                                child: const Text(
+                                  'Resume',
+                                  style: TextStyle(color: AppColors.primary),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (shouldResume == 'resume') {
+                          final draft = await draftRepo.getDraft();
+                          if (draft != null && context.mounted) {
+                            final exercises = List<Map<String, dynamic>>.from(
+                              jsonDecode(draft.data),
+                            );
+                            // Inject startTime if needed, but LogWorkoutTab can handle it if we pass a special flag or just the data
+                            // We'll pass the exercises, and set title/id from draft
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => LogWorkoutTab(
+                                  mode: 'resume',
+                                  exercises: exercises,
+                                  sessionId: draft.sessionId,
+                                  sessionName: draft.sessionName,
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                        } else if (shouldResume == 'new') {
+                          await draftRepo.deleteDraft();
+                        } else {
+                          // User cancelled dialog
+                          return;
+                        }
                       }
 
                       final exercisesForLog = s.exercises.map((e) {
@@ -649,7 +743,8 @@ class _SessionsSectionState extends State<SessionsSection> {
                           'name': e['name']?.toString() ?? '',
                           'desc': e['desc']?.toString() ?? '',
                           'image': e['image']?.toString() ?? '',
-                          'trackingType': e['trackingType'], // Ensure trackingType is passed
+                          'trackingType':
+                              e['trackingType'], // Ensure trackingType is passed
                           'sets': e['sets'],
                         };
                       }).toList();

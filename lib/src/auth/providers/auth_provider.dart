@@ -3,6 +3,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../../core/storage/local_storage.dart';
 import '../data/auth_repository.dart';
+import '../../workout/data/session_repository.dart';
 
 /// Authentication state for the app
 enum AuthStatus {
@@ -20,15 +21,20 @@ enum AuthStatus {
 class AuthProvider extends ChangeNotifier {
   final LocalStorageService _storage;
   final AuthRepository _authRepository;
+  final SessionRepository _sessionRepository;
 
   AuthStatus _status = AuthStatus.unknown;
   bool _isLoading = false;
   String? _error;
   Map<String, dynamic>? _userFromToken;
 
-  AuthProvider({LocalStorageService? storage, AuthRepository? authRepository})
-    : _storage = storage ?? LocalStorageService(),
-      _authRepository = authRepository ?? AuthRepository();
+  AuthProvider({
+    LocalStorageService? storage,
+    AuthRepository? authRepository,
+    SessionRepository? sessionRepository,
+  }) : _storage = storage ?? LocalStorageService(),
+       _authRepository = authRepository ?? AuthRepository(),
+       _sessionRepository = sessionRepository ?? SessionRepository();
 
   // Getters
   AuthStatus get status => _status;
@@ -91,6 +97,9 @@ class AuthProvider extends ChangeNotifier {
       // Register FCM token
       _registerFcmToken();
 
+      // Sync sessions from server
+      await _sessionRepository.syncSessionsOnLogin();
+
       return true;
     } catch (e) {
       _error = e.toString();
@@ -120,6 +129,9 @@ class AuthProvider extends ChangeNotifier {
 
       // Register FCM token
       _registerFcmToken();
+
+      // Sync sessions from server
+      await _sessionRepository.syncSessionsOnLogin();
 
       return true;
     } catch (e) {

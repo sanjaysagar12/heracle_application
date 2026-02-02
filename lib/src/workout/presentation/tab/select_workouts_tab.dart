@@ -64,6 +64,34 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
     }
   }
 
+  Future<void> _syncExercises() async {
+    setState(() => _isLoading = true);
+    try {
+      final exercises = await _exerciseRepository.syncExercises();
+      // Reload categories too as they might have changed or need refresh
+      final categories = await _exerciseRepository.getCategories();
+
+      if (mounted) {
+        setState(() {
+          _items = exercises;
+          _filters = ['All', ...categories.map((c) => c['name']!).toList()];
+          _filters = _filters.toSet().toList();
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Exercises synced successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to sync exercises: $e')));
+      }
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -104,6 +132,13 @@ class _SelectWorkoutsTabState extends State<SelectWorkoutsTab> {
           'Select Workouts',
           style: TextStyle(color: AppColors.pureWhite),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sync, color: AppColors.primary),
+            onPressed: _syncExercises,
+            tooltip: 'Sync Exercises',
+          ),
+        ],
       ),
       body: CustomScrollView(
         slivers: [

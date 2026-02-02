@@ -8,8 +8,13 @@ import '../storage/streak_storage.dart';
 
 class ViewSessionPage extends StatefulWidget {
   final Session session;
+  final bool isViewOnly;
 
-  const ViewSessionPage({super.key, required this.session});
+  const ViewSessionPage({
+    super.key,
+    required this.session,
+    this.isViewOnly = false,
+  });
 
   @override
   State<ViewSessionPage> createState() => _ViewSessionPageState();
@@ -27,14 +32,14 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
       // Calculate simple stats for the log
       int totalSets = 0;
       int totalVolume = 0;
-      
+
       for (var exercise in widget.session.exercises) {
         final sets = (exercise['sets'] as List<dynamic>?) ?? [];
         totalSets += sets.length;
         for (var s in sets) {
-           final weight = int.tryParse(s['kg']?.toString() ?? '0') ?? 0;
-           final reps = int.tryParse(s['reps']?.toString() ?? '0') ?? 0;
-           totalVolume += (weight * reps);
+          final weight = int.tryParse(s['kg']?.toString() ?? '0') ?? 0;
+          final reps = int.tryParse(s['reps']?.toString() ?? '0') ?? 0;
+          totalVolume += (weight * reps);
         }
       }
 
@@ -57,15 +62,19 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
           SnackBar(
             content: const Text('Workout Finished! Streak updated.'),
             backgroundColor: AppColors.primary,
-             behavior: SnackBarBehavior.floating,
-             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
         Navigator.pop(context, true); // Return to refresh
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error finishing workout: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error finishing workout: $e')));
       }
     }
   }
@@ -96,7 +105,9 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
             content: Text('Session copied: ${newSession.title}'),
             backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -115,9 +126,9 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
         setState(() {
           _isCopying = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to copy session: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to copy session: $e')));
       }
     }
   }
@@ -200,30 +211,32 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              // Finish Workout Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: _handleFinishWorkout,
-                  icon: const Icon(Icons.check_circle, color: Colors.black),
-                  label: const Text(
-                    'Finish Workout',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+              if (!widget.isViewOnly) ...[
+                const SizedBox(height: 12),
+                // Finish Workout Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _handleFinishWorkout,
+                    icon: const Icon(Icons.check_circle, color: Colors.black),
+                    label: const Text(
+                      'Finish Workout',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -233,7 +246,7 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
 
   Widget _buildExerciseCard(Map<String, dynamic> exercise) {
     final sets = (exercise['sets'] as List<dynamic>?) ?? [];
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -252,14 +265,18 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppColors.white70,
-                  image: exercise['image'] != null && exercise['image'].toString().isNotEmpty
+                  image:
+                      exercise['image'] != null &&
+                          exercise['image'].toString().isNotEmpty
                       ? DecorationImage(
                           image: NetworkImage(exercise['image']),
                           fit: BoxFit.cover,
                         )
                       : null,
                 ),
-                child: exercise['image'] == null || exercise['image'].toString().isEmpty
+                child:
+                    exercise['image'] == null ||
+                        exercise['image'].toString().isEmpty
                     ? const Icon(Icons.fitness_center, color: Colors.black54)
                     : null,
               ),
@@ -276,7 +293,8 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (exercise['desc'] != null && exercise['desc'].toString().isNotEmpty)
+                    if (exercise['desc'] != null &&
+                        exercise['desc'].toString().isNotEmpty)
                       Text(
                         exercise['desc'],
                         style: const TextStyle(
@@ -330,10 +348,7 @@ class _ViewSessionPageState extends State<ViewSessionPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: AppColors.white60,
-            fontSize: 14,
-          ),
+          style: const TextStyle(color: AppColors.white60, fontSize: 14),
         ),
         const SizedBox(width: 12),
         Container(

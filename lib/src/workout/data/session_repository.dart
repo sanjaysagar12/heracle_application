@@ -48,13 +48,11 @@ class WorkoutLog {
   });
 }
 
-
-
 class SessionRepository {
   final WorkoutSessionStorage _sessionStorage;
   final WorkoutLogsStorage _logsStorage;
   final WorkoutSessionApiService _apiService;
-  
+
   SessionRepository({
     WorkoutSessionStorage? sessionStorage,
     WorkoutLogsStorage? logsStorage,
@@ -62,7 +60,7 @@ class SessionRepository {
   }) : _sessionStorage = sessionStorage ?? WorkoutSessionStorage.instance,
        _logsStorage = logsStorage ?? WorkoutLogsStorage.instance,
        _apiService = apiService ?? WorkoutSessionApiService();
-  
+
   Future<List<Session>> getSessionsFromDb() async {
     return await _sessionStorage.getAllSessions();
   }
@@ -85,8 +83,8 @@ class SessionRepository {
         );
       }
     } catch (e) {
-       print('Failed to save session to API: $e');
-       rethrow; 
+      print('Failed to save session to API: $e');
+      rethrow;
     }
     await _sessionStorage.insertSession(sessionToSave);
   }
@@ -95,7 +93,10 @@ class SessionRepository {
     await _logsStorage.insertWorkoutLog(log);
   }
 
-  Future<List<WorkoutLog>> getWorkoutLogsFromDb({int? limit, int? offset}) async {
+  Future<List<WorkoutLog>> getWorkoutLogsFromDb({
+    int? limit,
+    int? offset,
+  }) async {
     return await _logsStorage.getAllWorkoutLogs(limit: limit, offset: offset);
   }
 
@@ -115,7 +116,7 @@ class SessionRepository {
       }
     } catch (e) {
       print('Failed to delete session from API: $e');
-      // Continue to delete locally even if offline? 
+      // Continue to delete locally even if offline?
       // Usually yes for user experience, but rethrowing lets UI know.
       // Assuming we want to delete locally regardless:
     }
@@ -129,10 +130,12 @@ class SessionRepository {
   Future<void> updateSession(Session session) async {
     try {
       // Use backendId if available, otherwise fallback (or throw? assuming backendId is crucial for sync)
-      final apiId = session.backendId.isNotEmpty ? session.backendId : session.id; 
-      // Note: If session was created offline, backendId might be empty. 
+      final apiId = session.backendId.isNotEmpty
+          ? session.backendId
+          : session.id;
+      // Note: If session was created offline, backendId might be empty.
       // Ideally we should sync first, but for now we follow user instruction to use this ID for editing.
-      
+
       await _apiService.updateSession(apiId, session);
     } catch (e) {
       print('Failed to update session API: $e');
@@ -143,5 +146,48 @@ class SessionRepository {
 
   Future<void> updateSessionOrder(List<Session> sessions) async {
     await _sessionStorage.updateSessionOrder(sessions);
+  }
+
+  Future<void> syncSessionsOnLogin() async {
+    try {
+      // 1. Clear local data
+      await _sessionStorage.clearAllData();
+
+      // 2. Fetch from API
+      final data = await _apiService.getSessions();
+
+      // 3. Insert into local DB
+      for (var item in data) {
+        final session = Session(
+          id: item['id']?.toString() ?? '',
+          backendId:
+              item['id']?.toString() ??
+              '', // Treat API ID as backendId AND local ID initially? Or generate new local ID?
+          // Usually sync keeps IDs consistent if possible. Let's use API ID as local ID for simplicity unless UUIDs clash.
+          title: item['title'] ?? '',
+          content: item['content'] ?? '',
+          categories:
+              (item['categories'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              [],
+          exercisesCount: item['exercises'] != null
+              ? (item['exercises'] as List).length
+              : 0,
+          position: item['position'] ?? 0,
+          exercises:
+              (item['exercises'] as List<dynamic>?)
+                  ?.map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              [],
+        );
+        await _sessionStorage.insertSession(session);
+      }
+      print('SessionRepository: Synced sessions successfully.');
+    } catch (e) {
+      print('SessionRepository: Failed to sync sessions: $e');
+      // Don't rethrow to avoid blocking login flow? Or should we?
+      // Usually better to log and continue, maybe show snackbar if context available (not here).
+    }
   }
 }

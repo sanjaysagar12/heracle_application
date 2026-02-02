@@ -95,10 +95,10 @@ class ProfileHeader extends StatelessWidget {
             ),
           ],
         ),
-        
+
         // Spacing for the bottom half of the profile image
         SizedBox(height: (profileImageSize / 2) + 16),
-        
+
         // Profile Info
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -151,19 +151,19 @@ class ProfileHeader extends StatelessWidget {
                   _buildStatColumn('Highlights', profile.formattedHighlights),
                   const SizedBox(width: 32),
                   _buildStatColumn(
-                    'Following', 
-                    profile.formattedFollowing, 
-                    onTap: onFollowingTap,
+                    'Followers',
+                    profile.formattedFollowers,
+                    onTap: onFollowersTap,
                   ),
                   const SizedBox(width: 32),
                   _buildStatColumn(
-                    'Followers', 
-                    profile.formattedFollowers, 
-                    onTap: onFollowersTap,
+                    'Following',
+                    profile.formattedFollowing,
+                    onTap: onFollowingTap,
                   ),
                 ],
               ),
-              
+
               // Follow or Edit Button
               if (onEditTap != null) ...[
                 const SizedBox(height: 24),
