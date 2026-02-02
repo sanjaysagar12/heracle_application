@@ -42,7 +42,7 @@ class _ReelsTabState extends State<ReelsTab> {
   // Added: stories repo and comments cache to reuse Home comments UI
   final StoriesRepository _storiesRepository = StoriesRepository();
   final Map<String, List<Comment>> _commentsCache = {};
-  
+
   // Added: Profile loading for comments
   final ProfileRepository _profileRepository = ProfileRepository();
   final MutualFeedService _mutualFeedService = MutualFeedService();
@@ -54,13 +54,13 @@ class _ReelsTabState extends State<ReelsTab> {
     _stories = widget.stories;
     _currentIndex = widget.initialIndex;
     _loadProfile(); // Load profile
-    
+
     _pageController = PageController(
       initialPage: _currentIndex,
       viewportFraction: 1.0,
       keepPage: true,
     );
-    
+
     // Mark initial story as viewed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_currentIndex < _stories.length) {
@@ -85,10 +85,6 @@ class _ReelsTabState extends State<ReelsTab> {
   }
 
   @override
-
-
-
-
   bool _isExpanded(String storyId) => _expandedStories.contains(storyId);
 
   void _toggleExpanded(String storyId) {
@@ -110,11 +106,10 @@ class _ReelsTabState extends State<ReelsTab> {
   void _handleDoubleTap(String storyId, bool isLiked) {
     // Toggle like state
     _handleLike(storyId);
-    
+
     // Show animation only when liking (not unliking)
     // Note: isLiked passed here is the OLD state. So if it WAS NOT liked, we are liking it now.
     if (!isLiked) {
-
       setState(() {
         _showLikeAnimation = true;
       });
@@ -132,7 +127,7 @@ class _ReelsTabState extends State<ReelsTab> {
   Future<void> _handleLike(String storyId) async {
     // Optimistic update
     final updatedStories = widget.onLike(storyId);
-    
+
     setState(() {
       _stories = updatedStories;
     });
@@ -154,15 +149,18 @@ class _ReelsTabState extends State<ReelsTab> {
 
   Future<void> _handleFollow(DiscoverStory story) async {
     final isCurrentlyFollowing = story.isFollowing;
-    
+
     // Optimistic update
     setState(() {
-      _stories = _stories.map((s) {
-        if (s.id == story.id) {
-          return s.copyWith(isFollowing: !isCurrentlyFollowing);
-        }
-        return s;
-      }).toList().cast<DiscoverStory>();
+      _stories = _stories
+          .map((s) {
+            if (s.id == story.id) {
+              return s.copyWith(isFollowing: !isCurrentlyFollowing);
+            }
+            return s;
+          })
+          .toList()
+          .cast<DiscoverStory>();
     });
 
     try {
@@ -172,17 +170,22 @@ class _ReelsTabState extends State<ReelsTab> {
       // Revert if failed
       if (mounted) {
         setState(() {
-          _stories = _stories.map((s) {
-            if (s.id == story.id) {
-              return s.copyWith(isFollowing: isCurrentlyFollowing);
-            }
-            return s;
-          }).toList().cast<DiscoverStory>();
+          _stories = _stories
+              .map((s) {
+                if (s.id == story.id) {
+                  return s.copyWith(isFollowing: isCurrentlyFollowing);
+                }
+                return s;
+              })
+              .toList()
+              .cast<DiscoverStory>();
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to ${isCurrentlyFollowing ? 'unfollow' : 'follow'} user'),
+            content: Text(
+              'Failed to ${isCurrentlyFollowing ? 'unfollow' : 'follow'} user',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -227,9 +230,8 @@ class _ReelsTabState extends State<ReelsTab> {
         initialChildSize: 0.7,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        builder: (context, scrollController) => LikesBottomSheet(
-          likedByUsers: story.likedBy,
-        ),
+        builder: (context, scrollController) =>
+            LikesBottomSheet(likedByUsers: story.likedBy),
       ),
     );
   }
@@ -251,42 +253,58 @@ class _ReelsTabState extends State<ReelsTab> {
 
             // Fetch comments in background if not cached
             if (isLoadingComments) {
-              _storiesRepository.getStoryComments(story.id).then((comments) {
-                if (mounted) {
-                  setState(() {
-                    _commentsCache[story.id] = comments;
+              _storiesRepository
+                  .getStoryComments(story.id)
+                  .then((comments) {
+                    if (mounted) {
+                      setState(() {
+                        _commentsCache[story.id] = comments;
+                      });
+                      setModalState(() {}); // Update modal to show comments
+                    }
+                  })
+                  .catchError((e) {
+                    print('Error loading comments: $e');
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to load comments'),
+                          backgroundColor: Colors.red,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   });
-                  setModalState(() {}); // Update modal to show comments
-                }
-              }).catchError((e) {
-                print('Error loading comments: $e');
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Failed to load comments'),
-                      backgroundColor: Colors.red,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              });
             }
 
             return CommentsBottomSheet(
               comments: currentComments,
               isLoading: isLoadingComments,
               onAddComment: (content) async {
-                final newComment = await _storiesRepository.commentOnStory(story.id, content);
+                final newComment = await _storiesRepository.commentOnStory(
+                  story.id,
+                  content,
+                );
                 setState(() {
-                  _commentsCache[story.id] = [...(_commentsCache[story.id] ?? []), newComment];
+                  _commentsCache[story.id] = [
+                    ...(_commentsCache[story.id] ?? []),
+                    newComment,
+                  ];
                 });
                 setModalState(() {});
               },
               onAddReply: (commentId, content) async {
-                final newReply = await _storiesRepository.replyToComment(commentId, content);
+                final newReply = await _storiesRepository.replyToComment(
+                  commentId,
+                  content,
+                );
                 setState(() {
                   final current = _commentsCache[story.id] ?? [];
-                  _commentsCache[story.id] = _addReplyToComment(current, commentId, newReply);
+                  _commentsCache[story.id] = _addReplyToComment(
+                    current,
+                    commentId,
+                    newReply,
+                  );
                 });
                 setModalState(() {});
               },
@@ -294,7 +312,10 @@ class _ReelsTabState extends State<ReelsTab> {
                 try {
                   await _storiesRepository.deleteStoryComment(commentId);
                   setState(() {
-                    _commentsCache[story.id] = _removeCommentLocally(_commentsCache[story.id] ?? [], commentId);
+                    _commentsCache[story.id] = _removeCommentLocally(
+                      _commentsCache[story.id] ?? [],
+                      commentId,
+                    );
                   });
                   setModalState(() {});
                   return true;
@@ -314,28 +335,32 @@ class _ReelsTabState extends State<ReelsTab> {
   }
 
   /// Recursively remove a comment by ID from the list
-  List<Comment> _removeCommentLocally(List<Comment> comments, String commentId) {
-    return comments
-        .where((comment) => comment.id != commentId)
-        .map((comment) {
-          if (comment.replies.isNotEmpty) {
-            return Comment(
-              id: comment.id,
-              username: comment.username,
-              handle: comment.handle,
-              profileImage: comment.profileImage,
-              timeAgo: comment.timeAgo,
-              content: comment.content,
-              replies: _removeCommentLocally(comment.replies, commentId),
-            );
-          }
-          return comment;
-        })
-        .toList();
+  List<Comment> _removeCommentLocally(
+    List<Comment> comments,
+    String commentId,
+  ) {
+    return comments.where((comment) => comment.id != commentId).map((comment) {
+      if (comment.replies.isNotEmpty) {
+        return Comment(
+          id: comment.id,
+          username: comment.username,
+          handle: comment.handle,
+          profileImage: comment.profileImage,
+          timeAgo: comment.timeAgo,
+          content: comment.content,
+          replies: _removeCommentLocally(comment.replies, commentId),
+        );
+      }
+      return comment;
+    }).toList();
   }
 
   // Helper to add reply into nested comment list (returns new list)
-  List<Comment> _addReplyToComment(List<Comment> comments, String commentId, Comment newReply) {
+  List<Comment> _addReplyToComment(
+    List<Comment> comments,
+    String commentId,
+    Comment newReply,
+  ) {
     return comments.map((comment) {
       if (comment.id == commentId) {
         return comment.copyWithReply(newReply);
@@ -356,7 +381,12 @@ class _ReelsTabState extends State<ReelsTab> {
   }
 
   // helper to render overlapping avatars safely
-  Widget _buildOverlappingAvatars(List<String> urls, {double size = 20, double overlap = 6, int max = 3}) {
+  Widget _buildOverlappingAvatars(
+    List<String> urls, {
+    double size = 20,
+    double overlap = 6,
+    int max = 3,
+  }) {
     final display = urls.take(max).toList();
     final count = display.length;
     final width = count > 0 ? size + (count - 1) * (size - overlap) : 0.0;
@@ -380,7 +410,9 @@ class _ReelsTabState extends State<ReelsTab> {
                         onError: (_, __) {}, // Handle error silently
                       )
                     : null,
-                color: display[i].isEmpty ? AppColors.greyDark : null, // Fallback color
+                color: display[i].isEmpty
+                    ? AppColors.greyDark
+                    : null, // Fallback color
               ),
             ),
           );
@@ -459,9 +491,7 @@ class _ReelsTabState extends State<ReelsTab> {
       body: PageView.builder(
         controller: _pageController,
         scrollDirection: Axis.vertical,
-        physics: const PageScrollPhysics(
-          parent: BouncingScrollPhysics(),
-        ),
+        physics: const PageScrollPhysics(parent: BouncingScrollPhysics()),
         pageSnapping: true,
         itemCount: _stories.length,
         onPageChanged: (index) {
@@ -470,7 +500,7 @@ class _ReelsTabState extends State<ReelsTab> {
             _showLikeAnimation = false;
             _expandedStories.clear();
           });
-          
+
           if (index < _stories.length) {
             final story = _stories[index];
             widget.onStoryViewed?.call(story.id);
@@ -479,34 +509,44 @@ class _ReelsTabState extends State<ReelsTab> {
         },
         itemBuilder: (context, index) {
           final story = _stories[index];
-          
+
           // Add smooth vertical transitions if needed, or keep simple
           // Using ValueKey to force rebuild when story state changes
           return AnimatedBuilder(
-            key: ValueKey('${story.id}_${story.isLiked}_${story.isViewed}_${story.likesCount}_${story.commentsCount}'),
+            key: ValueKey(
+              '${story.id}_${story.isLiked}_${story.isViewed}_${story.likesCount}_${story.commentsCount}',
+            ),
             animation: _pageController,
             builder: (context, child) {
               // Standard scale/opacity logic for vertical list if desired
               double value = 1.0;
               double opacity = 1.0;
-              
+
               if (_pageController.position.haveDimensions) {
                 final currentPage = _pageController.page ?? 0.0;
                 final offset = currentPage - index;
-                
+
                 // Subtle scale effect for neighbors
                 value = (1 - (offset.abs() * 0.1)).clamp(0.9, 1.0);
                 // Gentle opacity fade
                 opacity = (1 - (offset.abs() * 0.3)).clamp(0.7, 1.0);
               }
 
-              final isPlaying = index == (_pageController.hasClients ? (_pageController.page?.round() ?? 0) : 0);
-              
+              final isPlaying =
+                  index ==
+                  (_pageController.hasClients
+                      ? (_pageController.page?.round() ?? 0)
+                      : 0);
+
               return Transform.scale(
                 scale: value,
                 child: Opacity(
                   opacity: opacity,
-                  child: _buildReelItem(story, isCurrentUser: true, isPlaying: isPlaying),
+                  child: _buildReelItem(
+                    story,
+                    isCurrentUser: true,
+                    isPlaying: isPlaying,
+                  ),
                 ),
               );
             },
@@ -521,7 +561,7 @@ class _ReelsTabState extends State<ReelsTab> {
     try {
       final repository = StoriesRepository();
       final details = await repository.getStoryDetails(storyId);
-      
+
       // Update local state with fresh details
       setState(() {
         final updatedStories = _stories.map((s) {
@@ -529,18 +569,21 @@ class _ReelsTabState extends State<ReelsTab> {
             return s.copyWith(
               likesCount: details.likesCount,
               commentsCount: details.commentsCount,
-              likedBy: details.likes.map((l) => LikedByUser(
-                name: l.username,
-                username: l.username, // Pass username as handle
-                profileImage: l.avatarUrl ?? '',
-              )).toList(),
+              likedBy: details.likes
+                  .map(
+                    (l) => LikedByUser(
+                      name: l.username,
+                      username: l.username, // Pass username as handle
+                      profileImage: l.avatarUrl ?? '',
+                    ),
+                  )
+                  .toList(),
             );
           }
           return s;
         }).toList();
-        
-        _stories = updatedStories;
 
+        _stories = updatedStories;
       });
     } catch (e) {
       print('Error loading story details: $e');
@@ -567,7 +610,11 @@ class _ReelsTabState extends State<ReelsTab> {
     }
   }
 
-  Widget _buildReelItem(DiscoverStory story, {bool isCurrentUser = true, bool isPlaying = false}) {
+  Widget _buildReelItem(
+    DiscoverStory story, {
+    bool isCurrentUser = true,
+    bool isPlaying = false,
+  }) {
     return GestureDetector(
       onDoubleTap: () => _handleDoubleTap(story.id, story.isLiked),
       child: Stack(
@@ -645,10 +692,7 @@ class _ReelsTabState extends State<ReelsTab> {
             left: 0,
             right: 0,
             child: IgnorePointer(
-              child: Container(
-                height: 100,
-                color: Colors.black,
-              ),
+              child: Container(height: 100, color: Colors.black),
             ),
           ),
 
@@ -658,10 +702,7 @@ class _ReelsTabState extends State<ReelsTab> {
             left: 0,
             right: 0,
             child: IgnorePointer(
-              child: Container(
-                height: 140,
-                color: Colors.black,
-              ),
+              child: Container(height: 140, color: Colors.black),
             ),
           ),
 
@@ -675,9 +716,7 @@ class _ReelsTabState extends State<ReelsTab> {
                     child: GestureDetector(
                       onTap: () => _toggleExpanded(story.id),
                       behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        color: Colors.black.withOpacity(0.5),
-                      ),
+                      child: Container(color: Colors.black.withOpacity(0.5)),
                     ),
                   )
                 : const SizedBox.shrink(),
@@ -706,11 +745,7 @@ class _ReelsTabState extends State<ReelsTab> {
             ),
 
           // Right side actions
-          Positioned(
-            right: 12,
-            bottom: 40,
-            child: _buildRightActions(story),
-          ),
+          Positioned(right: 12, bottom: 40, child: _buildRightActions(story)),
 
           // Bottom info
           Positioned(
@@ -744,7 +779,11 @@ class _ReelsTabState extends State<ReelsTab> {
               onTap: () => _showLikes(story),
               child: Text(
                 _formatCount(story.likesCount),
-                style: const TextStyle(color: AppColors.pureWhite, fontSize: 12, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: AppColors.pureWhite,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -760,12 +799,19 @@ class _ReelsTabState extends State<ReelsTab> {
                 'assets/icons/comment.svg',
                 width: 28,
                 height: 28,
-                colorFilter: const ColorFilter.mode(AppColors.pureWhite, BlendMode.srcIn),
+                colorFilter: const ColorFilter.mode(
+                  AppColors.pureWhite,
+                  BlendMode.srcIn,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
                 _formatCount(story.commentsCount),
-                style: const TextStyle(color: AppColors.pureWhite, fontSize: 12, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: AppColors.pureWhite,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -781,12 +827,19 @@ class _ReelsTabState extends State<ReelsTab> {
                 'assets/icons/share.svg',
                 width: 26,
                 height: 26,
-                colorFilter: const ColorFilter.mode(AppColors.pureWhite, BlendMode.srcIn),
+                colorFilter: const ColorFilter.mode(
+                  AppColors.pureWhite,
+                  BlendMode.srcIn,
+                ),
               ),
               const SizedBox(height: 6),
               const Text(
                 'Share',
-                style: TextStyle(color: AppColors.pureWhite, fontSize: 12, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: AppColors.pureWhite,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -796,7 +849,11 @@ class _ReelsTabState extends State<ReelsTab> {
         // More options (plain icon)
         GestureDetector(
           onTap: () => _showMoreOptions(story),
-          child: const Icon(Icons.more_vert, color: AppColors.pureWhite, size: 28),
+          child: const Icon(
+            Icons.more_vert,
+            color: AppColors.pureWhite,
+            size: 28,
+          ),
         ),
       ],
     );
@@ -819,11 +876,7 @@ class _ReelsTabState extends State<ReelsTab> {
               color: Colors.black.withOpacity(0.3),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 28,
-            ),
+            child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(height: 4),
           Text(
@@ -832,12 +885,7 @@ class _ReelsTabState extends State<ReelsTab> {
               color: AppColors.pureWhite,
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              shadows: [
-                Shadow(
-                  color: Colors.black,
-                  blurRadius: 4,
-                ),
-              ],
+              shadows: [Shadow(color: Colors.black, blurRadius: 4)],
             ),
           ),
         ],
@@ -880,9 +928,15 @@ class _ReelsTabState extends State<ReelsTab> {
                 GestureDetector(
                   onTap: () => _handleFollow(story),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.pureWhite, width: 1.5),
+                      border: Border.all(
+                        color: AppColors.pureWhite,
+                        width: 1.5,
+                      ),
                       borderRadius: BorderRadius.circular(6),
                       // color: story.isFollowing ? AppColors.pureWhite.withOpacity(0.2) : Colors.transparent, // Logic removed as button is hidden
                     ),
@@ -916,7 +970,9 @@ class _ReelsTabState extends State<ReelsTab> {
                 height: 1.3,
               ),
               maxLines: _isExpanded(story.id) ? null : 2,
-              overflow: _isExpanded(story.id) ? TextOverflow.visible : TextOverflow.ellipsis,
+              overflow: _isExpanded(story.id)
+                  ? TextOverflow.visible
+                  : TextOverflow.ellipsis,
             ),
           ),
         ),
@@ -932,23 +988,34 @@ class _ReelsTabState extends State<ReelsTab> {
             child: Wrap(
               spacing: 8,
               runSpacing: 4,
-              children: (_isExpanded(story.id) ? story.hashtags : story.hashtags.take(math.min(3, story.hashtags.length))).map((tag) {
-                return Text(
-                  '#$tag',
-                  style: const TextStyle(
-                    color: Color(0xFFD4FC79),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                );
-              }).toList()
-                ..addAll([
-                  if (!_isExpanded(story.id) && story.hashtags.length > 3)
-                    Text(
-                      ' +${story.hashtags.length - 3} more',
-                      style: const TextStyle(color: AppColors.white60, fontSize: 14, fontWeight: FontWeight.w600),
-                    ),
-                ]),
+              children:
+                  (_isExpanded(story.id)
+                          ? story.hashtags
+                          : story.hashtags.take(
+                              math.min(3, story.hashtags.length),
+                            ))
+                      .map((tag) {
+                        return Text(
+                          '#$tag',
+                          style: const TextStyle(
+                            color: Color(0xFFD4FC79),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      })
+                      .toList()
+                    ..addAll([
+                      if (!_isExpanded(story.id) && story.hashtags.length > 3)
+                        Text(
+                          ' +${story.hashtags.length - 3} more',
+                          style: const TextStyle(
+                            color: AppColors.white60,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ]),
             ),
           ),
         ),
@@ -963,7 +1030,10 @@ class _ReelsTabState extends State<ReelsTab> {
               child: Row(
                 children: [
                   _buildOverlappingAvatars(
-                    story.likedBy.take(3).map((user) => user.profileImage).toList(),
+                    story.likedBy
+                        .take(3)
+                        .map((user) => user.profileImage)
+                        .toList(),
                     size: 20,
                     overlap: 6,
                     max: 3,
@@ -972,7 +1042,10 @@ class _ReelsTabState extends State<ReelsTab> {
                   Expanded(
                     child: Text(
                       'Liked by ${_getLikedByText(story)}',
-                      style: const TextStyle(color: AppColors.white60, fontSize: 12),
+                      style: const TextStyle(
+                        color: AppColors.white60,
+                        fontSize: 12,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -982,8 +1055,6 @@ class _ReelsTabState extends State<ReelsTab> {
             ),
           ),
         const SizedBox(height: 8),
-
-
       ],
     );
   }
@@ -1093,9 +1164,7 @@ class _ReelsTabState extends State<ReelsTab> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.black,
-                  border: Border(
-                    top: BorderSide(color: AppColors.greyDark),
-                  ),
+                  border: Border(top: BorderSide(color: AppColors.greyDark)),
                 ),
                 child: Row(
                   children: [
@@ -1115,10 +1184,7 @@ class _ReelsTabState extends State<ReelsTab> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(
-                        Icons.send,
-                        color: Color(0xFFD4FC79),
-                      ),
+                      icon: const Icon(Icons.send, color: Color(0xFFD4FC79)),
                       onPressed: () {},
                     ),
                   ],
@@ -1181,19 +1247,13 @@ class _ReelsTabState extends State<ReelsTab> {
           Container(
             width: 60,
             height: 60,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             child: Icon(icon, color: AppColors.pureWhite, size: 28),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.pureWhite,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: AppColors.pureWhite, fontSize: 12),
           ),
         ],
       ),
@@ -1206,18 +1266,40 @@ class _ReelsTabState extends State<ReelsTab> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildMoreOption(Icons.report, 'Report', Colors.red, () {
-            Navigator.pop(context);
-          }),
-          _buildMoreOption(Icons.block, 'Not Interested', AppColors.white70, () {
-            Navigator.pop(context);
-          }),
-          _buildMoreOption(Icons.person_add_disabled, 'Hide', AppColors.white70, () {
-            Navigator.pop(context);
-          }),
-          _buildMoreOption(Icons.info_outline, 'About this account', AppColors.white70, () {
-            Navigator.pop(context);
-          }),
+          if (story.isOwner)
+            _buildMoreOption(Icons.delete, 'Delete', Colors.red, () {
+              Navigator.pop(context); // Close sheet
+              _confirmDeleteStory(story);
+            }),
+          if (!story.isOwner) ...[
+            _buildMoreOption(Icons.report, 'Report', Colors.red, () {
+              Navigator.pop(context);
+            }),
+            _buildMoreOption(
+              Icons.block,
+              'Not Interested',
+              AppColors.white70,
+              () {
+                Navigator.pop(context);
+              },
+            ),
+            _buildMoreOption(
+              Icons.person_add_disabled,
+              'Hide',
+              AppColors.white70,
+              () {
+                Navigator.pop(context);
+              },
+            ),
+            _buildMoreOption(
+              Icons.info_outline,
+              'About this account',
+              AppColors.white70,
+              () {
+                Navigator.pop(context);
+              },
+            ),
+          ],
           const SizedBox(height: 8),
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1235,16 +1317,85 @@ class _ReelsTabState extends State<ReelsTab> {
     );
   }
 
-  Widget _buildMoreOption(IconData icon, String label, Color color, VoidCallback onTap) {
+  Future<void> _confirmDeleteStory(DiscoverStory story) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.black100,
+        title: const Text(
+          'Delete Story',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this story?',
+          style: TextStyle(color: AppColors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.white60),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      _handleDeleteStory(story);
+    }
+  }
+
+  Future<void> _handleDeleteStory(DiscoverStory story) async {
+    try {
+      // Optimistic update
+      // final previousStories = List<DiscoverStory>.from(_stories); // Unused
+      setState(() {
+        _stories.removeWhere((s) => s.id == story.id);
+        // If we deleted the last item, safe check is handled by PageView but index might need adjustment
+        if (_currentIndex >= _stories.length && _currentIndex > 0) {
+          _currentIndex = _stories.length - 1;
+        }
+      });
+
+      if (_stories.isEmpty) {
+        Navigator.pop(context); // Close reels if no stories left
+      }
+
+      await _storiesRepository.deleteStory(story.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Story deleted')));
+      }
+    } catch (e) {
+      if (mounted) {
+        // Revert if failed
+        // Note: Reverting a deletion is tricky with PageController, we might just reload or show error.
+        // For now, just show error.
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete story: $e')));
+        // Logic to reload could be added here
+      }
+    }
+  }
+
+  Widget _buildMoreOption(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       leading: Icon(icon, color: color),
-      title: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 16,
-        ),
-      ),
+      title: Text(label, style: TextStyle(color: color, fontSize: 16)),
       onTap: onTap,
     );
   }
@@ -1271,14 +1422,12 @@ class _ReelsTabState extends State<ReelsTab> {
     return count.toString();
   }
 
-
-
   String _getLikedByText(DiscoverStory story) {
     if (story.likesCount <= 0 || story.likedBy.isEmpty) return '';
 
     final buffer = StringBuffer();
     final displayCount = story.likedBy.length < 3 ? story.likedBy.length : 3;
-    
+
     for (int i = 0; i < displayCount; i++) {
       buffer.write(story.likedBy[i].name);
       if (i == displayCount - 1 && story.likesCount > displayCount) {
@@ -1290,5 +1439,3 @@ class _ReelsTabState extends State<ReelsTab> {
     return buffer.toString();
   }
 }
-
-

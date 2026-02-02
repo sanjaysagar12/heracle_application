@@ -124,11 +124,7 @@ class WorkoutCategory {
     );
   }
 
-  WorkoutCategory copyWith({
-    String? id,
-    String? name,
-    bool? isSelected,
-  }) {
+  WorkoutCategory copyWith({String? id, String? name, bool? isSelected}) {
     return WorkoutCategory(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -177,7 +173,6 @@ class HighlightVideo {
   }
 }
 
-
 /// Connection User Model (Followers/Following)
 class ConnectionUser {
   final String id;
@@ -203,7 +198,7 @@ class ConnectionUser {
       isFollowing: json['isFollowing'] as bool? ?? false,
     );
   }
-  
+
   ConnectionUser copyWith({
     String? id,
     String? name,
@@ -221,8 +216,6 @@ class ConnectionUser {
   }
 }
 
-
-
 // Remove local ProfilePost class as we now use FeedPost
 
 /// Profile Repository
@@ -231,9 +224,11 @@ class ProfileRepository {
   final MutualFeedRepository _mutualFeedRepository;
   final CacheManager _cacheManager = CacheManager();
 
-  ProfileRepository({ProfileApiService? apiService, MutualFeedRepository? mutualFeedRepository})
-      : _apiService = apiService ?? ProfileApiService(),
-        _mutualFeedRepository = mutualFeedRepository ?? MutualFeedRepository();
+  ProfileRepository({
+    ProfileApiService? apiService,
+    MutualFeedRepository? mutualFeedRepository,
+  }) : _apiService = apiService ?? ProfileApiService(),
+       _mutualFeedRepository = mutualFeedRepository ?? MutualFeedRepository();
 
   /// Get user profile
   Future<UserProfile> getUserProfile(String username) async {
@@ -254,13 +249,20 @@ class ProfileRepository {
   Future<List<WorkoutCategory>> getWorkoutCategories() async {
     try {
       final sessions = await getSessions();
-      final categoryNames = sessions.expand((s) => s.categories).toSet().toList();
-      
-      return categoryNames.map((name) => WorkoutCategory(
-        id: name.toLowerCase(),
-        name: name,
-        isSelected: false,
-      )).toList();
+      final categoryNames = sessions
+          .expand((s) => s.categories)
+          .toSet()
+          .toList();
+
+      return categoryNames
+          .map(
+            (name) => WorkoutCategory(
+              id: name.toLowerCase(),
+              name: name,
+              isSelected: false,
+            ),
+          )
+          .toList();
     } catch (e) {
       throw Exception('Failed to load categories: $e');
     }
@@ -270,16 +272,17 @@ class ProfileRepository {
   Future<List<HighlightVideo>> getHighlights({String? category}) async {
     try {
       final data = await _apiService.getHighlights(category: category);
-      List<HighlightVideo> highlights = 
-          data.map((json) => HighlightVideo.fromJson(json)).toList();
-      
+      List<HighlightVideo> highlights = data
+          .map((json) => HighlightVideo.fromJson(json))
+          .toList();
+
       // Filter by category if provided
       if (category != null && category.isNotEmpty) {
         highlights = highlights
             .where((h) => h.category.toLowerCase() == category.toLowerCase())
             .toList();
       }
-      
+
       return highlights;
     } catch (e) {
       throw Exception('Failed to load highlights: $e');
@@ -292,19 +295,19 @@ class ProfileRepository {
       final data = await _apiService.getUserFeed(userId);
       // Ensure 'items' exists and is a list
       final items = (data['items'] as List<dynamic>?) ?? [];
-      
+
       return items.map((item) {
         final user = item['user'] as Map<String, dynamic>;
         final createdAt = item['createdAt'] as String;
-        
+
         return DiscoverStory(
           id: item['id'],
           username: user['username'] ?? '',
           profileImage: user['avatarUrl'] ?? '',
           content: item['caption'] ?? '',
-          hashtags: [], 
+          hashtags: [],
           mediaUrl: item['mediaUrl'] ?? '',
-          thumbnailUrl: item['thumbnail'] ?? '', 
+          thumbnailUrl: item['thumbnail'] ?? '',
           mediaType: item['mediaType'] ?? 'IMAGE',
           platform: 'Heracle',
           platformHandle: '@${user['username'] ?? ''}',
@@ -316,6 +319,40 @@ class ProfileRepository {
       }).toList();
     } catch (e) {
       throw Exception('Failed to load user feed: $e');
+    }
+  }
+
+  /// Get user stories (highlights)
+  Future<List<DiscoverStory>> getUserStories(String username) async {
+    try {
+      final data = await _apiService.getUserStories(username);
+      final items = (data['items'] as List<dynamic>?) ?? [];
+
+      return items.map((item) {
+        final user = item['user'] as Map<String, dynamic>;
+        final createdAt = item['createdAt'] as String;
+
+        return DiscoverStory(
+          id: item['id'],
+          username: user['username'] ?? '',
+          profileImage: user['avatarUrl'] ?? '',
+          content: item['caption'] ?? '',
+          hashtags: [],
+          mediaUrl: item['mediaUrl'] ?? '',
+          thumbnailUrl: item['thumbnailUrl'] ?? item['thumbnail'] ?? '',
+          mediaType: item['mediaType'] ?? 'IMAGE',
+          platform: 'Heracle',
+          platformHandle: '@${user['username'] ?? ''}',
+          timeAgo: _calculateTimeAgo(createdAt),
+          isLiked: item['isLiked'] ?? false,
+          likesCount: item['likeCount'] ?? 0,
+          likedBy: [],
+          isOwner: item['isOwner'] ?? false,
+          isFollowing: item['isFollowing'] ?? false,
+        );
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to load user stories: $e');
     }
   }
 
@@ -366,7 +403,9 @@ class ProfileRepository {
       await _cacheManager.cacheData(cacheKey, data);
       return _mapSessions(data);
     } catch (e) {
-      final cacheKey = username != null ? 'profile_sessions_$username' : 'profile_sessions';
+      final cacheKey = username != null
+          ? 'profile_sessions_$username'
+          : 'profile_sessions';
       final cachedData = await _cacheManager.getCachedData(cacheKey);
       if (cachedData != null && cachedData is List) {
         return _mapSessions(List<Map<String, dynamic>>.from(cachedData));
@@ -376,16 +415,29 @@ class ProfileRepository {
   }
 
   List<Session> _mapSessions(List<Map<String, dynamic>> data) {
-      return data.map((json) => Session(
-        id: json['id'] as String,
-        title: json['title'] as String,
-        content: json['content'] as String? ?? '',
-        categories: (json['categories'] as List?)?.map((e) => e as String).toList() 
-            ?? ((json['category'] != null) ? [json['category'] as String] : []),
-        exercisesCount: json['exercisesCount'] as int? ?? 0,
-        position: json['position'] as int? ?? 0,
-        exercises: (json['exercises'] as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
-      )).toList();
+    return data
+        .map(
+          (json) => Session(
+            id: json['id'] as String,
+            title: json['title'] as String,
+            content: json['content'] as String? ?? '',
+            categories:
+                (json['categories'] as List?)
+                    ?.map((e) => e as String)
+                    .toList() ??
+                ((json['category'] != null)
+                    ? [json['category'] as String]
+                    : []),
+            exercisesCount: json['exercisesCount'] as int? ?? 0,
+            position: json['position'] as int? ?? 0,
+            exercises:
+                (json['exercises'] as List?)
+                    ?.map((e) => Map<String, dynamic>.from(e))
+                    .toList() ??
+                [],
+          ),
+        )
+        .toList();
   }
 
   /// Get posts
@@ -395,7 +447,9 @@ class ProfileRepository {
       await _cacheManager.cacheData('profile_posts_$username', data);
       return _mapPosts(data);
     } catch (e) {
-      final cachedData = await _cacheManager.getCachedData('profile_posts_$username');
+      final cachedData = await _cacheManager.getCachedData(
+        'profile_posts_$username',
+      );
       if (cachedData != null && cachedData is List) {
         return _mapPosts(List<Map<String, dynamic>>.from(cachedData));
       }
@@ -428,10 +482,10 @@ class ProfileRepository {
   /// Toggle follow status
   UserProfile toggleFollow(UserProfile profile) {
     final newFollowStatus = !profile.isFollowing;
-    final newFollowers = newFollowStatus 
-        ? profile.followers + 1 
+    final newFollowers = newFollowStatus
+        ? profile.followers + 1
         : profile.followers - 1;
-    
+
     return profile.copyWith(
       isFollowing: newFollowStatus,
       followers: newFollowers,

@@ -75,7 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
       // 3. Fetch other data in parallel
       final results = await Future.wait([
         _repository
-            .getUserFeed(profile.id)
+            .getUserStories(_targetUsername)
             .catchError((_) => <DiscoverStory>[]),
         _repository
             .getSessions(username: _targetUsername)
@@ -116,7 +116,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_profile != null) {
       final oldProfile = _profile;
       final isNowFollowing = !_profile!.isFollowing;
-      
+
       setState(() {
         _profile = _repository.toggleFollow(_profile!);
       });
